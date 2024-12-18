@@ -1,0 +1,11 @@
+integrations:
+  - name: Coinbase
+    type: coinbase
+    key: key
+    secret: secret
+    description: description
+  - name: Bitpanda
+    type: bitpanda
+    key: key
+    secret: secret
+    description: description
