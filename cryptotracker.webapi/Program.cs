@@ -40,7 +40,7 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
     return new CryptotrackerConfig();
 });
 
-builder.Services.AddDbContext<ApplicationContext>(options =>
+builder.Services.AddDbContext<DatabaseContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DbConnection") ?? "";
     options.UseMySQL(connectionString);

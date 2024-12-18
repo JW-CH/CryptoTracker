@@ -47,10 +47,10 @@ namespace cryptotracker.database.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    AssetId = table.Column<string>(type: "varchar(255)", nullable: true),
+                    AssetId = table.Column<string>(type: "varchar(255)", nullable: false),
                     IntegrationId = table.Column<Guid>(type: "char(36)", nullable: false),
                     StandingDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    StandingValue = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    StandingValue = table.Column<decimal>(type: "decimal(18,10)", precision: 18, scale: 10, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -59,7 +59,8 @@ namespace cryptotracker.database.Migrations
                         name: "FK_AssetMeasurings_Assets_AssetId",
                         column: x => x.AssetId,
                         principalTable: "Assets",
-                        principalColumn: "AssetId");
+                        principalColumn: "AssetId",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AssetMeasurings_ExchangeIntegrations_IntegrationId",
                         column: x => x.IntegrationId,

@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace cryptotracker.database.Migrations
 {
-    [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(DatabaseContext))]
+    partial class DatabaseContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -43,6 +43,7 @@ namespace cryptotracker.database.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<string>("AssetId")
+                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<Guid>("IntegrationId")
@@ -52,7 +53,8 @@ namespace cryptotracker.database.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<decimal>("StandingValue")
-                        .HasColumnType("decimal(18,2)");
+                        .HasPrecision(18, 10)
+                        .HasColumnType("decimal(18,10)");
 
                     b.HasKey("Id");
 
@@ -86,7 +88,9 @@ namespace cryptotracker.database.Migrations
                 {
                     b.HasOne("cryptotracker.database.Models.Asset", "Asset")
                         .WithMany()
-                        .HasForeignKey("AssetId");
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("cryptotracker.database.Models.ExchangeIntegration", "Integration")
                         .WithMany()
