@@ -56,9 +56,39 @@ namespace cryptotracker.core.Logic
                             Balance = await GetBitcoinAvailableBalances(client, integration.Key)
                         }};
                     }
-
+                case "ethereum":
+                    using (HttpClient client = new HttpClient())
+                    {
+                        return new List<BalanceResult>() { new BalanceResult(){
+                            Symbol = "ETH",
+                            Balance = await GetEthereumAvailableBalances(client, integration.Key)
+                        }};
+                    }
                 default:
                     throw new NotImplementedException($"Integration {integration.Type} was not implemented!");
+            }
+        }
+
+        private static async Task<decimal> GetEthereumAvailableBalances(HttpClient client, string address)
+        {
+            string apiUrl = $"https://api.ethplorer.io/getAddressInfo/{address}?apiKey=freekey";
+
+            HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string json = await response.Content.ReadAsStringAsync();
+
+                var property = JsonSerializer.Deserialize<JsonElement>(json).GetProperty("ETH");
+
+                var balance = property.GetProperty("balance").GetDecimal();
+
+                return balance;
+            }
+            else
+            {
+                Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                return 0;
             }
         }
 
