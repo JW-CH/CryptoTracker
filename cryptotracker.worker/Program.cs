@@ -25,7 +25,7 @@ StringBuilder sb = new StringBuilder();
 
 var root = Directory.GetCurrentDirectory();
 
-var ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "docker", "config.yml");
+var ymlConfigPath = Path.Combine(root, "docker", "config.yml");
 CryptotrackerConfig config;
 
 if (File.Exists(ymlConfigPath))
@@ -60,8 +60,6 @@ catch (Exception ex)
     Console.WriteLine(ex.ToString());
     tx.Rollback();
 }
-
-Console.ReadLine();
 
 void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal balance)
 {
