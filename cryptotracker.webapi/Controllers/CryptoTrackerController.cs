@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class CryptoTrackerController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;
