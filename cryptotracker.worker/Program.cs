@@ -1,17 +1,17 @@
 ﻿using cryptotracker.core.Logic;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
 optionsBuilder.UseMySQL("server=192.168.0.165;database=cryptotracker;user=root;password=strong_password;");
 
 using var db = new DatabaseContext(optionsBuilder.Options);
 
-Console.WriteLine("Clearing DB");
+Console.WriteLine("Clearing today's DB entries");
 
-db.AssetMeasurings.RemoveRange(db.AssetMeasurings);
+db.AssetMeasurings.RemoveRange(db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date));
 //db.Assets.RemoveRange(db.Assets);
 //db.ExchangeIntegrations.RemoveRange(db.ExchangeIntegrations);
 
@@ -55,7 +55,8 @@ try
     tx.Commit();
     Console.WriteLine(sb.ToString());
 }
-catch (Exception ex) {
+catch (Exception ex)
+{
     Console.WriteLine(ex.ToString());
     tx.Rollback();
 }

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="CryptoClients.Net" Version="2.7.1" />
+    <PackageReference Include="NBitcoin" Version="7.0.46" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>
 

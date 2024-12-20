@@ -1,4 +1,3 @@
-using CryptoExchange.Net.Authentication;
 using cryptotracker.core.Models;
 using Microsoft.EntityFrameworkCore;
 

@@ -6,8 +6,10 @@ using CryptoCom.Net.Interfaces.Clients;
 using CryptoCom.Net.Objects.Models;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
+using cryptotracker.core.Helpers;
 using cryptotracker.core.Models;
 using ImmichFrame.Core.Helpers;
+using NBitcoin;
 using System.Text.Json;
 
 namespace cryptotracker.core.Logic
@@ -46,11 +48,79 @@ namespace cryptotracker.core.Logic
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.AvailableBalance.Value + account.HoldBalance.Value }).ToList();
                     }
+                case "bitcoin":
+                    using (HttpClient client = new HttpClient())
+                    {
+                        return new List<BalanceResult>() { new BalanceResult(){
+                            Symbol = "BTC",
+                            Balance = await GetBitcoinAvailableBalances(client, integration.Key)
+                        }};
+                    }
+
                 default:
                     throw new NotImplementedException($"Integration {integration.Type} was not implemented!");
             }
         }
 
+        /// <summary>
+        /// Retrieves the available Bitcoin balances for a given input, which can be either an address or an extended public key (xpub).
+        /// </summary>
+        /// <param name="client">The HttpClient used to make the request.</param>
+        /// <param name="input">The Bitcoin address or extended public key (xpub) to retrieve the balance for.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the available balance in BTC.</returns>
+        private async static Task<decimal> GetBitcoinAvailableBalances(HttpClient client, string input)
+        {
+            async Task<(decimal balance, int transactions)> GetBitcoinAmountFromAddress(HttpClient client, string address)
+            {
+                string apiUrl = $"https://blockchain.info/balance?active={address}";
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string json = await response.Content.ReadAsStringAsync();
+
+                    var property = JsonSerializer.Deserialize<JsonElement>(json).GetProperty(address.ToString());
+
+                    var balance = property.GetProperty("final_balance").GetDecimal();
+                    var transactions = property.GetProperty("n_tx").GetInt32();
+
+                    return (BitcoinHelper.GetBitcoinFromSats(balance), transactions); // Convert satoshis to BTC
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                    return (0, 0);
+                }
+            }
+
+            if (input.StartsWith("xpub", StringComparison.OrdinalIgnoreCase))
+            {
+                ExtPubKey extPubKey = ExtPubKey.Parse(input, Network.Main);
+
+                decimal totalBalance = 0;
+                int i = 0;
+                int transactions = 0;
+                do
+                {
+                    KeyPath keyPath = new KeyPath($"0/{i}"); // Change path for receiving or change addresses
+                    PubKey pubKey = extPubKey.Derive(keyPath).PubKey;
+                    BitcoinAddress address = pubKey.GetAddress(ScriptPubKeyType.Segwit, Network.Main);
+
+                    var res = await GetBitcoinAmountFromAddress(client, address.ToString());
+                    totalBalance += res.balance;
+                    transactions = res.transactions;
+
+                    i++;
+                }
+                while (transactions > 0);
+
+                return totalBalance;
+            }
+            else
+            {
+                return (await GetBitcoinAmountFromAddress(client, input)).balance;
+            }
+        }
         private async static Task<IEnumerable<CryptoComBalance>> GetCoinbaseAvailableAccounts(ICryptoComRestClient client)
         {
             WebCallResult<IEnumerable<CryptoComBalances>>? result = null;
@@ -100,13 +170,5 @@ namespace cryptotracker.core.Logic
     {
         public string Symbol { get; set; }
         public decimal Balance { get; set; }
-    }
-
-    public enum IntegrationEnum
-    {
-        cryptocom,
-        coinbase,
-        binance,
-        bitpanda
     }
 }
