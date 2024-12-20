@@ -93,9 +93,16 @@ namespace cryptotracker.core.Logic
                 }
             }
 
-            if (input.StartsWith("xpub", StringComparison.OrdinalIgnoreCase))
+            if (input.StartsWith("xpub", StringComparison.OrdinalIgnoreCase) || input.StartsWith("zpub", StringComparison.OrdinalIgnoreCase))
             {
-                ExtPubKey extPubKey = ExtPubKey.Parse(input, Network.Main);
+                string xpub = input;
+
+                if (input.StartsWith("zpub", StringComparison.OrdinalIgnoreCase))
+                {
+                    xpub = BitcoinHelper.ZpubToXpub(input);
+                }
+
+                ExtPubKey extPubKey = ExtPubKey.Parse(xpub, Network.Main);
 
                 decimal totalBalance = 0;
                 int i = 0;
