@@ -1,5 +1,7 @@
 using cryptotracker.core.Models;
+using cryptotracker.database.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace cryptotracker.webapi.Controllers
 {
@@ -18,25 +20,12 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-        [HttpGet(Name = "Get")]
-        public async Task<Dictionary<string, decimal>> Get()
+        [HttpGet(Name = "GetMeasuringsByDay")]
+        public async Task<Dictionary<DateTime, List<AssetMeasuringDto>>> GetMeasuringsByDay(int days = 7)
         {
-            var today = _db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Today).ToList();
-            Dictionary<string, decimal> result = new();
-            foreach (var item in today)
-            {
+            var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
 
-                if (result.ContainsKey(item.AssetId))
-                {
-                    result[item.AssetId] += item.StandingValue;
-                }
-                else
-                {
-                    result[item.AssetId] = item.StandingValue;
-                }
-            }
-
-            return result;
+            return dayList.ToDictionary(x => x.Key, x => x.Select(a => AssetMeasuringDto.FromModel(a)).ToList());
         }
     }
 }
