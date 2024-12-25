@@ -20,12 +20,45 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-        [HttpGet(Name = "GetMeasuringsByDay")]
-        public async Task<Dictionary<DateTime, List<AssetMeasuringDto>>> GetMeasuringsByDay(int days = 7)
+        [HttpGet("{days}", Name = "GetMeasuringsByDay")]
+        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay(int days = 7)
         {
             var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
 
-            return dayList.ToDictionary(x => x.Key, x => x.Select(a => AssetMeasuringDto.FromModel(a)).ToList());
+            var result = new Dictionary<DateTime, List<AssetMeasuringDto>>();
+            foreach (var day in dayList.ToList())
+            {
+                result[day.Key] = GetAssetDayMeasuring(day.Key);
+            }
+
+            return result;
+        }
+
+        [HttpGet(Name = "GetLatestMeasurings")]
+        public List<AssetMeasuringDto> GetLatestMeasurings()
+        {
+            var day = _db.AssetMeasurings.Max(x => x.StandingDate.Date);
+
+            return GetAssetDayMeasuring(day);
+        }
+
+        private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day)
+        {
+            var result = new List<AssetMeasuringDto>();
+
+            foreach (var asset in _db.Assets.ToList())
+            {
+                var dto = new AssetMeasuringDto
+                {
+                    AssetId = asset.AssetId,
+                    AssetName = asset.Name,
+                    StandingValue = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.AssetId).Sum(x => x.StandingValue)
+                };
+
+                result.Add(dto);
+            }
+
+            return result;
         }
     }
 }
