@@ -11,6 +11,9 @@ Integrationen:
 - [x] Binance
 - [x] Bitcoin (XPUB, ZPUB)
 - [x] Ethereum (Adr)
+- [ ] XRP (Adr)
+- [ ] Cardano (Adr)
+- [ ] Polkadot (Adr)
 
 Tracking:
 - [x] Preis tracking per Asset
