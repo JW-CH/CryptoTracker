@@ -46,13 +46,18 @@ namespace cryptotracker.webapi.Controllers
         {
             var result = new List<AssetMeasuringDto>();
 
+            var currency = "chf";
             foreach (var asset in _db.Assets.ToList())
             {
+                var price = _db.AssetPriceHistory.Where(x => x.Date == day.Date && x.Symbol == asset.Symbol && x.Currency == currency).FirstOrDefault()?.Price ?? 0m;
+                var amount = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).Sum(x => x.StandingValue);
                 var dto = new AssetMeasuringDto
                 {
                     AssetId = asset.Symbol,
                     AssetName = asset.Name,
-                    StandingValue = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).Sum(x => x.StandingValue)
+                    AssetAmount = amount,
+                    AssetPrice = price,
+                    FiatValue = amount * price
                 };
 
                 result.Add(dto);

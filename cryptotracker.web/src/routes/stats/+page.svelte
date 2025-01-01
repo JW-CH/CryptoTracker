@@ -9,7 +9,7 @@
 	<div class="h-1/2 w-1/2">
 		<PieChart
 			labels={measuring.data.map((x) => x.assetId ?? '')}
-			values={measuring.data.map((x) => x.standingValue ?? 0)}
+			values={measuring.data.map((x) => x.fiatValue ?? 0)}
 		/>
 	</div>
 {/await}
@@ -21,8 +21,8 @@
 	{#each Object.keys(stats.data) as key}
 		<h1 class="font-bold">{key}</h1>
 		<ul>
-			{#each stats.data[key] as stat}
-				<li>{stat.assetId}: {stat.standingValue}</li>
+			{#each stats.data[key].sort((a, b) => (b.fiatValue ?? 0) - (a.fiatValue ?? 0)) as stat}
+				<li>{stat.assetId}: {stat.fiatValue}</li>
 			{/each}
 		</ul>
 	{/each}

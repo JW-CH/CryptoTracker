@@ -5,6 +5,7 @@
  * See https://www.npmjs.com/package/oazapfts
  */
 import * as Oazapfts from "@oazapfts/runtime";
+import * as QS from "@oazapfts/runtime/query";
 export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
     headers: {},
     baseUrl: "/",
@@ -14,7 +15,9 @@ export const servers = {};
 export type AssetMeasuringDto = {
     assetId?: string | null;
     assetName?: string | null;
-    standingValue?: number;
+    assetAmount?: number;
+    assetPrice?: number;
+    fiatValue?: number;
 };
 export function getMeasuringsByDay(days: number, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{

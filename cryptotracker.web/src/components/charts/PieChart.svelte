@@ -3,8 +3,8 @@
 	import { Chart } from 'chart.js/auto';
 	import { onMount } from 'svelte';
 
-	export let values: number[] = [300, 50, 100];
-	export let labels: string[] = ['Red', 'Blue', 'Yellow'];
+	export let values: number[];
+	export let labels: string[];
 
 	let id = 'chart_' + generateGUID();
 

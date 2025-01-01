@@ -2,6 +2,7 @@
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.InteropServices;
 using System.Text;
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
@@ -24,8 +25,16 @@ using var tx = db.Database.BeginTransaction();
 StringBuilder sb = new StringBuilder();
 
 var root = Directory.GetCurrentDirectory();
+string ymlConfigPath;
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+    ymlConfigPath = Path.Combine(root, "docker", "config.yml");
+}
+else
+{
+    ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "docker", "config.yml");
+}
 
-var ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "docker", "config.yml");
 CryptotrackerConfig config;
 
 if (File.Exists(ymlConfigPath))

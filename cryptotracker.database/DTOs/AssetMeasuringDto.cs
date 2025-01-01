@@ -6,16 +6,13 @@ namespace cryptotracker.database.DTOs
     {
         public string AssetId { get; set; }
         public string AssetName { get; set; }
-        public decimal StandingValue { get; set; }
+        public decimal AssetAmount { get; set; }
+        public decimal AssetPrice { get; set; }
+        public decimal FiatValue { get; set; }
 
         public static AssetMeasuringDto FromModel(AssetMeasuring model)
         {
-            return new AssetMeasuringDto
-            {
-                AssetId = model.AssetId,
-                AssetName = model.Asset.Name,
-                StandingValue = model.StandingValue
-            };
+            throw new NotImplementedException();
         }
     }
 }
