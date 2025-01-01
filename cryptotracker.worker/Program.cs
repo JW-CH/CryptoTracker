@@ -25,7 +25,7 @@ StringBuilder sb = new StringBuilder();
 
 var root = Directory.GetCurrentDirectory();
 
-var ymlConfigPath = Path.Combine(root, "docker", "config.yml");
+var ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "docker", "config.yml");
 CryptotrackerConfig config;
 
 if (File.Exists(ymlConfigPath))
@@ -52,17 +52,22 @@ try
         }
 
     }
+    Console.WriteLine(sb.ToString());
 
+    Console.WriteLine("Starting Metadataimport");
     UpdateAssetMetadata();
+    Console.WriteLine("Finished Metadataimport");
 
     tx.Commit();
-    Console.WriteLine(sb.ToString());
+
+    Console.WriteLine("Finished Import");
 }
 catch (Exception ex)
 {
     Console.WriteLine(ex.ToString());
     tx.Rollback();
 }
+
 
 void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal balance)
 {
@@ -86,8 +91,7 @@ void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal b
         {
             Symbol = symbol,
             Name = "",
-            ExternalId = "",
-            FiatValue = 0
+            ExternalId = ""
         };
         db.Assets.Add(asset);
     }
@@ -106,26 +110,71 @@ void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal b
 
 void UpdateAssetMetadata()
 {
+    var assets = db.Assets.ToList();
+
+    if (assets.Count == 0) return;
+
     var coinList = CryptoTrackerLogic.GetCoinList().Result;
 
     if (coinList == null) return;
 
-    var assets = db.Assets.ToList();
     foreach (var asset in assets)
     {
-        var coins = coinList.Where(x => x.symbol.ToLower() == asset.Symbol.ToLower());
+        Coin? coin = null;
+        if (string.IsNullOrWhiteSpace(asset.ExternalId))
+        {
+            var coins = coinList.Where(x => x.symbol.ToLower() == asset.Symbol.ToLower());
 
-        if (coins.Count() != 1) continue;
+            if (coins.Count() != 1) continue;
 
-        var coin = coins.First();
+            coin = coins.First();
+        }
+        else
+        {
+            coin = coinList.FirstOrDefault(x => x.id == asset.ExternalId);
+        }
 
-        asset.Name = coin.name;
-        asset.ExternalId = coin.id;
+        if (coin == null) continue;
+
+        asset.Name = coin.Value.name;
+        if (string.IsNullOrWhiteSpace(asset.ExternalId))
+            asset.ExternalId = coin.Value.id;
     }
+    db.SaveChanges();
 
-    var priceList = CryptoTrackerLogic.GetCoinPrices("chf").Result;
+    var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => x.ExternalId).ToList();
+
+    if (foundExternalIds.Count == 0) return;
+    var currency = "chf";
+    var priceList = CryptoTrackerLogic.GetCoinPrices(currency, foundExternalIds).Result;
 
     if (priceList == null) return;
+
+    priceList.ForEach(x =>
+    {
+        var asset = db.Assets.FirstOrDefault(a => a.ExternalId == x.AssetId);
+
+        if (asset == null) return;
+
+        var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.Today && p.Currency == currency);
+
+        if (price == null)
+        {
+            price = new AssetPriceHistory()
+            {
+                Symbol = asset.Symbol,
+                Date = DateTime.Today,
+                Currency = currency,
+                Price = x.Price,
+            };
+
+            db.AssetPriceHistory.Add(price);
+        }
+        else
+        {
+            price.Price = x.Price;
+        }
+    });
 
     db.SaveChanges();
 }

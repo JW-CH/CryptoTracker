@@ -229,13 +229,13 @@ namespace cryptotracker.core.Logic
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
 
-        public static async Task<List<AssetMetadata>?> GetCoinPrices(string currency)
+        public static async Task<List<AssetMetadata>?> GetCoinPrices(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
 
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-            string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={currency}";
+            string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={currency}&ids={string.Join(",", coinIds)}";
 
             var response = await client.GetAsync(apiUrl);
 
@@ -247,13 +247,15 @@ namespace cryptotracker.core.Logic
 
             foreach (var item in data)
             {
+                var id = item.GetProperty("id").GetString() ?? "";
                 var name = item.GetProperty("name").GetString() ?? "";
                 var symbol = item.GetProperty("symbol").GetString() ?? "";
                 var price = item.GetProperty("current_price").GetDecimal();
 
                 result.Add(new AssetMetadata()
                 {
-                    AssetId = symbol,
+                    AssetId = id,
+                    Symbol = symbol,
                     Currency = currency,
                     Name = name,
                     Price = price
@@ -290,6 +292,7 @@ namespace cryptotracker.core.Logic
     {
         public string AssetId { get; set; }
         public string Name { get; set; }
+        public string Symbol { get; set; }
         public string Currency { get; set; }
         public decimal Price { get; set; }
     }
