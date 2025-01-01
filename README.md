@@ -11,3 +11,11 @@ Integrationen:
 - [x] Binance
 - [x] Bitcoin (XPUB, ZPUB)
 - [x] Ethereum (Adr)
+
+Tracking:
+- [ ] Preis tracking per Asset
+- [ ] Automatischer abgleich für Assets
+
+WebUI:
+- [ ] Anzeige Verlauf
+- [ ] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
