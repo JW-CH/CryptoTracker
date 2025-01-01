@@ -20,7 +20,7 @@
 		labels: labels,
 		datasets: [
 			{
-				label: 'My First Dataset',
+				label: 'CHF',
 				data: values,
 				hoverOffset: 8
 			}

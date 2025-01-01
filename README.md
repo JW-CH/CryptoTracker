@@ -13,8 +13,8 @@ Integrationen:
 - [x] Ethereum (Adr)
 
 Tracking:
-- [ ] Preis tracking per Asset
-- [ ] Automatischer abgleich für Assets
+- [x] Preis tracking per Asset
+- [x] Automatischer abgleich für Assets
 
 WebUI:
 - [ ] Anzeige Verlauf
