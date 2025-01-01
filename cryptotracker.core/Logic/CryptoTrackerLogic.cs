@@ -76,11 +76,42 @@ namespace cryptotracker.core.Logic
                             Balance = await GetEthereumAvailableBalances(client, integration.Key)
                         }};
                     }
+                case "ripple":
+                case "xrp":
+                    using (HttpClient client = new HttpClient())
+                    {
+                        return new List<BalanceResult>() { new BalanceResult(){
+                            Symbol = "XRP",
+                            Balance = await GetRippleAvailableBalances(client, integration.Key)
+                        }};
+                    }
                 default:
                     throw new NotImplementedException($"Integration {integration.Type} was not implemented!");
             }
         }
 
+        private static async Task<decimal> GetRippleAvailableBalances(HttpClient client, string address)
+        {
+            var apiUrl = $"https://api.xrpscan.com/api/v1/account/{address}";
+
+            HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string json = await response.Content.ReadAsStringAsync();
+
+                var balance = JsonSerializer.Deserialize<JsonElement>(json).GetProperty("xrpBalance").GetString();
+
+                decimal.TryParse(balance, out decimal result);
+
+                return result;
+            }
+            else
+            {
+                Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                return 0;
+            }
+        }
         private static async Task<decimal> GetEthereumAvailableBalances(HttpClient client, string address)
         {
             string apiUrl = $"https://api.ethplorer.io/getAddressInfo/{address}?apiKey=freekey";
