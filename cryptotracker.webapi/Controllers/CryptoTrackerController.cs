@@ -50,9 +50,9 @@ namespace cryptotracker.webapi.Controllers
             {
                 var dto = new AssetMeasuringDto
                 {
-                    AssetId = asset.AssetId,
+                    AssetId = asset.Symbol,
                     AssetName = asset.Name,
-                    StandingValue = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.AssetId).Sum(x => x.StandingValue)
+                    StandingValue = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).Sum(x => x.StandingValue)
                 };
 
                 result.Add(dto);

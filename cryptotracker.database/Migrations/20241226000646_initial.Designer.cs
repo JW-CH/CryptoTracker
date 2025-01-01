@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace cryptotracker.database.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20241218192826_init")]
-    partial class init
+    [Migration("20241226000646_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,18 +23,22 @@ namespace cryptotracker.database.Migrations
 
             modelBuilder.Entity("cryptotracker.database.Models.Asset", b =>
                 {
-                    b.Property<string>("AssetId")
+                    b.Property<string>("Symbol")
                         .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("ExternalId")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<decimal>("FiatValue")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.HasKey("AssetId");
+                    b.HasKey("Symbol");
 
                     b.ToTable("Assets");
                 });

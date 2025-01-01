@@ -1,4 +1,6 @@
-﻿using Coinbase.Net.Clients;
+﻿using Binance.Net.Clients;
+using Binance.Net.Objects.Models.Spot;
+using Coinbase.Net.Clients;
 using Coinbase.Net.Interfaces.Clients;
 using Coinbase.Net.Objects.Models;
 using CryptoCom.Net.Clients;
@@ -21,32 +23,42 @@ namespace cryptotracker.core.Logic
             switch (integration.Type.ToLower())
             {
                 case "bitpanda":
-                    using (var client = new HttpClient())
+                    using (var bitpandaClient = new HttpClient())
                     {
-                        client.UseApiKey(integration.Secret);
-                        var accounts = await GetBitpandaAccounts(client);
+                        bitpandaClient.UseApiKey(integration.Secret);
+                        var accounts = await GetBitpandaAccounts(bitpandaClient);
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList();
                     }
                 case "cryptocom":
-                    using (var cbClient = new CryptoComRestClient(xy =>
+                    using (var cryptocomClient = new CryptoComRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
                     }))
                     {
-                        var accounts = await GetCoinbaseAvailableAccounts(cbClient);
+                        var accounts = await GetCoinbaseAvailableAccounts(cryptocomClient);
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Quantity }).ToList();
                     }
                 case "coinbase":
-                    using (var cbClient = new CoinbaseRestClient(xy =>
+                    using (var coinbaseClient = new CoinbaseRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
                     }))
                     {
-                        var accounts = await GetCoinbaseAvailableAccounts(cbClient);
+                        var accounts = await GetCoinbaseAvailableAccounts(coinbaseClient);
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.AvailableBalance.Value + account.HoldBalance.Value }).ToList();
+                    }
+                case "binance":
+                    using (var binanceClient = new BinanceRestClient(xy =>
+                    {
+                        xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
+                    }))
+                    {
+                        var accounts = await GetBinanceAvailableAccounts(binanceClient);
+
+                        return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Total }).ToList();
                     }
                 case "bitcoin":
                     using (HttpClient client = new HttpClient())
@@ -189,6 +201,21 @@ namespace cryptotracker.core.Logic
 
             return accounts;
         }
+
+        private static async Task<IEnumerable<BinanceBalance>> GetBinanceAvailableAccounts(BinanceRestClient client)
+        {
+            WebCallResult<BinanceAccountInfo>? result = null;
+            List<BinanceBalance> accounts = new();
+
+            result = await client.SpotApi.Account.GetAccountInfoAsync();
+
+            if (!result.Success) return accounts;
+
+            accounts.AddRange(result.Data.Balances.Where(x => x.Total > 0).ToList() ?? new());
+
+            return accounts;
+        }
+
         private async static Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/asset-wallets");
@@ -201,6 +228,70 @@ namespace cryptotracker.core.Logic
 
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
+
+        public static async Task<List<AssetMetadata>?> GetCoinPrices(string currency)
+        {
+            var result = new List<AssetMetadata>();
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
+            string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={currency}";
+
+            var response = await client.GetAsync(apiUrl);
+
+            if (!response.IsSuccessStatusCode) return null;
+
+            var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
+
+            if (data == null) return result;
+
+            foreach (var item in data)
+            {
+                var name = item.GetProperty("name").GetString() ?? "";
+                var symbol = item.GetProperty("symbol").GetString() ?? "";
+                var price = item.GetProperty("current_price").GetDecimal();
+
+                result.Add(new AssetMetadata()
+                {
+                    AssetId = symbol,
+                    Currency = currency,
+                    Name = name,
+                    Price = price
+                });
+
+            }
+
+            return result;
+        }
+
+        public static async Task<List<Coin>> GetCoinList()
+        {
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
+            var url = "https://api.coingecko.com/api/v3/coins/list";
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode) return null;
+
+            var data = JsonSerializer.Deserialize<List<Coin>>(await response.Content.ReadAsStringAsync());
+
+            return data ?? new List<Coin>();
+        }
+    }
+
+    public struct Coin
+    {
+        public string id { get; set; }
+        public string symbol { get; set; }
+        public string name { get; set; }
+
+    }
+    public struct AssetMetadata
+    {
+        public string AssetId { get; set; }
+        public string Name { get; set; }
+        public string Currency { get; set; }
+        public decimal Price { get; set; }
     }
 
     public struct BalanceResult

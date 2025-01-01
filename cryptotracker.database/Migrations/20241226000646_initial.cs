@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace cryptotracker.database.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,13 +18,14 @@ namespace cryptotracker.database.Migrations
                 name: "Assets",
                 columns: table => new
                 {
-                    AssetId = table.Column<string>(type: "varchar(255)", nullable: false),
+                    Symbol = table.Column<string>(type: "varchar(255)", nullable: false),
+                    ExternalId = table.Column<string>(type: "longtext", nullable: false),
                     Name = table.Column<string>(type: "longtext", nullable: false),
-                    Description = table.Column<string>(type: "longtext", nullable: false)
+                    FiatValue = table.Column<decimal>(type: "decimal(18,10)", precision: 18, scale: 10, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Assets", x => x.AssetId);
+                    table.PrimaryKey("PK_Assets", x => x.Symbol);
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
@@ -59,7 +60,7 @@ namespace cryptotracker.database.Migrations
                         name: "FK_AssetMeasurings_Assets_AssetId",
                         column: x => x.AssetId,
                         principalTable: "Assets",
-                        principalColumn: "AssetId",
+                        principalColumn: "Symbol",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_AssetMeasurings_ExchangeIntegrations_IntegrationId",

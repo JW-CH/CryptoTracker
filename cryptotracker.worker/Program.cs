@@ -52,6 +52,9 @@ try
         }
 
     }
+
+    UpdateAssetMetadata();
+
     tx.Commit();
     Console.WriteLine(sb.ToString());
 }
@@ -81,9 +84,10 @@ void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal b
     {
         asset = new Asset()
         {
-            AssetId = symbol,
+            Symbol = symbol,
             Name = "",
-            Description = ""
+            ExternalId = "",
+            FiatValue = 0
         };
         db.Assets.Add(asset);
     }
@@ -97,5 +101,31 @@ void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal b
     };
 
     db.AssetMeasurings.Add(x);
+    db.SaveChanges();
+}
+
+void UpdateAssetMetadata()
+{
+    var coinList = CryptoTrackerLogic.GetCoinList().Result;
+
+    if (coinList == null) return;
+
+    var assets = db.Assets.ToList();
+    foreach (var asset in assets)
+    {
+        var coins = coinList.Where(x => x.symbol.ToLower() == asset.Symbol.ToLower());
+
+        if (coins.Count() != 1) continue;
+
+        var coin = coins.First();
+
+        asset.Name = coin.name;
+        asset.ExternalId = coin.id;
+    }
+
+    var priceList = CryptoTrackerLogic.GetCoinPrices("chf").Result;
+
+    if (priceList == null) return;
+
     db.SaveChanges();
 }
