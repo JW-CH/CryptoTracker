@@ -28,11 +28,11 @@ var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 {
-    ymlConfigPath = Path.Combine(root, "docker", "config.yml");
+    ymlConfigPath = Path.Combine(root, "config", "config.yml");
 }
 else
 {
-    ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "docker", "config.yml");
+    ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "config", "config.yml");
 }
 
 CryptotrackerConfig config;

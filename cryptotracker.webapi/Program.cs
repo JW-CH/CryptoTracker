@@ -10,7 +10,7 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
 {
     var root = Directory.GetCurrentDirectory();
 
-    var ymlConfigPath = Path.Combine(root, "..", "docker", "config.yml");
+    var ymlConfigPath = Path.Combine(root, "..", "config", "config.yml");
 
     if (File.Exists(ymlConfigPath))
     {
@@ -21,7 +21,7 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
         return config;
     }
 
-    var jsonConfigPath = Path.Combine(root, "..", "docker", "config.json");
+    var jsonConfigPath = Path.Combine(root, "..", "config", "config.json");
 
     if (File.Exists(jsonConfigPath))
     {
