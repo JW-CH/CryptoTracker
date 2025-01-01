@@ -19,3 +19,4 @@ Tracking:
 WebUI:
 - [ ] Anzeige Verlauf
 - [ ] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
+- [ ] Werte verschleiern (Nur %)
