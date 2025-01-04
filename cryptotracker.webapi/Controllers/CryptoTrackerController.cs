@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     public class CryptoTrackerController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;
@@ -34,12 +34,34 @@ namespace cryptotracker.webapi.Controllers
             return result;
         }
 
+        [HttpGet("{days}", Name = "GetStandingsByDay")]
+        public Dictionary<DateTime, decimal> GetStandingByDay(int days = 7)
+        {
+            var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
+
+            var result = new Dictionary<DateTime, decimal>();
+            foreach (var day in dayList.ToList())
+            {
+                result[day.Key] = GetAssetDayMeasuring(day.Key).Sum(x => x.FiatValue);
+            }
+
+            return result;
+        }
+
         [HttpGet(Name = "GetLatestMeasurings")]
         public List<AssetMeasuringDto> GetLatestMeasurings()
         {
             var day = _db.AssetMeasurings.Max(x => x.StandingDate.Date);
 
             return GetAssetDayMeasuring(day);
+        }
+
+        [HttpGet(Name = "GetLatestStanding")]
+        public decimal GetLatestStanding()
+        {
+            var day = _db.AssetMeasurings.Max(x => x.StandingDate.Date);
+
+            return GetAssetDayMeasuring(day).Sum(x => x.FiatValue);
         }
 
         private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day)

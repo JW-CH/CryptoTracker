@@ -25,7 +25,17 @@ export function getMeasuringsByDay(days: number, opts?: Oazapfts.RequestOpts) {
         data: {
             [key: string]: AssetMeasuringDto[];
         };
-    }>(`/api/CryptoTracker/${encodeURIComponent(days)}`, {
+    }>(`/api/CryptoTracker/GetMeasuringsByDay/${encodeURIComponent(days)}`, {
+        ...opts
+    });
+}
+export function getStandingsByDay(days: number, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: {
+            [key: string]: number;
+        };
+    }>(`/api/CryptoTracker/GetStandingByDay/${encodeURIComponent(days)}`, {
         ...opts
     });
 }
@@ -33,7 +43,15 @@ export function getLatestMeasurings(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: AssetMeasuringDto[];
-    }>("/api/CryptoTracker", {
+    }>("/api/CryptoTracker/GetLatestMeasurings", {
+        ...opts
+    });
+}
+export function getLatestStanding(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: number;
+    }>("/api/CryptoTracker/GetLatestStanding", {
         ...opts
     });
 }
