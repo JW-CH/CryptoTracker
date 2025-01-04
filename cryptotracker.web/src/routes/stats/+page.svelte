@@ -18,7 +18,7 @@
 	}
 
 	function TrimMeasurings(data: api.AssetMeasuringDto[]) {
-		if (!summarize) {
+		if (!summarize || data.length <= 7) {
 			return data;
 		}
 
