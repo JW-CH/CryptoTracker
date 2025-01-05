@@ -2,7 +2,12 @@ using cryptotracker.core.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Logging.AddConsole();
+builder.Logging.AddSimpleConsole(options =>
+                {
+                    // Customizing the log output format
+                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
+                })
+            .SetMinimumLevel(LogLevel.Information); // Set minimum log level
 
 // Add services to the container.
 
