@@ -62,10 +62,6 @@
 						labels={TrimMeasurings(measuring.data).map((x) => x.assetId ?? '')}
 						values={TrimMeasurings(measuring.data).map((x) => x.fiatValue ?? 0)}
 					/>
-					<!-- <PieChart
-						labels={measuring.data.map((x) => x.assetId ?? '')}
-						values={measuring.data.map((x) => x.fiatValue ?? 0)}
-					/> -->
 				{/await}
 			</Card.Content>
 		</Card.Root>

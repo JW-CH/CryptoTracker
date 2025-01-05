@@ -35,9 +35,10 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
     return new CryptotrackerConfig();
 });
 
-builder.Services.AddDbContext<DatabaseContext>(options =>
+builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DbConnection") ?? "";
+    var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
+    var connectionString = config?.ConnectionString ?? "";
     options.UseMySQL(connectionString);
 });
 

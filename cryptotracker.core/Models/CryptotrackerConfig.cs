@@ -7,6 +7,8 @@ namespace cryptotracker.core.Models
 {
     public class CryptotrackerConfig : ICryptotrackerConfig
     {
+        public string ConnectionString { get; set; } = string.Empty;
+        public int Interval { get; set; } = 60;
         public List<CryptotrackerIntegration> Integrations { get; set; } = new();
 
         public static CryptotrackerConfig LoadFromJson(string input)

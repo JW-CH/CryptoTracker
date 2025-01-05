@@ -2,27 +2,9 @@
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Runtime.InteropServices;
 using System.Text;
-
-var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
-optionsBuilder.UseMySQL("server=192.168.0.165;database=cryptotracker;user=root;password=strong_password;");
-
-using var db = new DatabaseContext(optionsBuilder.Options);
-
-Console.WriteLine("Clearing today's DB entries");
-
-db.AssetMeasurings.RemoveRange(db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date));
-//db.Assets.RemoveRange(db.Assets);
-//db.ExchangeIntegrations.RemoveRange(db.ExchangeIntegrations);
-
-db.SaveChanges();
-
-Console.WriteLine("DB clear");
-
-using var tx = db.Database.BeginTransaction();
-
-StringBuilder sb = new StringBuilder();
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
@@ -37,48 +19,94 @@ else
 
 CryptotrackerConfig config;
 
+Console.WriteLine("Loading config");
+Console.WriteLine(ymlConfigPath);
+
 if (File.Exists(ymlConfigPath))
 {
     var yml = File.ReadAllText(ymlConfigPath);
 
     config = CryptotrackerConfig.LoadFromYml(yml);
+
+    Console.WriteLine("Config loaded");
+    Console.WriteLine($"Connectionstring: {config.ConnectionString}");
+    Console.WriteLine($"Integrations: {config.Integrations.Count}");
 }
 else
 {
-    config = new CryptotrackerConfig();
+    throw new Exception("Config file not found");
 }
-try
+
+var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
+optionsBuilder.UseMySQL(config.ConnectionString);
+
+// Apply migrations
+using (var db = new DatabaseContext(optionsBuilder.Options))
 {
-    foreach (var integration in config.Integrations)
+    db.Database.Migrate();
+}
+
+while (true)
+{
+    Console.WriteLine("Starting import");
+    await Import();
+    Console.WriteLine("Import finished");
+
+    Console.WriteLine($"Waiting {config.Interval} minutes");
+    await Task.Delay(1000 * 60 * config.Interval);
+}
+
+async Task Import()
+{
+    using var db = new DatabaseContext(optionsBuilder.Options);
+
+    Console.WriteLine("Clearing today's DB entries");
+
+    db.AssetMeasurings.RemoveRange(db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date));
+    //db.Assets.RemoveRange(db.Assets);
+    //db.ExchangeIntegrations.RemoveRange(db.ExchangeIntegrations);
+
+    db.SaveChanges();
+
+    Console.WriteLine("DB clear");
+
+    using var tx = db.Database.BeginTransaction();
+
+    StringBuilder sb = new StringBuilder();
+
+    try
     {
-        var balances = await CryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
-
-        foreach (var balance in balances)
+        foreach (var integration in config.Integrations)
         {
-            AddMeasuring(integration, balance.Symbol, balance.Balance);
+            var balances = await CryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
 
-            sb.AppendLine($"{integration.Name} - {balance.Symbol}: {balance.Balance}");
+            foreach (var balance in balances)
+            {
+                AddMeasuring(db, integration, balance.Symbol, balance.Balance);
+
+                sb.AppendLine($"{integration.Name} - {balance.Symbol}: {balance.Balance}");
+            }
+
         }
+        Console.WriteLine(sb.ToString());
 
+        Console.WriteLine("Starting Metadataimport");
+        UpdateAssetMetadata(db);
+        Console.WriteLine("Finished Metadataimport");
+
+        tx.Commit();
+
+        Console.WriteLine("Finished Import");
     }
-    Console.WriteLine(sb.ToString());
-
-    Console.WriteLine("Starting Metadataimport");
-    UpdateAssetMetadata();
-    Console.WriteLine("Finished Metadataimport");
-
-    tx.Commit();
-
-    Console.WriteLine("Finished Import");
-}
-catch (Exception ex)
-{
-    Console.WriteLine(ex.ToString());
-    tx.Rollback();
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.ToString());
+        tx.Rollback();
+    }
 }
 
 
-void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal balance)
+void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, string symbol, decimal balance)
 {
     var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
 
@@ -117,7 +145,7 @@ void AddMeasuring(CryptotrackerIntegration integration, string symbol, decimal b
     db.SaveChanges();
 }
 
-void UpdateAssetMetadata()
+void UpdateAssetMetadata(DatabaseContext db)
 {
     var assets = db.Assets.ToList();
 
