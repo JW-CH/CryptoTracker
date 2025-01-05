@@ -2,8 +2,23 @@
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using System.Text;
+
+// Create a LoggerFactory
+using var loggerFactory = LoggerFactory.Create(builder =>
+{
+    _ = builder.AddSimpleConsole(options =>
+                {
+                    // Customizing the log output format
+                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
+                })
+            .SetMinimumLevel(LogLevel.Information); // Set minimum log level
+});
+
+// Create a logger instance
+var logger = loggerFactory.CreateLogger("Cryptotracker");
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
@@ -18,18 +33,16 @@ else
 
 CryptotrackerConfig config;
 
-Console.WriteLine("Loading config");
-Console.WriteLine(ymlConfigPath);
-
 if (File.Exists(ymlConfigPath))
 {
     var yml = File.ReadAllText(ymlConfigPath);
 
     config = CryptotrackerConfig.LoadFromYml(yml);
 
-    Console.WriteLine("Config loaded");
-    Console.WriteLine($"Connectionstring: {config.ConnectionString}");
-    Console.WriteLine($"Integrations: {config.Integrations.Count}");
+    logger.LogInformation("Config loaded");
+
+    logger.LogInformation($"Connectionstring: {config.ConnectionString}");
+    logger.LogInformation($"Integrations: {config.Integrations.Count}");
 }
 else
 {
@@ -47,11 +60,12 @@ using (var db = new DatabaseContext(optionsBuilder.Options))
 
 while (true)
 {
-    Console.WriteLine("Starting import");
-    await Import();
-    Console.WriteLine("Import finished");
+    logger.LogInformation("Starting import");
 
-    Console.WriteLine($"Waiting {config.Interval} minutes");
+    await Import();
+    logger.LogInformation("Import finished");
+
+    logger.LogInformation($"Waiting {config.Interval} minutes");
     await Task.Delay(1000 * 60 * config.Interval);
 }
 
@@ -59,7 +73,7 @@ async Task Import()
 {
     using var db = new DatabaseContext(optionsBuilder.Options);
 
-    Console.WriteLine("Clearing today's DB entries");
+    logger.LogTrace("Clearing today's DB entries");
 
     db.AssetMeasurings.RemoveRange(db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date));
     //db.Assets.RemoveRange(db.Assets);
@@ -67,7 +81,7 @@ async Task Import()
 
     db.SaveChanges();
 
-    Console.WriteLine("DB clear");
+    logger.LogTrace("DB clear");
 
     using var tx = db.Database.BeginTransaction();
 
@@ -87,19 +101,19 @@ async Task Import()
             }
 
         }
-        Console.WriteLine(sb.ToString());
+        logger.LogInformation(sb.ToString());
 
-        Console.WriteLine("Starting Metadataimport");
+        logger.LogTrace("Starting Metadataimport");
         UpdateAssetMetadata(db);
-        Console.WriteLine("Finished Metadataimport");
+        logger.LogTrace("Finished Metadataimport");
 
         tx.Commit();
 
-        Console.WriteLine("Finished Import");
+        logger.LogInformation("Finished Import");
     }
     catch (Exception ex)
     {
-        Console.WriteLine(ex.ToString());
+        logger.LogError(ex.ToString());
         tx.Rollback();
     }
 }

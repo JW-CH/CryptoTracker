@@ -45,6 +45,7 @@ builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
     var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
     var connectionString = config?.ConnectionString ?? "";
     options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
+    options.EnableSensitiveDataLogging(false);
 });
 
 builder.Services.AddControllers();
@@ -52,6 +53,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Disable EF Core info logs
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
 var app = builder.Build();
