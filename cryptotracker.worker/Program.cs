@@ -2,7 +2,6 @@
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System.Runtime.InteropServices;
 using System.Text;
 

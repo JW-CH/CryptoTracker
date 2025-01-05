@@ -44,13 +44,15 @@ builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
 {
     var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
     var connectionString = config?.ConnectionString ?? "";
-    options.UseMySQL(connectionString);
+    options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
 });
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 
 var app = builder.Build();
 
