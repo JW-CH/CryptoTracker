@@ -11,6 +11,13 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
     var root = Directory.GetCurrentDirectory();
 
     var ymlConfigPath = Path.Combine(root, "..", "config", "config.yml");
+    var jsonConfigPath = Path.Combine(root, "..", "config", "config.json");
+
+    if (builder.Environment.IsProduction())
+    {
+        ymlConfigPath = Path.Combine(root, "config", "config.yml");
+        jsonConfigPath = Path.Combine(root, "config", "config.json");
+    }
 
     if (File.Exists(ymlConfigPath))
     {
@@ -21,8 +28,6 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
         return config;
     }
 
-    var jsonConfigPath = Path.Combine(root, "..", "config", "config.json");
-
     if (File.Exists(jsonConfigPath))
     {
         var json = File.ReadAllText(jsonConfigPath);
@@ -32,7 +37,7 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
         return config;
     }
 
-    return new CryptotrackerConfig();
+    throw new Exception("Config file not found");
 });
 
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
