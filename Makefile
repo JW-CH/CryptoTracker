@@ -27,3 +27,17 @@ docker_push_worker:
 
 docker_push_worker_final:
 	docker push janmer/cryptotracker_worker:latest
+
+ef_remove_migration:
+	dotnet ef migrations remove  --project cryptotracker.database --startup-project cryptotracker.webapi
+
+ef_update_database:
+	dotnet ef database update --project cryptotracker.database --startup-project cryptotracker.webapi
+
+ef_add_migration:
+	@echo "Adding migration: $(filter-out $@,$(MAKECMDGOALS))"
+	dotnet ef migrations add $(filter-out $@,$(MAKECMDGOALS)) --project cryptotracker.database --startup-project cryptotracker.webapi
+
+# Prevent Make from treating the parameter as a target
+%:
+	@:
