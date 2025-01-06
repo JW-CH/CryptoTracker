@@ -21,14 +21,21 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("{days}", Name = "GetMeasuringsByDay")]
-        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay(int days = 7)
+        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay(int days = 7, string? symbol = null)
         {
             var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
 
             var result = new Dictionary<DateTime, List<AssetMeasuringDto>>();
             foreach (var day in dayList.ToList())
             {
-                result[day.Key] = GetAssetDayMeasuring(day.Key);
+                if (symbol != null)
+                {
+                    result[day.Key] = GetAssetDayMeasuring(day.Key).Where(x => x.AssetId.ToLower() == symbol.ToLower()).ToList();
+                }
+                else
+                {
+                    result[day.Key] = GetAssetDayMeasuring(day.Key);
+                }
             }
 
             return result;

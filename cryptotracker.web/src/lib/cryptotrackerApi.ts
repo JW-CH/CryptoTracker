@@ -12,6 +12,16 @@ export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
 };
 const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {};
+export type Asset = {
+    "symbol": string | null;
+    externalId: string | null;
+    name: string | null;
+    image: string | null;
+};
+export type AssetData = {
+    asset: Asset;
+    price: number;
+};
 export type AssetMeasuringDto = {
     assetId?: string | null;
     assetName?: string | null;
@@ -19,13 +29,33 @@ export type AssetMeasuringDto = {
     assetPrice?: number;
     fiatValue?: number;
 };
-export function getMeasuringsByDay(days: number, opts?: Oazapfts.RequestOpts) {
+export function getAssets(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Asset[];
+    }>("/api/Asset/GetAssets", {
+        ...opts
+    });
+}
+export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: AssetData;
+    }>(`/api/Asset/GetAsset/${encodeURIComponent($symbol)}`, {
+        ...opts
+    });
+}
+export function getMeasuringsByDay(days: number, { $symbol }: {
+    $symbol?: string;
+} = {}, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: {
             [key: string]: AssetMeasuringDto[];
         };
-    }>(`/api/CryptoTracker/GetMeasuringsByDay/${encodeURIComponent(days)}`, {
+    }>(`/api/CryptoTracker/GetMeasuringsByDay/${encodeURIComponent(days)}${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, {
         ...opts
     });
 }

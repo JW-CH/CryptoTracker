@@ -17,6 +17,7 @@
 		<nav class={cn('flex items-center space-x-4 lg:space-x-6', className)}>
 			<NavItem path="" text="Home" />
 			<NavItem path="stats" text="Stats" />
+			<NavItem path="assets" text="Assets" />
 			<NavItem path="info" text="Info" />
 		</nav>
 	</div>
