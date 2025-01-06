@@ -49,31 +49,50 @@
 		</div>
 
 		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-			<Card.Root class="col-span-4">
-				<Card.Header>
-					<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#await api.getMeasuringsByDay(7, { $symbol: asset.data.asset.symbol ?? '' })}
-						<p>Loading...</p>
-					{:then measurings}
+			{#await api.getMeasuringsByDay(7, { $symbol: asset.data.asset.symbol ?? '' })}
+				<p>Loading...</p>
+			{:then measurings}
+				<Card.Root class="col-span-4">
+					<Card.Header>
+						<Card.Title>Bestand letzte 7 Tage</Card.Title>
+					</Card.Header>
+					<Card.Content>
 						<LineChart
 							fill={true}
 							labels={StringKeysToDates(Object.keys(measurings.data))}
 							datasets={[
 								{
-									name: 'CHF',
+									name: asset.data.asset.symbol ?? '',
+									data: Object.values(measurings.data).map(
+										(x) => x.find((y) => y.assetId === asset.data.asset.symbol)?.assetAmount ?? 0
+									)
+								}
+							]}
+						/>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root class="col-span-4">
+					<Card.Header>
+						<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<LineChart
+							fill={true}
+							labels={StringKeysToDates(Object.keys(measurings.data))}
+							datasets={[
+								{
+									name: asset.data.asset.symbol ?? '',
 									data: Object.values(measurings.data).map(
 										(x) => x.find((y) => y.assetId === asset.data.asset.symbol)?.fiatValue ?? 0
 									)
 								}
 							]}
 						/>
-					{:catch error}
-						<p>{error.message}</p>
-					{/await}
-				</Card.Content>
-			</Card.Root>
+					</Card.Content>
+				</Card.Root>
+			{:catch error}
+				<p>{error.message}</p>
+			{/await}
 		</div>
 	</div>
 {/await}
