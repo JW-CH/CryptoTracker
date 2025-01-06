@@ -141,6 +141,7 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
         {
             Symbol = symbol,
             Name = "",
+            Image = "",
             ExternalId = ""
         };
         db.Assets.Add(asset);
