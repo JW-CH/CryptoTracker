@@ -8,5 +8,6 @@ namespace cryptotracker.database.Models
         public string Symbol { get; set; }
         public string ExternalId { get; set; }
         public string Name { get; set; }
+        public string Image { get; set; }
     }
 }

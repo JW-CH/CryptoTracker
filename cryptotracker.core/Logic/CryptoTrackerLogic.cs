@@ -260,7 +260,7 @@ namespace cryptotracker.core.Logic
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
 
-        public static async Task<List<AssetMetadata>?> GetCoinPrices(string currency, List<string> coinIds)
+        public static async Task<List<AssetMetadata>?> GetCoinData(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
 
@@ -280,6 +280,7 @@ namespace cryptotracker.core.Logic
             {
                 var id = item.GetProperty("id").GetString() ?? "";
                 var name = item.GetProperty("name").GetString() ?? "";
+                var image = item.GetProperty("image").GetString() ?? "";
                 var symbol = item.GetProperty("symbol").GetString() ?? "";
                 var price = item.GetProperty("current_price").GetDecimal();
 
@@ -287,6 +288,7 @@ namespace cryptotracker.core.Logic
                 {
                     AssetId = id,
                     Symbol = symbol,
+                    Image = image,
                     Currency = currency,
                     Name = name,
                     Price = price
@@ -324,6 +326,7 @@ namespace cryptotracker.core.Logic
         public string AssetId { get; set; }
         public string Name { get; set; }
         public string Symbol { get; set; }
+        public string Image { get; set; }
         public string Currency { get; set; }
         public decimal Price { get; set; }
     }

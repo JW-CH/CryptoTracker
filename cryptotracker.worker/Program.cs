@@ -196,15 +196,18 @@ void UpdateAssetMetadata(DatabaseContext db)
 
     if (foundExternalIds.Count == 0) return;
     var currency = "chf";
-    var priceList = CryptoTrackerLogic.GetCoinPrices(currency, foundExternalIds).Result;
+    var coinDataList = CryptoTrackerLogic.GetCoinData(currency, foundExternalIds).Result;
 
-    if (priceList == null) return;
+    if (coinDataList == null) return;
 
-    priceList.ForEach(x =>
+    coinDataList.ForEach(coin =>
     {
-        var asset = db.Assets.FirstOrDefault(a => a.ExternalId == x.AssetId);
+        var asset = db.Assets.FirstOrDefault(a => a.ExternalId == coin.AssetId);
 
         if (asset == null) return;
+
+        if (string.IsNullOrWhiteSpace(asset.Image))
+            asset.Image = coin.Image;
 
         var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.Today && p.Currency == currency);
 
@@ -215,14 +218,14 @@ void UpdateAssetMetadata(DatabaseContext db)
                 Symbol = asset.Symbol,
                 Date = DateTime.Today,
                 Currency = currency,
-                Price = x.Price,
+                Price = coin.Price,
             };
 
             db.AssetPriceHistory.Add(price);
         }
         else
         {
-            price.Price = x.Price;
+            price.Price = coin.Price;
         }
     });
 
