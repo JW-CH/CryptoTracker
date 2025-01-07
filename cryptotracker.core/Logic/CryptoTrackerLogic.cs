@@ -299,18 +299,23 @@ namespace cryptotracker.core.Logic
             return result;
         }
 
+        private static List<Coin>? _coinList;
         public static async Task<List<Coin>> GetCoinList()
         {
+            if (_coinList != null) return _coinList;
+
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             var url = "https://api.coingecko.com/api/v3/coins/list";
             var response = await client.GetAsync(url);
 
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch coin list");
 
             var data = JsonSerializer.Deserialize<List<Coin>>(await response.Content.ReadAsStringAsync());
 
-            return data ?? new List<Coin>();
+            _coinList = data ?? new List<Coin>();
+
+            return _coinList;
         }
     }
 

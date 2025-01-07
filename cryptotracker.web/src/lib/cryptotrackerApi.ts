@@ -22,6 +22,11 @@ export type AssetData = {
     asset: Asset;
     price: number;
 };
+export type Coin = {
+    id?: string | null;
+    "symbol"?: string | null;
+    name?: string | null;
+};
 export type AssetMeasuringDto = {
     assetId?: string | null;
     assetName?: string | null;
@@ -44,6 +49,24 @@ export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
     }>(`/api/Asset/GetAsset/${encodeURIComponent($symbol)}`, {
         ...opts
     });
+}
+export function getPossibleAssets($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Coin[];
+    }>(`/api/Asset/GetPossibleAssets/${encodeURIComponent($symbol)}`, {
+        ...opts
+    });
+}
+export function setAssetForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/SetAssetForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
 }
 export function getMeasuringsByDay(days: number, { $symbol }: {
     $symbol?: string;

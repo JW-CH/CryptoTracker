@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -35,6 +36,25 @@ namespace cryptotracker.webapi.Controllers
                 Asset = asset,
                 Price = _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault()?.Price ?? 0
             };
+        }
+
+        [HttpGet("{symbol}", Name = "GetPossibleAssets")]
+        public async Task<List<Coin>> GetPossibleAssets(string symbol)
+        {
+            var coinList = await CryptoTrackerLogic.GetCoinList();
+
+            return coinList.Where(x => x.symbol.ToLower().Contains(symbol.ToLower())).ToList();
+        }
+
+        [HttpPost("{symbol}", Name = "SetAssetForSymbol")]
+        public bool SetAssetForSymbol(string symbol, [FromBody] string externalId)
+        {
+            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol);
+            if (asset == null) return false;
+            asset.ExternalId = externalId;
+            _db.SaveChanges();
+
+            return true;
         }
 
         public struct AssetData
