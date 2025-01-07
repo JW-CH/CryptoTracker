@@ -73,7 +73,6 @@
 				{#await api.getStandingsByDay(7)}
 					<p>Loading...</p>
 				{:then standings}
-					{console.log(assets)}
 					<LineChart
 						fill={true}
 						labels={StringKeysToDates(Object.keys(standings.data))}
@@ -95,7 +94,6 @@
 					{#each Object.values(stats.data).flat() as stat}
 						{AddAsset(stat.assetId ?? '')}
 					{/each}
-					{console.log(assets)}
 					<LineChart
 						labels={StringKeysToDates(Object.keys(stats.data))}
 						datasets={Array.from(assets).map((assetId) => ({

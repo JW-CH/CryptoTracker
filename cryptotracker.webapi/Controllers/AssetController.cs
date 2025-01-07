@@ -38,8 +38,8 @@ namespace cryptotracker.webapi.Controllers
             };
         }
 
-        [HttpGet("{symbol}", Name = "GetPossibleAssets")]
-        public async Task<List<Coin>> GetPossibleAssets(string symbol)
+        [HttpGet("{symbol}", Name = "FindCoinsBySymbol")]
+        public async Task<List<Coin>> FindCoinsBySymbol(string symbol)
         {
             var coinList = await CryptoTrackerLogic.GetCoinList();
 
@@ -49,9 +49,28 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost("{symbol}", Name = "SetAssetForSymbol")]
         public bool SetAssetForSymbol(string symbol, [FromBody] string externalId)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol);
-            if (asset == null) return false;
+            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
             asset.ExternalId = externalId;
+            _db.SaveChanges();
+
+            return true;
+        }
+
+        [HttpPost("{symbol}", Name = "SetVisibilityForSymbol")]
+        public bool SetVisibilityForSymbol(string symbol, [FromBody] bool isHidden)
+        {
+            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            asset.IsHidden = isHidden;
+            _db.SaveChanges();
+
+            return true;
+        }
+
+        [HttpPost("{symbol}", Name = "SetFiatForSymbol")]
+        public bool SetFiatForSymbol(string symbol, [FromBody] bool isFiat)
+        {
+            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            asset.IsFiat = isFiat;
             _db.SaveChanges();
 
             return true;

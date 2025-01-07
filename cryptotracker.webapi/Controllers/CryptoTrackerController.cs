@@ -76,7 +76,7 @@ namespace cryptotracker.webapi.Controllers
             var result = new List<AssetMeasuringDto>();
 
             var currency = "chf";
-            foreach (var asset in _db.Assets.ToList())
+            foreach (var asset in _db.Assets.Where(x => !x.IsHidden).ToList())
             {
                 var price = _db.AssetPriceHistory.Where(x => x.Date == day.Date && x.Symbol == asset.Symbol && x.Currency == currency).FirstOrDefault()?.Price ?? 0m;
                 var amount = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).Sum(x => x.StandingValue);

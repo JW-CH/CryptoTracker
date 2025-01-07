@@ -17,6 +17,8 @@ export type Asset = {
     externalId: string | null;
     name: string | null;
     image: string | null;
+    isFiat: boolean;
+    isHidden: boolean;
 };
 export type AssetData = {
     asset: Asset;
@@ -50,11 +52,11 @@ export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
         ...opts
     });
 }
-export function getPossibleAssets($symbol: string, opts?: Oazapfts.RequestOpts) {
+export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: Coin[];
-    }>(`/api/Asset/GetPossibleAssets/${encodeURIComponent($symbol)}`, {
+    }>(`/api/Asset/FindCoinsBySymbol/${encodeURIComponent($symbol)}`, {
         ...opts
     });
 }
@@ -63,6 +65,26 @@ export function setAssetForSymbol($symbol: string, body?: string, opts?: Oazapft
         status: 200;
         data: boolean;
     }>(`/api/Asset/SetAssetForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
+}
+export function setVisibilityForSymbol($symbol: string, body?: boolean, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/SetVisibilityForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
+}
+export function setFiatForSymbol($symbol: string, body?: boolean, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/SetFiatForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
         ...opts,
         method: "POST",
         body

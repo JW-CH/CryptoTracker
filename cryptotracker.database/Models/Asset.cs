@@ -9,5 +9,7 @@ namespace cryptotracker.database.Models
         public required string ExternalId { get; set; }
         public required string Name { get; set; }
         public required string Image { get; set; }
+        public required bool IsFiat { get; set; }
+        public required bool IsHidden { get; set; }
     }
 }

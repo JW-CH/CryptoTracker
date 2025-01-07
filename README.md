@@ -11,7 +11,7 @@ Integrationen:
 - [x] Binance
 - [x] Bitcoin (XPUB, ZPUB)
 - [x] Ethereum (Adr)
-- [ ] XRP (Adr)
+- [x] XRP (Adr)
 - [ ] Cardano (Adr)
 - [ ] Polkadot (Adr)
 
@@ -20,6 +20,6 @@ Tracking:
 - [x] Automatischer abgleich für Assets
 
 WebUI:
-- [ ] Anzeige Verlauf
-- [ ] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
+- [x] Anzeige Verlauf
+- [x] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
 - [ ] Werte verschleiern (Nur %)
