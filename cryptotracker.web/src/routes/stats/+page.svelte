@@ -18,11 +18,11 @@
 	}
 
 	function TrimMeasurings(data: api.AssetMeasuringDto[]) {
-		if (!summarize || data.length <= 7) {
-			return data;
+		let sortedMeasuring = data.sort((a, b) => (b.fiatValue ?? 0) - (a.fiatValue ?? 0));
+		if (!summarize || sortedMeasuring.length <= 7) {
+			return sortedMeasuring;
 		}
 
-		let sortedMeasuring = data.sort((a, b) => (b.fiatValue ?? 0) - (a.fiatValue ?? 0));
 		let topMeasuring = sortedMeasuring.slice(0, 7);
 		let otherMeasuring = sortedMeasuring.slice(7);
 		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.fiatValue ?? 0), 0);

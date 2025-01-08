@@ -6,7 +6,7 @@ Integrationen:
   - [x] Euro 
 - [x] Bitpanda
   - [x] CHF Tracking
-  - [ ] Tracking Staked assets
+  - [x] Tracking Staked assets
 - [x] Crypto.com (exchange)
 - [x] Binance
 - [x] Bitcoin (XPUB, ZPUB)
@@ -23,3 +23,6 @@ WebUI:
 - [x] Anzeige Verlauf
 - [x] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
 - [ ] Werte verschleiern (Nur %)
+- [ ] Integrationen anzeigen
+  - [ ] Integration Manuell hinzufügen
+  - [ ] Messung manuell hinzufügen

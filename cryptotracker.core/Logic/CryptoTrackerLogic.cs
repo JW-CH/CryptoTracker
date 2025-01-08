@@ -29,11 +29,16 @@ namespace cryptotracker.core.Logic
                         var result = new List<BalanceResult>();
 
                         bitpandaClient.UseApiKey(integration.Secret);
-                        var accounts = await GetBitpandaAccounts(bitpandaClient);
-                        var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
 
-                        result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
-                        result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        var full = await GetBitpandaPortfolio(bitpandaClient);
+
+                        result.AddRange(full.Select(x => new BalanceResult { Symbol = x.Attributes.AssetSymbol, Balance = Convert.ToDecimal(x.Attributes.AssetBalance) }).ToList());
+
+                        // var accounts = await GetBitpandaAccounts(bitpandaClient);
+                        // var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
+
+                        // result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        // result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
 
                         return result;
                     }
@@ -265,6 +270,19 @@ namespace cryptotracker.core.Logic
             var list = JsonSerializer.Deserialize<BitpandaFiatWalletResult>(json);
 
             return list?.Data.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
+        }
+
+        private async static Task<List<Portfolio>> GetBitpandaPortfolio(HttpClient client)
+        {
+            var response = await client.GetAsync("https://api.bitpanda.com/v2/portfolio/overview");
+
+            if (!response.IsSuccessStatusCode) throw new Exception("no success");
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var portfolio = JsonSerializer.Deserialize<BitpandaPortfolio>(json);
+
+            return portfolio?.Data.Attributes.Portfolios ?? new();
         }
 
         private async static Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)

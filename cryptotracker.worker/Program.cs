@@ -48,7 +48,6 @@ if (File.Exists(ymlConfigPath))
 
     logger.LogInformation("Config loaded");
 
-    logger.LogInformation($"Connectionstring: {config.ConnectionString}");
     logger.LogInformation($"Integrations: {config.Integrations.Count}");
 }
 else
