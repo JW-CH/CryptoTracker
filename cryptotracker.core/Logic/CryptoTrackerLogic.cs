@@ -13,6 +13,7 @@ using cryptotracker.core.Models;
 using ImmichFrame.Core.Helpers;
 using NBitcoin;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Logic
 {
@@ -260,7 +261,49 @@ namespace cryptotracker.core.Logic
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
 
-        public static async Task<List<AssetMetadata>?> GetCoinData(string currency, List<string> coinIds)
+        public static async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
+        {
+            var result = new List<AssetMetadata>();
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
+            string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={string.Join(",", fiatIds)}";
+
+            var response = await client.GetAsync(apiUrl);
+
+            if (!response.IsSuccessStatusCode) return result;
+
+            var data = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
+
+            var ratesProperty = data.GetProperty("rates");
+
+            var rates = JsonSerializer.Deserialize<Dictionary<string, decimal>>(ratesProperty);
+
+            if (rates == null) return result;
+
+            foreach (var item in rates)
+            {
+                var id = item.Key;
+                var name = "";
+                var image = "";
+                var symbol = item.Key;
+                var price = item.Value;
+
+                result.Add(new AssetMetadata()
+                {
+                    AssetId = id,
+                    Symbol = symbol,
+                    Image = image,
+                    Currency = currency,
+                    Name = name,
+                    Price = price
+                });
+            }
+
+            return result;
+        }
+
+        public static async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
 
@@ -270,7 +313,7 @@ namespace cryptotracker.core.Logic
 
             var response = await client.GetAsync(apiUrl);
 
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode) return result;
 
             var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
 
@@ -299,6 +342,32 @@ namespace cryptotracker.core.Logic
             return result;
         }
 
+        private static List<Fiat>? _fiatList;
+        public static async Task<List<Fiat>> GetFiatList()
+        {
+            if (_fiatList != null) return _fiatList;
+
+            var client = new HttpClient();
+            var url = "https://api.frankfurter.app/currencies";
+            var response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch fiat list");
+
+            var json = await response.Content.ReadAsStringAsync();
+            var fiatDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+            if (fiatDictionary != null)
+            {
+                _fiatList = fiatDictionary.Select(kvp => new Fiat { Symbol = kvp.Key, Name = kvp.Value }).ToList();
+            }
+            else
+            {
+                _fiatList = new List<Fiat>();
+            }
+
+            return _fiatList;
+        }
+
         private static List<Coin>? _coinList;
         public static async Task<List<Coin>> GetCoinList()
         {
@@ -308,24 +377,34 @@ namespace cryptotracker.core.Logic
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             var url = "https://api.coingecko.com/api/v3/coins/list";
             var response = await client.GetAsync(url);
-
+            Console.WriteLine(response.StatusCode);
             if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch coin list");
 
-            var data = JsonSerializer.Deserialize<List<Coin>>(await response.Content.ReadAsStringAsync());
-
+            var json = await response.Content.ReadAsStringAsync();
+            var data = JsonSerializer.Deserialize<List<Coin>>(json);
+            Console.WriteLine(data?.Count);
             _coinList = data ?? new List<Coin>();
 
             return _coinList;
         }
     }
 
+    public struct Fiat
+    {
+        public string Symbol { get; set; }
+        public string Name { get; set; }
+    }
+
     public struct Coin
     {
-        public string id { get; set; }
-        public string symbol { get; set; }
-        public string name { get; set; }
-
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+        [JsonPropertyName("symbol")]
+        public string Symbol { get; set; }
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
     }
+
     public struct AssetMetadata
     {
         public string AssetId { get; set; }

@@ -29,6 +29,10 @@ export type Coin = {
     "symbol"?: string | null;
     name?: string | null;
 };
+export type Fiat = {
+    "symbol"?: string | null;
+    name?: string | null;
+};
 export type AssetMeasuringDto = {
     assetId?: string | null;
     assetName?: string | null;
@@ -60,6 +64,14 @@ export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) 
         ...opts
     });
 }
+export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Fiat[];
+    }>(`/api/Asset/FindFiatBySymbol/${encodeURIComponent($symbol)}`, {
+        ...opts
+    });
+}
 export function setAssetForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
@@ -85,6 +97,16 @@ export function setFiatForSymbol($symbol: string, body?: boolean, opts?: Oazapft
         status: 200;
         data: boolean;
     }>(`/api/Asset/SetFiatForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
+}
+export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Asset/ResetAsset", oazapfts.json({
         ...opts,
         method: "POST",
         body

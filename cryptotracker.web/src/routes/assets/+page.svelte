@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as api from '$lib/cryptotrackerApi';
-	import NavBreadcrumb from '../../components/navigation/NavBreadcrumb.svelte';
 	import AssetTiles from './AssetTiles.svelte';
 </script>
 

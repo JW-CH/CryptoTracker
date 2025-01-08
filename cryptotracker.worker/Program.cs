@@ -22,6 +22,13 @@ var logger = loggerFactory.CreateLogger("Cryptotracker");
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
+
+// #if DEBUG
+// ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "config", "config.yml");
+// #else
+// ymlConfigPath = Path.Combine(root, "config", "config.yml");
+// #endif
+
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 {
     ymlConfigPath = Path.Combine(root, "config", "config.yml");
@@ -142,7 +149,9 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
             Symbol = symbol,
             Name = "",
             Image = "",
-            ExternalId = ""
+            ExternalId = "",
+            IsFiat = false,
+            IsHidden = false
         };
         db.Assets.Add(asset);
     }
@@ -167,48 +176,84 @@ void UpdateAssetMetadata(DatabaseContext db)
 
     var coinList = CryptoTrackerLogic.GetCoinList().Result;
 
-    if (coinList == null) return;
-
-    foreach (var asset in assets)
+    if (coinList != null)
     {
-        Coin? coin = null;
-        if (string.IsNullOrWhiteSpace(asset.ExternalId))
+        foreach (var asset in assets.Where(x => !x.IsFiat))
         {
-            var coins = coinList.Where(x => x.symbol.ToLower() == asset.Symbol.ToLower());
+            Coin? coin = null;
+            if (string.IsNullOrWhiteSpace(asset.ExternalId))
+            {
+                var coins = coinList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
 
-            if (coins.Count() != 1) continue;
+                if (coins.Count() != 1) continue;
 
-            coin = coins.First();
+                coin = coins.First();
+            }
+            else
+            {
+                coin = coinList.FirstOrDefault(x => x.Id.ToLower() == asset.ExternalId.ToLower());
+            }
+
+            if (coin == null) continue;
+
+            Console.WriteLine(asset.Symbol);
+            Console.WriteLine(coin.Value.Id);
+            Console.WriteLine(coin.Value.Symbol);
+            Console.WriteLine(coin.Value.Name);
+
+            asset.Name = coin.Value.Name;
+            if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                asset.ExternalId = coin.Value.Id;
         }
-        else
-        {
-            coin = coinList.FirstOrDefault(x => x.id == asset.ExternalId);
-        }
-
-        if (coin == null) continue;
-
-        asset.Name = coin.Value.name;
-        if (string.IsNullOrWhiteSpace(asset.ExternalId))
-            asset.ExternalId = coin.Value.id;
+        db.SaveChanges();
     }
-    db.SaveChanges();
 
-    var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => x.ExternalId).ToList();
+    var fiatList = CryptoTrackerLogic.GetFiatList().Result;
+
+    if (fiatList != null)
+    {
+        foreach (var asset in assets.Where(x => x.IsFiat))
+        {
+            Fiat? fiat = null;
+            if (string.IsNullOrWhiteSpace(asset.ExternalId))
+            {
+                var fiats = fiatList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
+
+                if (fiats.Count() != 1) continue;
+
+                fiat = fiats.First();
+            }
+            else
+            {
+                fiat = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == asset.ExternalId.ToLower());
+            }
+
+            if (fiat == null) continue;
+
+            asset.Name = fiat.Value.Name;
+            if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                asset.ExternalId = fiat.Value.Symbol;
+        }
+        db.SaveChanges();
+    }
+
+    var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.IsFiat }).ToList();
 
     if (foundExternalIds.Count == 0) return;
     var currency = "chf";
-    var coinDataList = CryptoTrackerLogic.GetCoinData(currency, foundExternalIds).Result;
+    var coinDataList = CryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => !x.IsFiat).Select(x => x.ExternalId).ToList()).Result;
+    var fiatDataList = CryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.IsFiat).Select(x => x.ExternalId).ToList()).Result;
 
-    if (coinDataList == null) return;
+    var all = coinDataList.Union(fiatDataList).ToList();
 
-    coinDataList.ForEach(coin =>
+    all.ForEach(item =>
     {
-        var asset = db.Assets.FirstOrDefault(a => a.ExternalId == coin.AssetId);
+        var asset = db.Assets.FirstOrDefault(a => a.ExternalId == item.AssetId);
 
         if (asset == null) return;
 
         if (string.IsNullOrWhiteSpace(asset.Image))
-            asset.Image = coin.Image;
+            asset.Image = item.Image;
 
         var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.Today && p.Currency == currency);
 
@@ -219,14 +264,14 @@ void UpdateAssetMetadata(DatabaseContext db)
                 Symbol = asset.Symbol,
                 Date = DateTime.Today,
                 Currency = currency,
-                Price = coin.Price,
+                Price = item.Price,
             };
 
             db.AssetPriceHistory.Add(price);
         }
         else
         {
-            price.Price = coin.Price;
+            price.Price = item.Price;
         }
     });
 

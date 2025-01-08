@@ -5,10 +5,10 @@
 	import { onMount } from 'svelte';
 	import LineChart from '../../../components/charts/LineChart.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import NavBreadcrumb from '../../../components/navigation/NavBreadcrumb.svelte';
 
 	let assetData: api.AssetData | null = null;
 	let selectedCoin: string = '';
+	let isFiat: boolean = false;
 	let hidden: boolean = false;
 
 	function StringKeysToDates(arr: string[]) {
@@ -23,6 +23,23 @@
 		});
 	}
 
+	function SetIsFiat() {
+		if (!assetData?.asset.symbol) return;
+
+		api.setFiatForSymbol(assetData.asset.symbol, !isFiat).then(() => {
+			isFiat = !isFiat;
+		});
+	}
+
+	function ResetAsset() {
+		if (!assetData?.asset.symbol) return;
+
+		api.resetAsset(assetData.asset.symbol).then(async () => {
+			assetData = null;
+			assetData = await LoadAssetData();
+		});
+	}
+
 	function setAssetData() {
 		if (!assetData?.asset.symbol) return;
 
@@ -31,17 +48,23 @@
 		api.setAssetForSymbol(assetData.asset.symbol, selectedCoin);
 	}
 
-	onMount(async () => {
-		let xy = await api.getAsset(page.params.slug);
-		assetData = xy.data;
+	async function LoadAssetData() {
+		let request = await api.getAsset(page.params.slug);
+		let data = request.data;
+		selectedCoin = data.asset.externalId ?? '';
+		hidden = data.asset.isHidden ?? false;
+		isFiat = data.asset.isFiat ?? false;
+		return data;
+	}
 
-		selectedCoin = assetData.asset.externalId ?? '';
-		hidden = assetData.asset.isHidden ?? false;
+	onMount(async () => {
+		assetData = await LoadAssetData();
 	});
 </script>
 
 {#if assetData}
 	<Button on:click={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
+	<Button on:click={ResetAsset}>Reset</Button>
 	{#if assetData.asset.name}
 		<div class="space-y-4">
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -125,24 +148,37 @@
 			</div>
 		</div>
 	{:else if assetData?.asset.symbol}
-		{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
-			<Card.Root class="col-span-4">
-				<Card.Header>
-					<Card.Title>Externe ID verknüpfen</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					<select
-						class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-						bind:value={selectedCoin}
-					>
-						{#each coins.data as coin}
-							<option value={coin.id}>{coin.name}</option>
-						{/each}
-					</select>
-					<Button on:click={setAssetData}>Speichern</Button>
-				</Card.Content>
-			</Card.Root>
-		{/await}
+		{#if !selectedCoin}
+			<Button on:click={SetIsFiat}>{isFiat ? 'Kein Fiat' : 'Fiat'}</Button>
+		{/if}
+		<Card.Root class="col-span-4">
+			<Card.Header>
+				<Card.Title>Externe ID verknüpfen</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<select
+					class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+					bind:value={selectedCoin}
+				>
+					{#key isFiat}
+						{#if isFiat}
+							{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
+								{#each coins.data as coin}
+									<option value={coin.symbol}>{coin.name}</option>
+								{/each}
+							{/await}
+						{:else}
+							{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
+								{#each coins.data as coin}
+									<option value={coin.id}>{coin.name}</option>
+								{/each}
+							{/await}
+						{/if}
+					{/key}
+				</select>
+				<Button on:click={setAssetData}>Speichern</Button>
+			</Card.Content>
+		</Card.Root>
 	{/if}
 {:else}
 	<p>Loading...</p>
