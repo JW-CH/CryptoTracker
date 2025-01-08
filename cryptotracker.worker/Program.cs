@@ -147,9 +147,6 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
         asset = new Asset()
         {
             Symbol = symbol,
-            Name = "",
-            Image = "",
-            ExternalId = "",
             IsFiat = false,
             IsHidden = false
         };
@@ -195,11 +192,6 @@ void UpdateAssetMetadata(DatabaseContext db)
             }
 
             if (coin == null) continue;
-
-            Console.WriteLine(asset.Symbol);
-            Console.WriteLine(coin.Value.Id);
-            Console.WriteLine(coin.Value.Symbol);
-            Console.WriteLine(coin.Value.Name);
 
             asset.Name = coin.Value.Name;
             if (string.IsNullOrWhiteSpace(asset.ExternalId))

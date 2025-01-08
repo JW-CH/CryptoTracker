@@ -45,11 +45,6 @@ namespace cryptotracker.webapi.Controllers
 
             var list = coinList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
 
-            foreach (var coin in coinList.Where(x => x.Symbol.StartsWith("u")))
-            {
-                Console.WriteLine(coin.Symbol);
-            }
-
             return list;
         }
 

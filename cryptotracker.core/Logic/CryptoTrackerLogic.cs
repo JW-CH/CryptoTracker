@@ -26,10 +26,16 @@ namespace cryptotracker.core.Logic
                 case "bitpanda":
                     using (var bitpandaClient = new HttpClient())
                     {
+                        var result = new List<BalanceResult>();
+
                         bitpandaClient.UseApiKey(integration.Secret);
                         var accounts = await GetBitpandaAccounts(bitpandaClient);
+                        var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
 
-                        return accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList();
+                        result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+
+                        return result;
                     }
                 case "cryptocom":
                     using (var cryptocomClient = new CryptoComRestClient(xy =>
@@ -248,6 +254,19 @@ namespace cryptotracker.core.Logic
             return accounts;
         }
 
+        private async static Task<List<BitpandaFiatWallet>> GetBitpandaFiatAccounts(HttpClient client)
+        {
+            var response = await client.GetAsync("https://api.bitpanda.com/v1/fiatwallets");
+
+            if (!response.IsSuccessStatusCode) throw new Exception("no success");
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var list = JsonSerializer.Deserialize<BitpandaFiatWalletResult>(json);
+
+            return list?.Data.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
+        }
+
         private async static Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/asset-wallets");
@@ -263,12 +282,13 @@ namespace cryptotracker.core.Logic
 
         public static async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
         {
+            fiatIds = fiatIds.Distinct().Select(x => x.ToLower()).ToList();
+
             var result = new List<AssetMetadata>();
 
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={string.Join(",", fiatIds)}";
-
             var response = await client.GetAsync(apiUrl);
 
             if (!response.IsSuccessStatusCode) return result;
@@ -297,6 +317,19 @@ namespace cryptotracker.core.Logic
                     Currency = currency,
                     Name = name,
                     Price = price
+                });
+            }
+
+            if (fiatIds.Contains(currency.ToLower()))
+            {
+                result.Add(new AssetMetadata()
+                {
+                    AssetId = currency,
+                    Symbol = currency,
+                    Image = "",
+                    Currency = currency,
+                    Name = "",
+                    Price = 1
                 });
             }
 
@@ -377,12 +410,10 @@ namespace cryptotracker.core.Logic
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             var url = "https://api.coingecko.com/api/v3/coins/list";
             var response = await client.GetAsync(url);
-            Console.WriteLine(response.StatusCode);
             if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch coin list");
 
             var json = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<List<Coin>>(json);
-            Console.WriteLine(data?.Count);
             _coinList = data ?? new List<Coin>();
 
             return _coinList;

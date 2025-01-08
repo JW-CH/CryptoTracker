@@ -5,7 +5,7 @@ Integrationen:
 - [x] Coinbase
   - [x] Euro 
 - [x] Bitpanda
-  - [ ] CHF Tracking
+  - [x] CHF Tracking
   - [ ] Tracking Staked assets
 - [x] Crypto.com (exchange)
 - [x] Binance
