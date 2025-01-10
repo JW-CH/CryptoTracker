@@ -20,6 +20,8 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 // Create a logger instance
 var logger = loggerFactory.CreateLogger("Cryptotracker");
 
+var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
+
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
 
@@ -79,39 +81,40 @@ async Task Import()
 {
     using var db = new DatabaseContext(optionsBuilder.Options);
 
-    logger.LogTrace("Clearing today's DB entries");
-
-    db.AssetMeasurings.RemoveRange(db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date));
+    logger.LogTrace("Clearing today's AssetMeasurings entries");
+    var entries = db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date);
+    var count = entries.Count();
+    db.AssetMeasurings.RemoveRange(entries);
+    logger.LogTrace($"Removed {count} AssetMeasurings");
     //db.Assets.RemoveRange(db.Assets);
     //db.ExchangeIntegrations.RemoveRange(db.ExchangeIntegrations);
 
     db.SaveChanges();
-
     logger.LogTrace("DB clear");
 
+    logger.LogTrace("Starting DB-Transaction");
     using var tx = db.Database.BeginTransaction();
-
-    StringBuilder sb = new StringBuilder();
 
     try
     {
+        logger.LogInformation("Starting Integration-Import");
         foreach (var integration in config.Integrations)
         {
-            var balances = await CryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
+            var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
+
+            logger.LogTrace($"Fetched {balances.Count()} balances for {integration.Name}");
 
             foreach (var balance in balances)
             {
                 AddMeasuring(db, integration, balance.Symbol, balance.Balance);
-
-                sb.AppendLine($"{integration.Name} - {balance.Symbol}: {balance.Balance}");
             }
 
         }
-        logger.LogInformation(sb.ToString());
+        logger.LogInformation("Finished Integration-Import");
 
-        logger.LogTrace("Starting Metadataimport");
-        UpdateAssetMetadata(db);
-        logger.LogTrace("Finished Metadataimport");
+        logger.LogInformation("Starting Metadataimport");
+        await UpdateAssetMetadata(db);
+        logger.LogInformation("Finished Metadataimport");
 
         tx.Commit();
 
@@ -120,6 +123,7 @@ async Task Import()
     catch (Exception ex)
     {
         logger.LogError(ex.ToString());
+        logger.LogTrace("Rolling back transaction");
         tx.Rollback();
     }
 }
@@ -136,6 +140,7 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
             Name = integration.Name,
             Description = integration.Description
         };
+        logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
         db.ExchangeIntegrations.Add(ex);
     }
 
@@ -149,6 +154,7 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
             IsFiat = false,
             IsHidden = false
         };
+        logger.LogTrace($"Adding new Asset: {asset.Symbol}");
         db.Assets.Add(asset);
     }
 
@@ -161,16 +167,19 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
     };
 
     db.AssetMeasurings.Add(x);
+    logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {x.Asset.Symbol} - {x.StandingValue}");
     db.SaveChanges();
 }
 
-void UpdateAssetMetadata(DatabaseContext db)
+async Task UpdateAssetMetadata(DatabaseContext db)
 {
     var assets = db.Assets.ToList();
+    logger.LogTrace($"Found {assets.Count} assets");
 
     if (assets.Count == 0) return;
 
-    var coinList = CryptoTrackerLogic.GetCoinList().Result;
+    var coinList = cryptoTrackerLogic.GetCoinList().Result;
+    logger.LogTrace($"Fetched {coinList.Count()} coins");
 
     if (coinList != null)
     {
@@ -192,14 +201,23 @@ void UpdateAssetMetadata(DatabaseContext db)
 
             if (coin == null) continue;
 
-            asset.Name = coin.Value.Name;
+            if (string.IsNullOrWhiteSpace(asset.Name))
+            {
+                logger.LogTrace($"Update name for '{asset.Symbol}' to '{coin.Value.Name}'");
+                asset.Name = coin.Value.Name;
+            }
+
             if (string.IsNullOrWhiteSpace(asset.ExternalId))
+            {
+                logger.LogTrace($"Update externalId for '{asset.Symbol}' to '{coin.Value.Id}'");
                 asset.ExternalId = coin.Value.Id;
+            }
         }
         db.SaveChanges();
     }
 
-    var fiatList = CryptoTrackerLogic.GetFiatList().Result;
+    var fiatList = cryptoTrackerLogic.GetFiatList().Result;
+    logger.LogTrace($"Fetched {fiatList.Count()} fiats");
 
     if (fiatList != null)
     {
@@ -221,9 +239,17 @@ void UpdateAssetMetadata(DatabaseContext db)
 
             if (fiat == null) continue;
 
-            asset.Name = fiat.Value.Name;
+            if (string.IsNullOrWhiteSpace(asset.Name))
+            {
+                logger.LogTrace($"Update name for '{asset.Symbol}' to '{fiat.Value.Name}'");
+                asset.Name = fiat.Value.Name;
+            }
             if (string.IsNullOrWhiteSpace(asset.ExternalId))
+            {
+
+                logger.LogTrace($"Update externalId for '{asset.Symbol}' to '{fiat.Value.Symbol}'");
                 asset.ExternalId = fiat.Value.Symbol;
+            }
         }
         db.SaveChanges();
     }
@@ -232,8 +258,8 @@ void UpdateAssetMetadata(DatabaseContext db)
 
     if (foundExternalIds.Count == 0) return;
     var currency = "chf";
-    var coinDataList = CryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => !x.IsFiat).Select(x => x.ExternalId).ToList()).Result;
-    var fiatDataList = CryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.IsFiat).Select(x => x.ExternalId).ToList()).Result;
+    var coinDataList = await cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => !x.IsFiat).Select(x => x.ExternalId!).ToList());
+    var fiatDataList = await cryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.IsFiat).Select(x => x.ExternalId!).ToList());
 
     var all = coinDataList.Union(fiatDataList).ToList();
 
@@ -258,10 +284,13 @@ void UpdateAssetMetadata(DatabaseContext db)
                 Price = item.Price,
             };
 
+            logger.LogTrace($"Add AssetPriceHistory for {price.Symbol}, {price.Date} - {price.Price} {price.Currency}");
+
             db.AssetPriceHistory.Add(price);
         }
         else
         {
+            logger.LogTrace($"Update AssetPriceHistory for {price.Symbol}, {price.Date} from {price.Price} {price.Currency} to {item.Price} {price.Currency}");
             price.Price = item.Price;
         }
     });

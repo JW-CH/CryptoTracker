@@ -11,16 +11,25 @@ using CryptoExchange.Net.Objects;
 using cryptotracker.core.Helpers;
 using cryptotracker.core.Models;
 using ImmichFrame.Core.Helpers;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Logic
 {
-    public static class CryptoTrackerLogic
+    public class CryptoTrackerLogic
     {
-        public async static Task<IEnumerable<BalanceResult>> GetAvailableIntegrationBalances(CryptotrackerIntegration integration)
+        private ILogger _logger;
+        public CryptoTrackerLogic(ILogger logger)
         {
+            _logger = logger;
+        }
+
+        public async Task<IEnumerable<BalanceResult>> GetAvailableIntegrationBalances(CryptotrackerIntegration integration)
+        {
+            _logger.LogTrace($"Fetching balances for integration {integration.Name}");
+
             switch (integration.Type.ToLower())
             {
                 case "bitpanda":
@@ -102,7 +111,7 @@ namespace cryptotracker.core.Logic
             }
         }
 
-        private static async Task<decimal> GetRippleAvailableBalances(HttpClient client, string address)
+        private async Task<decimal> GetRippleAvailableBalances(HttpClient client, string address)
         {
             var apiUrl = $"https://api.xrpscan.com/api/v1/account/{address}";
 
@@ -120,11 +129,11 @@ namespace cryptotracker.core.Logic
             }
             else
             {
-                Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
                 return 0;
             }
         }
-        private static async Task<decimal> GetEthereumAvailableBalances(HttpClient client, string address)
+        private async Task<decimal> GetEthereumAvailableBalances(HttpClient client, string address)
         {
             string apiUrl = $"https://api.ethplorer.io/getAddressInfo/{address}?apiKey=freekey";
 
@@ -142,7 +151,7 @@ namespace cryptotracker.core.Logic
             }
             else
             {
-                Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
                 return 0;
             }
         }
@@ -153,7 +162,7 @@ namespace cryptotracker.core.Logic
         /// <param name="client">The HttpClient used to make the request.</param>
         /// <param name="input">The Bitcoin address or extended public key (xpub) to retrieve the balance for.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the available balance in BTC.</returns>
-        private async static Task<decimal> GetBitcoinAvailableBalances(HttpClient client, string input)
+        private async Task<decimal> GetBitcoinAvailableBalances(HttpClient client, string input)
         {
             async Task<(decimal balance, int transactions)> GetBitcoinAmountFromAddress(HttpClient client, string address)
             {
@@ -173,7 +182,7 @@ namespace cryptotracker.core.Logic
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                    _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
                     return (0, 0);
                 }
             }
@@ -213,7 +222,7 @@ namespace cryptotracker.core.Logic
                 return (await GetBitcoinAmountFromAddress(client, input)).balance;
             }
         }
-        private async static Task<IEnumerable<CryptoComBalance>> GetCoinbaseAvailableAccounts(ICryptoComRestClient client)
+        private async Task<IEnumerable<CryptoComBalance>> GetCoinbaseAvailableAccounts(ICryptoComRestClient client)
         {
             WebCallResult<IEnumerable<CryptoComBalances>>? result = null;
             List<CryptoComBalance> accounts = new();
@@ -226,7 +235,7 @@ namespace cryptotracker.core.Logic
 
             return accounts;
         }
-        private async static Task<IEnumerable<CoinbaseAccount>> GetCoinbaseAvailableAccounts(ICoinbaseRestClient client)
+        private async Task<IEnumerable<CoinbaseAccount>> GetCoinbaseAvailableAccounts(ICoinbaseRestClient client)
         {
             WebCallResult<CoinbaseAccountPage>? result = null;
             List<CoinbaseAccount> accounts = new();
@@ -245,7 +254,7 @@ namespace cryptotracker.core.Logic
             return accounts;
         }
 
-        private static async Task<IEnumerable<BinanceBalance>> GetBinanceAvailableAccounts(BinanceRestClient client)
+        private async Task<IEnumerable<BinanceBalance>> GetBinanceAvailableAccounts(BinanceRestClient client)
         {
             WebCallResult<BinanceAccountInfo>? result = null;
             List<BinanceBalance> accounts = new();
@@ -259,7 +268,7 @@ namespace cryptotracker.core.Logic
             return accounts;
         }
 
-        private async static Task<List<BitpandaFiatWallet>> GetBitpandaFiatAccounts(HttpClient client)
+        private async Task<List<BitpandaFiatWallet>> GetBitpandaFiatAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/fiatwallets");
 
@@ -272,7 +281,7 @@ namespace cryptotracker.core.Logic
             return list?.Data.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
 
-        private async static Task<List<Portfolio>> GetBitpandaPortfolio(HttpClient client)
+        private async Task<List<Portfolio>> GetBitpandaPortfolio(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v2/portfolio/overview");
 
@@ -285,7 +294,7 @@ namespace cryptotracker.core.Logic
             return portfolio?.Data.Attributes.Portfolios ?? new();
         }
 
-        private async static Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)
+        private async Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/asset-wallets");
 
@@ -298,7 +307,7 @@ namespace cryptotracker.core.Logic
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
 
-        public static async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
+        public async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
         {
             fiatIds = fiatIds.Distinct().Select(x => x.ToLower()).ToList();
 
@@ -354,7 +363,7 @@ namespace cryptotracker.core.Logic
             return result;
         }
 
-        public static async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
+        public async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
 
@@ -393,8 +402,8 @@ namespace cryptotracker.core.Logic
             return result;
         }
 
-        private static List<Fiat>? _fiatList;
-        public static async Task<List<Fiat>> GetFiatList()
+        private List<Fiat>? _fiatList;
+        public async Task<List<Fiat>> GetFiatList()
         {
             if (_fiatList != null) return _fiatList;
 
@@ -419,8 +428,8 @@ namespace cryptotracker.core.Logic
             return _fiatList;
         }
 
-        private static List<Coin>? _coinList;
-        public static async Task<List<Coin>> GetCoinList()
+        private List<Coin>? _coinList;
+        public async Task<List<Coin>> GetCoinList()
         {
             if (_coinList != null) return _coinList;
 
