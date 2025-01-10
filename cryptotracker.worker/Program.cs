@@ -3,24 +3,10 @@ using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// Create a LoggerFactory
-using var loggerFactory = LoggerFactory.Create(builder =>
-{
-    _ = builder.AddSimpleConsole(options =>
-                {
-                    // Customizing the log output format
-                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
-                })
-            .SetMinimumLevel(LogLevel.Information); // Set minimum log level
-});
-
-// Create a logger instance
-var logger = loggerFactory.CreateLogger("Cryptotracker");
-
-var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
@@ -47,15 +33,47 @@ if (File.Exists(ymlConfigPath))
     var yml = File.ReadAllText(ymlConfigPath);
 
     config = CryptotrackerConfig.LoadFromYml(yml);
-
-    logger.LogInformation("Config loaded");
-
-    logger.LogInformation($"Integrations: {config.Integrations.Count}");
 }
 else
 {
     throw new Exception("Config file not found");
 }
+var loglevelNotLoaded = false;
+// Create a LoggerFactory
+using var loggerFactory = LoggerFactory.Create(builder =>
+{
+    LogLevel level;
+
+    if (string.IsNullOrWhiteSpace(config.LogLevel) || !Enum.TryParse(config.LogLevel, true, out level))
+    {
+        if (!string.IsNullOrWhiteSpace(config.LogLevel))
+            loglevelNotLoaded = true;
+        level = LogLevel.Information;
+    }
+
+    _ = builder.AddSimpleConsole(options =>
+                {
+                    // Customizing the log output format
+                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
+                    options.SingleLine = true;
+                })
+            .SetMinimumLevel(level); // Set minimum log level
+});
+
+// Create a logger instance
+var logger = loggerFactory.CreateLogger("Cryptotracker");
+
+logger.LogInformation("Config loaded");
+
+logger.LogInformation($"LogLevel: '{config.LogLevel}'");
+if (loglevelNotLoaded)
+{
+    logger.LogWarning($"LogLevel '{config.LogLevel}' is not valid, using '{nameof(LogLevel.Information)}' instead!");
+}
+
+logger.LogInformation($"Integrations: {config.Integrations.Count}");
+
+var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
 optionsBuilder.UseMySQL(config.ConnectionString);
@@ -158,16 +176,16 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
         db.Assets.Add(asset);
     }
 
-    var x = new AssetMeasuring()
+    var measuring = new AssetMeasuring()
     {
-        Asset = asset,
-        Integration = ex,
+        AssetId = asset.Symbol,
+        IntegrationId = ex.Id,
         StandingDate = DateTime.Now,
         StandingValue = balance
     };
 
-    db.AssetMeasurings.Add(x);
-    logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {x.Asset.Symbol} - {x.StandingValue}");
+    db.AssetMeasurings.Add(measuring);
+    logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.AssetId} - {measuring.StandingValue}");
     db.SaveChanges();
 }
 

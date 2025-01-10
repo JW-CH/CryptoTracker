@@ -4,8 +4,8 @@ namespace cryptotracker.database.DTOs
 {
     public class AssetMeasuringDto
     {
-        public string AssetId { get; set; }
-        public string AssetName { get; set; }
+        public required string AssetId { get; set; }
+        public string? AssetName { get; set; }
         public decimal AssetAmount { get; set; }
         public decimal AssetPrice { get; set; }
         public decimal FiatValue { get; set; }
