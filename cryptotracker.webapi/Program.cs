@@ -1,17 +1,81 @@
+using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Logging.AddSimpleConsole(options =>
-                {
-                    // Customizing the log output format
-                    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
-                })
-            .SetMinimumLevel(LogLevel.Information); // Set minimum log level
 
-// Add services to the container.
+var config = NewMethod(builder);
 
-builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
+LogLevel level = LogLevel.Information;
+if (!string.IsNullOrWhiteSpace(config.LogLevel))
+{
+    Enum.TryParse(config.LogLevel, true, out level);
+}
+
+builder.Services.AddLogging(builder =>
+        {
+            builder.SetMinimumLevel(level);
+            builder.AddSimpleConsole(options =>
+                    {
+                        // Customizing the log output format
+                        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";  // Custom timestamp format
+                        options.SingleLine = true;
+                    });
+
+
+            // Disable EF Core info logs
+            builder.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+            // Disable SpaProxy info logs
+            builder.AddFilter("Microsoft.AspNetCore.SpaProxy", LogLevel.Warning);
+        });
+
+builder.Services.AddSingleton(srv =>
+{
+    return config;
+});
+
+builder.Services.AddSingleton(srv =>
+{
+    var logger = srv.GetRequiredService<ILogger<CryptoTrackerLogic>>();
+    return new CryptoTrackerLogic(logger);
+});
+builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
+{
+    var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
+    var connectionString = config?.ConnectionString ?? "";
+    options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
+    options.EnableSensitiveDataLogging(false);
+});
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+if (app.Environment.IsProduction())
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.MapFallbackToFile("/index.html");
+
+app.Run();
+
+static CryptotrackerConfig NewMethod(WebApplicationBuilder builder)
 {
     var root = Directory.GetCurrentDirectory();
 
@@ -43,43 +107,4 @@ builder.Services.AddSingleton<CryptotrackerConfig>(srv =>
     }
 
     throw new Exception("Config file not found");
-});
-
-builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
-{
-    var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
-    var connectionString = config?.ConnectionString ?? "";
-    options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
-    options.EnableSensitiveDataLogging(false);
-});
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Disable EF Core info logs
-builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
-
-if (app.Environment.IsProduction())
-{
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-}
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.MapFallbackToFile("/index.html");
-
-app.Run();

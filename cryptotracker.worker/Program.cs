@@ -3,9 +3,7 @@ using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 
 var root = Directory.GetCurrentDirectory();

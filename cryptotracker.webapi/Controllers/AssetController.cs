@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Logic;
-using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +11,13 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
-        private readonly CryptotrackerConfig _config;
+        private readonly CryptoTrackerLogic _cryptoTrackerLogic;
 
-        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptotrackerConfig config)
+        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic)
         {
             _logger = logger;
             _db = db;
-            _config = config;
+            _cryptoTrackerLogic = cryptoTrackerLogic;
         }
 
         [HttpGet(Name = "GetAssets")]
@@ -41,7 +40,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("{symbol}", Name = "FindCoinsBySymbol")]
         public async Task<List<Coin>> FindCoinsBySymbol(string symbol)
         {
-            var coinList = await CryptoTrackerLogic.GetCoinList();
+            var coinList = await _cryptoTrackerLogic.GetCoinList();
 
             var list = coinList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
 
@@ -51,7 +50,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("{symbol}", Name = "FindFiatBySymbol")]
         public async Task<List<Fiat>> FindFiatBySymbol(string symbol)
         {
-            var fiatList = await CryptoTrackerLogic.GetFiatList();
+            var fiatList = await _cryptoTrackerLogic.GetFiatList();
 
             return fiatList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
         }

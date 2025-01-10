@@ -11,8 +11,11 @@ Integrationen:
 - [x] Binance
 - [x] Bitcoin (XPUB, ZPUB)
 - [x] Ethereum (Adr)
+  - [ ] Add token support
 - [x] XRP (Adr)
+  - [ ] Add token support
 - [ ] Cardano (Adr)
+  - [ ] Add token support
 - [ ] Polkadot (Adr)
 
 Tracking:
