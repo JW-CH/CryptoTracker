@@ -30,7 +30,7 @@ namespace cryptotracker.webapi.Controllers
             {
                 if (symbol != null)
                 {
-                    result[day.Key] = GetAssetDayMeasuring(day.Key).Where(x => x.AssetId.ToLower() == symbol.ToLower()).ToList();
+                    result[day.Key] = GetAssetDayMeasuring(day.Key).Where(x => x.Asset.Id.ToLower() == symbol.ToLower()).ToList();
                 }
                 else
                 {
@@ -49,7 +49,7 @@ namespace cryptotracker.webapi.Controllers
             var result = new Dictionary<DateTime, decimal>();
             foreach (var day in dayList.ToList())
             {
-                result[day.Key] = GetAssetDayMeasuring(day.Key).Sum(x => x.FiatValue);
+                result[day.Key] = GetAssetDayMeasuring(day.Key).Sum(x => x.TotalValue);
             }
 
             return result;
@@ -68,7 +68,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var day = _db.AssetMeasurings.Max(x => x.StandingDate.Date);
 
-            return GetAssetDayMeasuring(day).Sum(x => x.FiatValue);
+            return GetAssetDayMeasuring(day).Sum(x => x.TotalValue);
         }
 
         private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day)
@@ -79,15 +79,9 @@ namespace cryptotracker.webapi.Controllers
             foreach (var asset in _db.Assets.Where(x => !x.IsHidden).ToList())
             {
                 var price = _db.AssetPriceHistory.Where(x => x.Date == day.Date && x.Symbol == asset.Symbol && x.Currency == currency).FirstOrDefault()?.Price ?? 0m;
-                var amount = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).Sum(x => x.StandingValue);
-                var dto = new AssetMeasuringDto
-                {
-                    AssetId = asset.Symbol,
-                    AssetName = asset.Name,
-                    AssetAmount = amount,
-                    AssetPrice = price,
-                    FiatValue = amount * price
-                };
+                var measurings = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).ToList();
+
+                var dto = AssetMeasuringDto.SumFromModels(measurings, price);
 
                 result.Add(dto);
             }

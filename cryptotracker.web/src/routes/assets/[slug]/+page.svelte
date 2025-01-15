@@ -102,7 +102,22 @@
 
 			<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
 				{#await api.getMeasuringsByDay(7, { $symbol: assetData.asset.symbol ?? '' })}
-					<p>Loading...</p>
+					<Card.Root class="col-span-4">
+						<Card.Header>
+							<Card.Title>Bestand letzte 7 Tage</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<LineChart skeleton={true} />
+						</Card.Content>
+					</Card.Root>
+					<Card.Root class="col-span-4">
+						<Card.Header>
+							<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<LineChart skeleton={true} />
+						</Card.Content>
+					</Card.Root>
 				{:then measurings}
 					<Card.Root class="col-span-4">
 						<Card.Header>
@@ -116,7 +131,7 @@
 									{
 										name: assetData.asset.symbol ?? '',
 										data: Object.values(measurings.data).map(
-											(x) => x.find((y) => y.assetId === assetData?.asset.symbol)?.assetAmount ?? 0
+											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.amount ?? 0
 										)
 									}
 								]}
@@ -135,7 +150,7 @@
 									{
 										name: 'CHF',
 										data: Object.values(measurings.data).map(
-											(x) => x.find((y) => y.assetId === assetData?.asset.symbol)?.fiatValue ?? 0
+											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.totalValue ?? 0
 										)
 									}
 								]}

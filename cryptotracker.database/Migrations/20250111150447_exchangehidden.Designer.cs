@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace cryptotracker.database.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250111150447_exchangehidden")]
+    partial class exchangehidden
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Symbol");
 
-                    b.ToTable("Assets", (string)null);
+                    b.ToTable("Assets");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetMeasuring", b =>
@@ -69,7 +72,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasIndex("IntegrationId");
 
-                    b.ToTable("AssetMeasurings", (string)null);
+                    b.ToTable("AssetMeasurings");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetPriceHistory", b =>
@@ -89,7 +92,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Symbol", "Date", "Currency");
 
-                    b.ToTable("AssetPriceHistory", (string)null);
+                    b.ToTable("AssetPriceHistory");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.ExchangeIntegration", b =>
@@ -113,7 +116,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ExchangeIntegrations", (string)null);
+                    b.ToTable("ExchangeIntegrations");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetMeasuring", b =>

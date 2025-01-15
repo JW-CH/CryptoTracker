@@ -14,9 +14,9 @@ const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {};
 export type Asset = {
     "symbol": string | null;
-    externalId: string | null;
-    name: string | null;
-    image: string | null;
+    externalId?: string | null;
+    name?: string | null;
+    image?: string | null;
     isFiat: boolean;
     isHidden: boolean;
 };
@@ -33,12 +33,25 @@ export type Fiat = {
     "symbol"?: string | null;
     name?: string | null;
 };
+export type AssetDto = {
+    id: string | null;
+    name?: string | null;
+    image?: string | null;
+    isHidden?: boolean;
+};
 export type AssetMeasuringDto = {
-    assetId?: string | null;
-    assetName?: string | null;
-    assetAmount?: number;
-    assetPrice?: number;
-    fiatValue?: number;
+    asset: AssetDto;
+    price?: number;
+    amount?: number;
+    totalValue?: number;
+};
+export type IntegrationDetails = {
+    id: string;
+    name: string | null;
+    description?: string | null;
+    isManual: boolean;
+    isHidden: boolean;
+    measurings: AssetMeasuringDto[] | null;
 };
 export function getAssets(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
@@ -149,6 +162,24 @@ export function getLatestStanding(opts?: Oazapfts.RequestOpts) {
         status: 200;
         data: number;
     }>("/api/CryptoTracker/GetLatestStanding", {
+        ...opts
+    });
+}
+export function getIntegrations(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: IntegrationDetails[];
+    }>("/api/Integration/GetIntegrations", {
+        ...opts
+    });
+}
+export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: IntegrationDetails;
+    }>(`/api/Integration/GetIntegrationDetails${QS.query(QS.explode({
+        id
+    }))}`, {
         ...opts
     });
 }

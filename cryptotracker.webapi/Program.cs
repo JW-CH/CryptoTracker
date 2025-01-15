@@ -27,6 +27,8 @@ builder.Services.AddLogging(builder =>
             builder.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             // Disable SpaProxy info logs
             builder.AddFilter("Microsoft.AspNetCore.SpaProxy", LogLevel.Warning);
+            // Disable AspNetCore info logs
+            builder.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         });
 
 builder.Services.AddSingleton(srv =>

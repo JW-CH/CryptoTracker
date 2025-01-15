@@ -4,7 +4,9 @@
 </script>
 
 {#await api.getAssets()}
-	<p>Loading...</p>
+	<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+		<AssetTiles skeleton={true} />
+	</div>
 {:then assets}
 	<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
 		<AssetTiles assets={assets.data} hidden={false} />
