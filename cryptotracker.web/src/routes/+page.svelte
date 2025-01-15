@@ -37,7 +37,6 @@
 		<Card.Root>
 			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
 				<Card.Title class="text-sm font-medium">Aktueller Wert</Card.Title>
-				<!-- <CreditCard class="text-muted-foreground h-4 w-4" /> -->
 			</Card.Header>
 			<Card.Content>
 				{#await api.getLatestStanding()}
@@ -45,7 +44,6 @@
 				{:then standing}
 					<div class="text-2xl font-bold">{standing.data.toFixed(2)} CHF</div>
 				{/await}
-				<!-- <p class="text-muted-foreground text-xs">+19% from last month</p> -->
 			</Card.Content>
 		</Card.Root>
 	</div>

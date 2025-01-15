@@ -3,6 +3,7 @@
 	import * as api from '$lib/cryptotrackerApi';
 	import { onMount } from 'svelte';
 	import AssetMeasuringTiles from './AssetMeasuringTiles.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 
 	let isLoading: boolean = true;
 	let details: api.IntegrationDetails;
@@ -20,6 +21,10 @@
 		<AssetMeasuringTiles skeleton={true} />
 	</div>
 {:else}
+	{#if details.isManual}
+		<Button href="/integrations/add/{details.id}">Manuelle Messung hinzufügen</Button>
+		<Button>Reset</Button>
+	{/if}
 	<p>{details.name}</p>
 	<p class="text-center">Inkludiert:</p>
 	<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">

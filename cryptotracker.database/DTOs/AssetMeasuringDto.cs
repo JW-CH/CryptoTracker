@@ -28,15 +28,13 @@ namespace cryptotracker.database.DTOs
         public decimal Amount { get; set; }
         public decimal TotalValue { get; set; }
 
-        public static AssetMeasuringDto SumFromModels(List<AssetMeasuring> measurings, decimal price)
+        public static AssetMeasuringDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
-            var first = measurings.First();
-            if (first.Asset == null) throw new Exception("Asset is null");
             var amt = measurings.Sum(x => x.StandingValue);
 
             return new AssetMeasuringDto()
             {
-                Asset = AssetDto.FromModel(first.Asset),
+                Asset = AssetDto.FromModel(asset),
                 Amount = amt,
                 Price = price,
                 TotalValue = amt * price,

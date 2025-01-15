@@ -9,7 +9,7 @@
 		<IntegrationTiles skeleton={true} />
 	</div>
 {:then integrations}
-	<Button href="integrations/add">Manuelle Integration hinzufügen</Button>
+	<Button href="/integrations/add">Manuelle Integration hinzufügen</Button>
 	<div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
 		<IntegrationTiles integrations={integrations.data} hidden={false} />
 	</div>

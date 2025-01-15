@@ -1,5 +1,6 @@
 using cryptotracker.core.Models;
 using cryptotracker.database.DTOs;
+using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,36 +24,50 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("{days}", Name = "GetMeasuringsByDay")]
         public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay(int days = 7, string? symbol = null)
         {
-            var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
+            //var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
+
+            var dayList = new List<DateTime>();
+            for (int i = 0; i < 7; i++)
+            {
+                DateTime date = DateTime.Today.AddDays(-i);
+                dayList.Add(date.Date);
+            }
 
             var result = new Dictionary<DateTime, List<AssetMeasuringDto>>();
             foreach (var day in dayList.ToList())
             {
                 if (symbol != null)
                 {
-                    result[day.Key] = GetAssetDayMeasuring(day.Key).Where(x => x.Asset.Id.ToLower() == symbol.ToLower()).ToList();
+                    result[day] = GetAssetDayMeasuring(day, symbol).ToList();
                 }
                 else
                 {
-                    result[day.Key] = GetAssetDayMeasuring(day.Key);
+                    result[day] = GetAssetDayMeasuring(day);
                 }
             }
 
-            return result;
+            return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
         [HttpGet("{days}", Name = "GetStandingsByDay")]
         public Dictionary<DateTime, decimal> GetStandingByDay(int days = 7)
         {
-            var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
+            // var dayList = _db.AssetMeasurings.Include(x => x.Asset).Where(x => x.StandingDate.Date >= DateTime.Now.AddDays(days * -1)).GroupBy(x => x.StandingDate.Date);
+
+            var dayList = new List<DateTime>();
+            for (int i = 0; i < 7; i++)
+            {
+                DateTime date = DateTime.Today.AddDays(-i);
+                dayList.Add(date.Date);
+            }
 
             var result = new Dictionary<DateTime, decimal>();
             foreach (var day in dayList.ToList())
             {
-                result[day.Key] = GetAssetDayMeasuring(day.Key).Sum(x => x.TotalValue);
+                result[day] = GetAssetDayMeasuring(day).Sum(x => x.TotalValue);
             }
 
-            return result;
+            return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
         [HttpGet(Name = "GetLatestMeasurings")]
@@ -73,15 +88,46 @@ namespace cryptotracker.webapi.Controllers
 
         private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day)
         {
+            return GetAssetDayMeasuring(day, _db.Assets.Where(x => !x.IsHidden).ToList());
+        }
+
+        private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day, string symbol)
+        {
+            return GetAssetDayMeasuring(day, _db.Assets.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList());
+        }
+        private List<AssetMeasuringDto> GetAssetDayMeasuring(DateTime day, List<Asset> assets)
+        {
             var result = new List<AssetMeasuringDto>();
 
             var currency = "chf";
-            foreach (var asset in _db.Assets.Where(x => !x.IsHidden).ToList())
+            foreach (var asset in assets)
             {
-                var price = _db.AssetPriceHistory.Where(x => x.Date == day.Date && x.Symbol == asset.Symbol && x.Currency == currency).FirstOrDefault()?.Price ?? 0m;
-                var measurings = _db.AssetMeasurings.Where(x => x.StandingDate.Date == day.Date && x.AssetId == asset.Symbol).ToList();
+                var priceHistory = _db.AssetPriceHistory
+                        .Where(x => x.Date <= day.Date && x.Symbol == asset.Symbol && x.Currency == currency)
+                        .OrderByDescending(x => x.Date)
+                        .FirstOrDefault();
 
-                var dto = AssetMeasuringDto.SumFromModels(measurings, price);
+                var dd = priceHistory?.Date.Date;
+
+                var integrations = _db.ExchangeIntegrations.ToList();
+
+
+                var m = new List<AssetMeasuring>();
+                foreach (var integration in integrations)
+                {
+                    var datt = _db.AssetMeasurings.Where(x => x.StandingDate.Date <= day.Date && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol).OrderByDescending(x => x.StandingDate).FirstOrDefault()?.StandingDate.Date;
+
+                    if (!datt.HasValue) continue;
+
+                    var measurings = _db.AssetMeasurings
+                    .Where(x => x.StandingDate.Date == datt && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
+                    .ToList();
+
+                    m.AddRange(measurings);
+                }
+
+
+                var dto = AssetMeasuringDto.SumFromModels(asset, m, priceHistory?.Price ?? 0m);
 
                 result.Add(dto);
             }

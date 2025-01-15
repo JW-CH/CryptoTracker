@@ -53,6 +53,11 @@ export type IntegrationDetails = {
     isHidden: boolean;
     measurings: AssetMeasuringDto[] | null;
 };
+export type AddMeasurementDto = {
+    "symbol"?: string | null;
+    date?: string;
+    amount?: number;
+};
 export function getAssets(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
@@ -182,4 +187,16 @@ export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
     }))}`, {
         ...opts
     });
+}
+export function addIntegrationMeasurement(id: string, addMeasurementDto?: AddMeasurementDto, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Integration/AddIntegrationMeasurement${QS.query(QS.explode({
+        id
+    }))}`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: addMeasurementDto
+    }));
 }
