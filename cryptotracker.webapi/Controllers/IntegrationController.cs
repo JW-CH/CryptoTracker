@@ -31,15 +31,13 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet(Name = "GetIntegrationDetails")]
         public IntegrationDetails? GetIntegrationDetails([Required] Guid id)
         {
-            var currency = "CHF";
             var integration = _db.ExchangeIntegrations.Include(x => x.AssetMeasurings).ThenInclude(x => x.Asset).FirstOrDefault(x => x.Id == id);
 
             if (integration == null) return null;
-            var latest = integration.AssetMeasurings.Any() ? integration.AssetMeasurings?.Max(x => x.StandingDate.Date) : null;
 
-            var latestMeasurings = integration.AssetMeasurings?.Where(x => x.StandingDate.Date == latest && x.StandingValue != 0).ToList() ?? new();
+            var measurings = ApiHelper.GetAssetDayMeasuring(_db, DateTime.Today, integrationId: integration.Id);
 
-            return IntegrationDetails.FromIntegration(integration, latestMeasurings.Select(m => AssetMeasuringDto.FromModel(m, _db.AssetPriceHistory.FirstOrDefault(x => x.Date.Date == latest && x.Symbol == m.AssetId && x.Currency == currency)?.Price ?? 0)).ToList());
+            return IntegrationDetails.FromIntegration(integration, measurings);
         }
 
         [HttpPost(Name = "AddIntegration")]

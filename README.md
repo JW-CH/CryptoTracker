@@ -25,7 +25,8 @@ Tracking:
 WebUI:
 - [x] Anzeige Verlauf
 - [x] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
+  - [ ] Assets zusammenstellung Integrationen anzeigen
 - [ ] Werte verschleiern (Nur %)
-- [ ] Integrationen anzeigen
-  - [ ] Integration Manuell hinzufügen
-  - [ ] Messung manuell hinzufügen
+- [x] Integrationen anzeigen
+  - [x] Integration Manuell hinzufügen
+  - [x] Messung manuell hinzufügen
