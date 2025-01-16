@@ -16,19 +16,18 @@
 		assets = request.data;
 	});
 
-	async function SaveShit() {
+	async function AddMeasurement() {
 		if (!date || !selectedAsset || !amount) return;
-		console.log('datum: ' + date);
-		console.log('selektiertes asset: ' + selectedAsset);
-		console.log('wert: ' + amount);
 
-		let res = await api.addIntegrationMeasurement(page.params.slug, {
+		let request = await api.addIntegrationMeasurement(page.params.slug, {
 			symbol: selectedAsset,
 			date: date,
 			amount: amount
 		});
 
-		console.log(res.data ? 'Erfolg' : 'Nicht hinzugefügt');
+		if (request.data) {
+			window.location.href = '/integrations/' + page.params.slug;
+		}
 	}
 </script>
 
@@ -55,6 +54,6 @@
 			type="number"
 			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
 		/>
-		<Button on:click={SaveShit}>Speichern</Button>
+		<Button on:click={AddMeasurement}>Speichern</Button>
 	</Card.Content>
 </Card.Root>

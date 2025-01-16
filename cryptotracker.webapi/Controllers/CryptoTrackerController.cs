@@ -99,35 +99,44 @@ namespace cryptotracker.webapi.Controllers
         {
             var result = new List<AssetMeasuringDto>();
 
+            var allSymbols = assets.Select(x => x.Symbol).ToList();
+
             var currency = "chf";
+            var integrations = _db.ExchangeIntegrations.ToList();
+            var priceHistories = _db.AssetPriceHistory
+                .Where(x => x.Date <= day.Date && x.Currency == currency)
+                .Where(x => allSymbols.Contains(x.Symbol))
+                .OrderByDescending(x => x.Date)
+                .ToList();
+
+            var assetMeasurings = _db.AssetMeasurings
+                .Where(x => x.StandingDate.Date <= day.Date)
+                .Where(x => allSymbols.Contains(x.AssetId))
+                .OrderByDescending(x => x.StandingDate)
+                .ToList();
+
             foreach (var asset in assets)
             {
-                var priceHistory = _db.AssetPriceHistory
-                        .Where(x => x.Date <= day.Date && x.Symbol == asset.Symbol && x.Currency == currency)
-                        .OrderByDescending(x => x.Date)
-                        .FirstOrDefault();
+                var priceHistory = priceHistories
+                    .FirstOrDefault(x => x.Symbol == asset.Symbol);
 
-                var dd = priceHistory?.Date.Date;
-
-                var integrations = _db.ExchangeIntegrations.ToList();
-
-
-                var m = new List<AssetMeasuring>();
+                var allMeasurings = new List<AssetMeasuring>();
                 foreach (var integration in integrations)
                 {
-                    var datt = _db.AssetMeasurings.Where(x => x.StandingDate.Date <= day.Date && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol).OrderByDescending(x => x.StandingDate).FirstOrDefault()?.StandingDate.Date;
+                    var datt = assetMeasurings
+                        .Where(x => x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
+                        .FirstOrDefault()?.StandingDate.Date;
 
                     if (!datt.HasValue) continue;
 
-                    var measurings = _db.AssetMeasurings
-                    .Where(x => x.StandingDate.Date == datt && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
-                    .ToList();
+                    var measurings = assetMeasurings
+                        .Where(x => x.StandingDate.Date == datt && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
+                        .ToList();
 
-                    m.AddRange(measurings);
+                    allMeasurings.AddRange(measurings);
                 }
 
-
-                var dto = AssetMeasuringDto.SumFromModels(asset, m, priceHistory?.Price ?? 0m);
+                var dto = AssetMeasuringDto.SumFromModels(asset, allMeasurings, priceHistory?.Price ?? 0m);
 
                 result.Add(dto);
             }

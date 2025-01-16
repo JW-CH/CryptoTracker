@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
 	import LineChart from '../components/charts/LineChart.svelte';
 	import PieChart from '../components/charts/PieChart.svelte';
@@ -27,8 +28,6 @@
 		let otherMeasuring = sortedMeasuring.slice(7);
 		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
 		return topMeasuring.concat({ asset: { id: 'Other' }, totalValue: otherFiatValue });
-		console.log(topMeasuring);
-		return topMeasuring;
 	}
 </script>
 
@@ -40,7 +39,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#await api.getLatestStanding()}
-					<p>Loading...</p>
+					<Skeleton class="h-6 w-1/2 bg-gray-200" />
 				{:then standing}
 					<div class="text-2xl font-bold">{standing.data.toFixed(2)} CHF</div>
 				{/await}

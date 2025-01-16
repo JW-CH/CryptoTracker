@@ -42,6 +42,23 @@ namespace cryptotracker.webapi.Controllers
             return IntegrationDetails.FromIntegration(integration, latestMeasurings.Select(m => AssetMeasuringDto.FromModel(m, _db.AssetPriceHistory.FirstOrDefault(x => x.Date.Date == latest && x.Symbol == m.AssetId && x.Currency == currency)?.Price ?? 0)).ToList());
         }
 
+        [HttpPost(Name = "AddIntegration")]
+        public bool AddIntegration([FromBody] AddIntegrationDto dto)
+        {
+            var integration = new ExchangeIntegration
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                IsHidden = false,
+                IsManual = true,
+            };
+
+            _db.Add(integration);
+            _db.SaveChanges();
+
+            return true;
+        }
+
         [HttpPost(Name = "AddIntegrationMeasurement")]
         public bool AddIntegrationMeasurement([Required] Guid id, [FromBody] AddMeasurementDto dto)
         {
@@ -55,20 +72,35 @@ namespace cryptotracker.webapi.Controllers
 
             if (asset == null) throw new Exception("Asset nicht gefunden");
 
-            var measurement = new AssetMeasuring()
-            {
-                AssetId = asset.Symbol,
-                IntegrationId = integration.Id,
-                StandingDate = dto.Date.Date,
-                StandingValue = dto.Amount
-            };
+            AssetMeasuring? measuring = _db.AssetMeasurings.Where(x => x.AssetId == dto.Symbol && x.IntegrationId == integration.Id && x.StandingDate.Date == dto.Date.Date).FirstOrDefault();
 
-            _db.AssetMeasurings.Add(measurement);
+            if (measuring != null)
+            {
+                measuring.StandingDate = dto.Date;
+                measuring.StandingValue = dto.Amount;
+            }
+            else
+            {
+                measuring = new AssetMeasuring()
+                {
+                    AssetId = asset.Symbol,
+                    IntegrationId = integration.Id,
+                    StandingDate = dto.Date,
+                    StandingValue = dto.Amount
+                };
+                _db.AssetMeasurings.Add(measuring);
+            }
+
             _db.SaveChanges();
 
             return true;
         }
 
+        public struct AddIntegrationDto
+        {
+            public string Name { get; set; }
+            public string? Description { get; set; }
+        }
         public struct AddMeasurementDto
         {
             public string Symbol { get; set; }

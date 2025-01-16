@@ -53,6 +53,10 @@ export type IntegrationDetails = {
     isHidden: boolean;
     measurings: AssetMeasuringDto[] | null;
 };
+export type AddIntegrationDto = {
+    name?: string | null;
+    description?: string | null;
+};
 export type AddMeasurementDto = {
     "symbol"?: string | null;
     date?: string;
@@ -187,6 +191,16 @@ export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
     }))}`, {
         ...opts
     });
+}
+export function addIntegration(addIntegrationDto?: AddIntegrationDto, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Integration/AddIntegration", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: addIntegrationDto
+    }));
 }
 export function addIntegrationMeasurement(id: string, addMeasurementDto?: AddMeasurementDto, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{

@@ -16,8 +16,8 @@
 	<div class="container mx-auto flex h-16 items-center px-4">
 		<nav class={cn('flex items-center space-x-4 lg:space-x-6', className)}>
 			<NavItem path="" text="Home" />
-			<NavItem path="integrations" text="Integrations" />
-			<NavItem path="assets" text="Assets" />
+			<NavItem path="integrations" text="Integrationen" />
+			<NavItem path="assets" text="Vermögenswerte" />
 			<NavItem path="info" text="Info" />
 		</nav>
 	</div>
