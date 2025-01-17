@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace cryptotracker.database.Models
 {
     [PrimaryKey(nameof(Symbol), nameof(Date), nameof(Currency))]
     public class AssetPriceHistory
     {
+        [ForeignKey(nameof(Asset))]
         public required string Symbol { get; set; }
         public Asset? Asset { get; set; }
         public required DateTime Date { get; set; }

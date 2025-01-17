@@ -30,7 +30,7 @@ namespace cryptotracker.database.DTOs
 
         public static AssetMeasuringDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
-            var amt = measurings.Sum(x => x.StandingValue);
+            var amt = measurings.Sum(x => x.Amount);
 
             return new AssetMeasuringDto()
             {
@@ -47,9 +47,9 @@ namespace cryptotracker.database.DTOs
             return new AssetMeasuringDto()
             {
                 Asset = AssetDto.FromModel(measuring.Asset),
-                Amount = measuring.StandingValue,
+                Amount = measuring.Amount,
                 Price = price,
-                TotalValue = measuring.StandingValue * price,
+                TotalValue = measuring.Amount * price,
             };
         }
     }

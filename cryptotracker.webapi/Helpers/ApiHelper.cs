@@ -40,13 +40,13 @@ public static class ApiHelper
             .ToList();
 
         var assetMeasurings = db.AssetMeasurings
-            .Where(x => x.StandingDate.Date <= day.Date)
-            .Where(x => allSymbols.Contains(x.AssetId))
+            .Where(x => x.Timestamp.Date <= day.Date)
+            .Where(x => allSymbols.Contains(x.Symbol))
             .Where(x => allIntegrations.Contains(x.IntegrationId))
-            .OrderByDescending(x => x.StandingDate)
+            .OrderByDescending(x => x.Timestamp)
             .ToList();
 
-        foreach (var asset in assets.Where(x => assetMeasurings.Select(x => x.AssetId).Contains(x.Symbol)))
+        foreach (var asset in assets.Where(x => assetMeasurings.Select(x => x.Symbol).Contains(x.Symbol)))
         {
             var priceHistory = priceHistories
                 .FirstOrDefault(x => x.Symbol == asset.Symbol);
@@ -55,13 +55,13 @@ public static class ApiHelper
             foreach (var integration in integrations)
             {
                 var datt = assetMeasurings
-                    .Where(x => x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
-                    .FirstOrDefault()?.StandingDate.Date;
+                    .Where(x => x.IntegrationId == integration.Id && x.Symbol == asset.Symbol)
+                    .FirstOrDefault()?.Timestamp.Date;
 
                 if (!datt.HasValue) continue;
 
                 var measurings = assetMeasurings
-                    .Where(x => x.StandingDate.Date == datt && x.IntegrationId == integration.Id && x.AssetId == asset.Symbol)
+                    .Where(x => x.Timestamp.Date == datt && x.IntegrationId == integration.Id && x.Symbol == asset.Symbol)
                     .ToList();
 
                 allMeasurings.AddRange(measurings);

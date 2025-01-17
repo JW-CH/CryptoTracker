@@ -98,7 +98,7 @@ async Task Import()
     using var db = new DatabaseContext(optionsBuilder.Options);
 
     logger.LogTrace("Clearing today's AssetMeasurings entries");
-    var entries = db.AssetMeasurings.Where(x => x.StandingDate.Date == DateTime.Now.Date);
+    var entries = db.AssetMeasurings.Where(x => x.Timestamp.Date == DateTime.Today.Date);
     var count = entries.Count();
     db.AssetMeasurings.RemoveRange(entries);
     logger.LogTrace($"Removed {count} AssetMeasurings");
@@ -176,14 +176,14 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
 
     var measuring = new AssetMeasuring()
     {
-        AssetId = asset.Symbol,
+        Symbol = asset.Symbol,
         IntegrationId = ex.Id,
-        StandingDate = DateTime.Now,
-        StandingValue = balance
+        Timestamp = DateTime.Now,
+        Amount = balance
     };
 
     db.AssetMeasurings.Add(measuring);
-    logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.AssetId} - {measuring.StandingValue}");
+    logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
     db.SaveChanges();
 }
 

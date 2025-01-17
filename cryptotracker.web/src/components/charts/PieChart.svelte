@@ -33,7 +33,7 @@
 </script>
 
 {#if skeleton}
-	<Skeleton class="h-32 w-full bg-gray-200"></Skeleton>
+	<Skeleton class="aspect-square w-full bg-gray-200"></Skeleton>
 {:else}
 	<canvas {id}></canvas>
 {/if}

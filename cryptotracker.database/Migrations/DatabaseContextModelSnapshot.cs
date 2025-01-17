@@ -40,7 +40,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Symbol");
 
-                    b.ToTable("Assets", (string)null);
+                    b.ToTable("Assets");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetMeasuring", b =>
@@ -49,27 +49,27 @@ namespace cryptotracker.database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AssetId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<Guid>("IntegrationId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("StandingDate")
-                        .HasColumnType("datetime(6)");
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
-                    b.Property<decimal>("StandingValue")
-                        .HasPrecision(18, 10)
-                        .HasColumnType("decimal(18,10)");
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetId");
-
                     b.HasIndex("IntegrationId");
 
-                    b.ToTable("AssetMeasurings", (string)null);
+                    b.HasIndex("Symbol");
+
+                    b.ToTable("AssetMeasurings");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetPriceHistory", b =>
@@ -89,7 +89,7 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Symbol", "Date", "Currency");
 
-                    b.ToTable("AssetPriceHistory", (string)null);
+                    b.ToTable("AssetPriceHistory");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.ExchangeIntegration", b =>
@@ -113,20 +113,20 @@ namespace cryptotracker.database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ExchangeIntegrations", (string)null);
+                    b.ToTable("ExchangeIntegrations");
                 });
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetMeasuring", b =>
                 {
-                    b.HasOne("cryptotracker.database.Models.Asset", "Asset")
-                        .WithMany()
-                        .HasForeignKey("AssetId")
+                    b.HasOne("cryptotracker.database.Models.ExchangeIntegration", "Integration")
+                        .WithMany("AssetMeasurings")
+                        .HasForeignKey("IntegrationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("cryptotracker.database.Models.ExchangeIntegration", "Integration")
+                    b.HasOne("cryptotracker.database.Models.Asset", "Asset")
                         .WithMany()
-                        .HasForeignKey("IntegrationId")
+                        .HasForeignKey("Symbol")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -144,6 +144,11 @@ namespace cryptotracker.database.Migrations
                         .IsRequired();
 
                     b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("cryptotracker.database.Models.ExchangeIntegration", b =>
+                {
+                    b.Navigation("AssetMeasurings");
                 });
 #pragma warning restore 612, 618
         }

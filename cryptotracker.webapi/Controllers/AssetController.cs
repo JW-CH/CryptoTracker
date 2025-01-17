@@ -105,10 +105,8 @@ namespace cryptotracker.webapi.Controllers
 
         public struct AssetData
         {
-            [Required]
-            public Asset Asset { get; set; }
-            [Required]
-            public decimal Price { get; set; }
+            public required Asset Asset { get; set; }
+            public required decimal Price { get; set; }
         }
     }
 }

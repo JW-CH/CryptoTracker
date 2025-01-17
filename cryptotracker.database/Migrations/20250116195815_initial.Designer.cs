@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace cryptotracker.database.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250111150447_exchangehidden")]
-    partial class exchangehidden
+    [Migration("20250116195815_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -52,25 +52,25 @@ namespace cryptotracker.database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AssetId")
-                        .IsRequired()
-                        .HasColumnType("varchar(255)");
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<Guid>("IntegrationId")
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime>("StandingDate")
-                        .HasColumnType("datetime(6)");
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
-                    b.Property<decimal>("StandingValue")
-                        .HasPrecision(18, 10)
-                        .HasColumnType("decimal(18,10)");
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetId");
-
                     b.HasIndex("IntegrationId");
+
+                    b.HasIndex("Symbol");
 
                     b.ToTable("AssetMeasurings");
                 });
@@ -121,15 +121,15 @@ namespace cryptotracker.database.Migrations
 
             modelBuilder.Entity("cryptotracker.database.Models.AssetMeasuring", b =>
                 {
-                    b.HasOne("cryptotracker.database.Models.Asset", "Asset")
-                        .WithMany()
-                        .HasForeignKey("AssetId")
+                    b.HasOne("cryptotracker.database.Models.ExchangeIntegration", "Integration")
+                        .WithMany("AssetMeasurings")
+                        .HasForeignKey("IntegrationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("cryptotracker.database.Models.ExchangeIntegration", "Integration")
+                    b.HasOne("cryptotracker.database.Models.Asset", "Asset")
                         .WithMany()
-                        .HasForeignKey("IntegrationId")
+                        .HasForeignKey("Symbol")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -147,6 +147,11 @@ namespace cryptotracker.database.Migrations
                         .IsRequired();
 
                     b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("cryptotracker.database.Models.ExchangeIntegration", b =>
+                {
+                    b.Navigation("AssetMeasurings");
                 });
 #pragma warning restore 612, 618
         }
