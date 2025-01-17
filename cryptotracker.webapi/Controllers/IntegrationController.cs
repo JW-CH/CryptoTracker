@@ -43,6 +43,8 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost(Name = "AddIntegration")]
         public bool AddIntegration([FromBody] AddIntegrationDto dto)
         {
+            if (_db.ExchangeIntegrations.Any(x => x.Name.ToLower() == dto.Name.ToLower())) throw new Exception("Integration mit diesem Namen existiert bereits.");
+
             var integration = new ExchangeIntegration
             {
                 Name = dto.Name,

@@ -37,6 +37,12 @@ namespace cryptotracker.webapi.Controllers
             };
         }
 
+        [HttpGet(Name = "GetCoins")]
+        public async Task<List<Coin>> GetCoins()
+        {
+            return await _cryptoTrackerLogic.GetCoinList();
+        }
+
         [HttpGet("{symbol}", Name = "FindCoinsBySymbol")]
         public async Task<List<Coin>> FindCoinsBySymbol(string symbol)
         {
@@ -45,6 +51,12 @@ namespace cryptotracker.webapi.Controllers
             var list = coinList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
 
             return list;
+        }
+
+        [HttpGet(Name = "GetFiats")]
+        public async Task<List<Fiat>> GetFiats()
+        {
+            return await _cryptoTrackerLogic.GetFiatList();
         }
 
         [HttpGet("{symbol}", Name = "FindFiatBySymbol")]
@@ -88,6 +100,25 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
+        [HttpPost(Name = "AddAsset")]
+        public bool AddAsset([FromBody] AddAssetDto assetDto)
+        {
+            if (_db.Assets.Any(x => x.Symbol.ToLower() == assetDto.Symbol)) throw new Exception("Asset already exists");
+
+            var asset = new Asset
+            {
+                Symbol = assetDto.Symbol,
+                ExternalId = assetDto.ExternalId,
+                IsFiat = assetDto.IsFiat,
+                IsHidden = false
+            };
+
+            _db.Assets.Add(asset);
+            _db.SaveChanges();
+
+            return true;
+        }
+
         [HttpPost(Name = "ResetAsset")]
         public bool ResetAsset([FromBody] string symbol)
         {
@@ -101,6 +132,13 @@ namespace cryptotracker.webapi.Controllers
             _db.SaveChanges();
 
             return true;
+        }
+
+        public struct AddAssetDto
+        {
+            public string Symbol { get; set; }
+            public bool IsFiat { get; set; }
+            public string ExternalId { get; set; }
         }
 
         public struct AssetData

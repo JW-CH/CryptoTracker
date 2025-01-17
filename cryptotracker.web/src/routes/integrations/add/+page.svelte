@@ -22,7 +22,7 @@
 
 <Card.Root class="col-span-4">
 	<Card.Header>
-		<Card.Title>Messung hinzufügen</Card.Title>
+		<Card.Title>Integration hinzufügen</Card.Title>
 	</Card.Header>
 	<Card.Content>
 		<input

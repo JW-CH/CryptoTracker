@@ -1,5 +1,10 @@
 ﻿using Binance.Net.Clients;
 using Binance.Net.Objects.Models.Spot;
+using CardanoSharp.Wallet.Enums;
+using CardanoSharp.Wallet.Extensions.Models;
+using CardanoSharp.Wallet.Models.Addresses;
+using CardanoSharp.Wallet.Models.Keys;
+using CardanoSharp.Wallet.Utilities;
 using Coinbase.Net.Clients;
 using Coinbase.Net.Interfaces.Clients;
 using Coinbase.Net.Objects.Models;
@@ -57,7 +62,7 @@ namespace cryptotracker.core.Logic
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
                     }))
                     {
-                        var accounts = await GetCoinbaseAvailableAccounts(cryptocomClient);
+                        var accounts = await GetCryptoComAvailableAccounts(cryptocomClient);
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Quantity }).ToList();
                     }
@@ -82,6 +87,7 @@ namespace cryptotracker.core.Logic
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Total }).ToList();
                     }
                 case "bitcoin":
+                case "btc":
                     using (HttpClient client = new HttpClient())
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
@@ -106,8 +112,76 @@ namespace cryptotracker.core.Logic
                             Balance = await GetRippleAvailableBalances(client, integration.Key)
                         }};
                     }
+                case "cardano":
+                case "ada":
+                    using (HttpClient client = new HttpClient())
+                    {
+                        return new List<BalanceResult>() { new BalanceResult(){
+                            Symbol = "ADA",
+                            Balance = await GetCardanoAvailableBalances(client, integration.Key)
+                        }};
+                    }
                 default:
                     throw new NotImplementedException($"Integration {integration.Type} was not implemented!");
+            }
+        }
+
+        private async Task<decimal> GetCardanoAvailableBalances(HttpClient client, string input)
+        {
+            async Task<(decimal balance, int transactions)> GetCardanoAmountFromAddress(HttpClient client, string address)
+            {
+                var apiUrl = $"https://api.cardanoscan.io/api/v1/address/balance?address={address}";
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string json = await response.Content.ReadAsStringAsync();
+
+                    var property = JsonSerializer.Deserialize<JsonElement>(json).GetProperty(address.ToString());
+
+                    var balance = property.GetProperty("final_balance").GetDecimal();
+                    var transactions = property.GetProperty("n_tx").GetInt32();
+
+                    return (BitcoinHelper.GetBitcoinFromSats(balance), transactions); // Convert satoshis to BTC
+                }
+                else
+                {
+                    _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
+                    return (0, 0);
+                }
+            }
+
+            if (!input.StartsWith("addr", StringComparison.OrdinalIgnoreCase))
+            {
+                string xpub = input;
+
+                var byteStuff = CardanoHelper.GetByteStuff(xpub);
+
+                var extPubKey = new PublicKey(byteStuff.publicKey, byteStuff.chaincode);
+
+                var keyPath = extPubKey.Derive(CardanoSharp.Wallet.Enums.RoleType.InternalChain);
+
+                decimal totalBalance = 0;
+                int i = 0;
+                int transactions;
+                do
+                {
+                    var pubKey = keyPath.Derive(i);
+                    Address enterpriseAddress = AddressUtility.GetEnterpriseAddress(pubKey.PublicKey, NetworkType.Mainnet);
+
+                    var res = await GetCardanoAmountFromAddress(client, enterpriseAddress.ToString());
+                    totalBalance += res.balance;
+                    transactions = res.transactions;
+
+                    i++;
+                }
+                while (transactions > 0);
+
+                return totalBalance;
+            }
+            else
+            {
+                return (await GetCardanoAmountFromAddress(client, input)).balance;
             }
         }
 
@@ -222,7 +296,7 @@ namespace cryptotracker.core.Logic
                 return (await GetBitcoinAmountFromAddress(client, input)).balance;
             }
         }
-        private async Task<IEnumerable<CryptoComBalance>> GetCoinbaseAvailableAccounts(ICryptoComRestClient client)
+        private async Task<IEnumerable<CryptoComBalance>> GetCryptoComAvailableAccounts(ICryptoComRestClient client)
         {
             WebCallResult<IEnumerable<CryptoComBalances>>? result = null;
             List<CryptoComBalance> accounts = new();
@@ -253,7 +327,6 @@ namespace cryptotracker.core.Logic
 
             return accounts;
         }
-
         private async Task<IEnumerable<BinanceBalance>> GetBinanceAvailableAccounts(BinanceRestClient client)
         {
             WebCallResult<BinanceAccountInfo>? result = null;
@@ -267,46 +340,51 @@ namespace cryptotracker.core.Logic
 
             return accounts;
         }
-
         private async Task<List<BitpandaFiatWallet>> GetBitpandaFiatAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/fiatwallets");
 
-            if (!response.IsSuccessStatusCode) throw new Exception("no success");
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return new();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
-
             var list = JsonSerializer.Deserialize<BitpandaFiatWalletResult>(json);
-
             return list?.Data.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
-
         private async Task<List<Portfolio>> GetBitpandaPortfolio(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v2/portfolio/overview");
 
-            if (!response.IsSuccessStatusCode) throw new Exception("no success");
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return new();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
-
             var portfolio = JsonSerializer.Deserialize<BitpandaPortfolio>(json);
-
             return portfolio?.Data.Attributes.Portfolios ?? new();
         }
-
         private async Task<List<Wallet>> GetBitpandaAccounts(HttpClient client)
         {
             var response = await client.GetAsync("https://api.bitpanda.com/v1/asset-wallets");
 
-            if (!response.IsSuccessStatusCode) throw new Exception("no success");
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return new();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
-
             var list = JsonSerializer.Deserialize<BitpandaAssetWallet>(json);
-
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
-
         public async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
         {
             fiatIds = fiatIds.Distinct().Select(x => x.ToLower()).ToList();
@@ -318,7 +396,12 @@ namespace cryptotracker.core.Logic
             string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={string.Join(",", fiatIds)}";
             var response = await client.GetAsync(apiUrl);
 
-            if (!response.IsSuccessStatusCode) return result;
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch Fiat balances: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return result;
+            }
 
             var data = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
 
@@ -326,7 +409,11 @@ namespace cryptotracker.core.Logic
 
             var rates = JsonSerializer.Deserialize<Dictionary<string, decimal>>(ratesProperty);
 
-            if (rates == null) return result;
+            if (rates == null)
+            {
+                _logger.LogError($"Failed to fetch Fiat balances: No balances were returned");
+                return result;
+            }
 
             foreach (var item in rates)
             {
@@ -362,7 +449,6 @@ namespace cryptotracker.core.Logic
 
             return result;
         }
-
         public async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
@@ -373,11 +459,20 @@ namespace cryptotracker.core.Logic
 
             var response = await client.GetAsync(apiUrl);
 
-            if (!response.IsSuccessStatusCode) return result;
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch Coin balances: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return result;
+            }
 
             var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
 
-            if (data == null) return result;
+            if (data == null)
+            {
+                _logger.LogError($"Failed to fetch Coin balances: No balances were returned");
+                return result;
+            }
 
             foreach (var item in data)
             {
@@ -401,7 +496,6 @@ namespace cryptotracker.core.Logic
 
             return result;
         }
-
         private List<Fiat>? _fiatList;
         public async Task<List<Fiat>> GetFiatList()
         {
@@ -411,23 +505,26 @@ namespace cryptotracker.core.Logic
             var url = "https://api.frankfurter.app/currencies";
             var response = await client.GetAsync(url);
 
-            if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch fiat list");
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch Fiat list: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return new();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             var fiatDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
-            if (fiatDictionary != null)
+            if (fiatDictionary == null)
             {
-                _fiatList = fiatDictionary.Select(kvp => new Fiat { Symbol = kvp.Key, Name = kvp.Value }).ToList();
+                _logger.LogError($"Failed to fetch Fiat list");
+                return new();
             }
-            else
-            {
-                _fiatList = new List<Fiat>();
-            }
+
+            _fiatList = fiatDictionary.Select(kvp => new Fiat { Symbol = kvp.Key, Name = kvp.Value }).ToList();
 
             return _fiatList;
         }
-
         private List<Coin>? _coinList;
         public async Task<List<Coin>> GetCoinList()
         {
@@ -437,11 +534,24 @@ namespace cryptotracker.core.Logic
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             var url = "https://api.coingecko.com/api/v3/coins/list";
             var response = await client.GetAsync(url);
-            if (!response.IsSuccessStatusCode) throw new Exception("Failed to fetch coin list");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError($"Failed to fetch Coin list: {response.StatusCode}");
+                _logger.LogError(await response.Content.ReadAsStringAsync());
+                return new();
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<List<Coin>>(json);
-            _coinList = data ?? new List<Coin>();
+
+            if (data == null)
+            {
+                _logger.LogError($"Failed to fetch Coin list");
+                return new();
+            }
+
+            _coinList = data;
 
             return _coinList;
         }
@@ -452,7 +562,6 @@ namespace cryptotracker.core.Logic
         public string Symbol { get; set; }
         public string Name { get; set; }
     }
-
     public struct Coin
     {
         [JsonPropertyName("id")]
@@ -462,7 +571,6 @@ namespace cryptotracker.core.Logic
         [JsonPropertyName("name")]
         public string Name { get; set; }
     }
-
     public struct AssetMetadata
     {
         public string AssetId { get; set; }
@@ -472,7 +580,6 @@ namespace cryptotracker.core.Logic
         public string Currency { get; set; }
         public decimal Price { get; set; }
     }
-
     public struct BalanceResult
     {
         public string Symbol { get; set; }
