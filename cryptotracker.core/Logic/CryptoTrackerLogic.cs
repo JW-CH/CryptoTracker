@@ -16,6 +16,11 @@ using CryptoExchange.Net.Objects;
 using cryptotracker.core.Helpers;
 using cryptotracker.core.Models;
 using ImmichFrame.Core.Helpers;
+using Kucoin.Net;
+using Kucoin.Net.Clients;
+using Kucoin.Net.Interfaces.Clients;
+using Kucoin.Net.Objects;
+using Kucoin.Net.Objects.Models.Spot;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using System.Text.Json;
@@ -44,15 +49,14 @@ namespace cryptotracker.core.Logic
 
                         bitpandaClient.UseApiKey(integration.Secret);
 
-                        var full = await GetBitpandaPortfolio(bitpandaClient);
+                        //var full = await GetBitpandaPortfolio(bitpandaClient);
+                        // result.AddRange(full.Select(x => new BalanceResult { Symbol = x.Attributes.AssetSymbol, Balance = Convert.ToDecimal(x.Attributes.AssetBalance) }).ToList());
 
-                        result.AddRange(full.Select(x => new BalanceResult { Symbol = x.Attributes.AssetSymbol, Balance = Convert.ToDecimal(x.Attributes.AssetBalance) }).ToList());
+                        var accounts = await GetBitpandaAccounts(bitpandaClient);
+                        var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
 
-                        // var accounts = await GetBitpandaAccounts(bitpandaClient);
-                        // var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
-
-                        // result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
-                        // result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
 
                         return result;
                     }
@@ -65,6 +69,16 @@ namespace cryptotracker.core.Logic
                         var accounts = await GetCryptoComAvailableAccounts(cryptocomClient);
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Quantity }).ToList();
+                    }
+                case "kucoin":
+                    using (var kucoinClient = new KucoinRestClient(xy =>
+                    {
+                        xy.ApiCredentials = new KucoinApiCredentials(integration.Key, integration.Secret, integration.Passphrase);
+                    }))
+                    {
+                        var accounts = await GetKucoinAvailableAccounts(kucoinClient);
+
+                        return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Total }).ToList();
                     }
                 case "coinbase":
                     using (var coinbaseClient = new CoinbaseRestClient(xy =>
@@ -296,6 +310,23 @@ namespace cryptotracker.core.Logic
                 return (await GetBitcoinAmountFromAddress(client, input)).balance;
             }
         }
+        private async Task<List<KucoinAccount>> GetKucoinAvailableAccounts(IKucoinRestClient client)
+        {
+            WebCallResult<IEnumerable<KucoinAccount>>? result = null;
+            List<KucoinAccount> accounts = new();
+
+            result = await client.SpotApi.Account.GetAccountsAsync();
+
+            if (!result.Success)
+            {
+                _logger.LogError($"Could not get balances for Kucoin integration");
+                return accounts;
+            }
+
+            accounts.AddRange(result.Data.ToList() ?? new());
+
+            return accounts;
+        }
         private async Task<IEnumerable<CryptoComBalance>> GetCryptoComAvailableAccounts(ICryptoComRestClient client)
         {
             WebCallResult<IEnumerable<CryptoComBalances>>? result = null;
@@ -303,7 +334,11 @@ namespace cryptotracker.core.Logic
 
             result = await client.ExchangeApi.Account.GetBalancesAsync();
 
-            if (!result.Success) return accounts;
+            if (!result.Success)
+            {
+                _logger.LogError($"Could not get balances for CryptoCom integration");
+                return accounts;
+            }
 
             accounts.AddRange(result.Data.FirstOrDefault()?.PositionBalances.ToList() ?? new());
 
@@ -318,7 +353,11 @@ namespace cryptotracker.core.Logic
             {
                 result = await client.AdvancedTradeApi.Account.GetAccountsAsync(250, cursor);
 
-                if (!result.Success) break;
+                if (!result.Success)
+                {
+                    _logger.LogError($"Could not get balances for Coinbase integration");
+                    return new List<CoinbaseAccount>();
+                }
 
                 accounts.AddRange(result.Data.Accounts.Where(x => x.AvailableBalance.Value > 0).ToList());
                 cursor = result.Data.Cursor;
@@ -334,7 +373,11 @@ namespace cryptotracker.core.Logic
 
             result = await client.SpotApi.Account.GetAccountInfoAsync();
 
-            if (!result.Success) return accounts;
+            if (!result.Success)
+            {
+                _logger.LogError($"Could not get balances for Binance integration");
+                return accounts;
+            }
 
             accounts.AddRange(result.Data.Balances.Where(x => x.Total > 0).ToList() ?? new());
 
@@ -346,7 +389,7 @@ namespace cryptotracker.core.Logic
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
+                _logger.LogError($"Failed to fetch fiat balances for Bitpanda: {response.StatusCode}");
                 _logger.LogError(await response.Content.ReadAsStringAsync());
                 return new();
             }
@@ -376,7 +419,7 @@ namespace cryptotracker.core.Logic
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
+                _logger.LogError($"Failed to fetch account balances for Bitpanda: {response.StatusCode}");
                 _logger.LogError(await response.Content.ReadAsStringAsync());
                 return new();
             }
