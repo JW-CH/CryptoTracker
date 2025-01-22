@@ -79,7 +79,9 @@ export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: AssetData;
-    }>(`/api/Asset/GetAsset/${encodeURIComponent($symbol)}`, {
+    }>(`/api/Asset/GetAsset${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, {
         ...opts
     });
 }
@@ -95,7 +97,9 @@ export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) 
     return oazapfts.fetchJson<{
         status: 200;
         data: Coin[];
-    }>(`/api/Asset/FindCoinsBySymbol/${encodeURIComponent($symbol)}`, {
+    }>(`/api/Asset/FindCoinsBySymbol${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, {
         ...opts
     });
 }
@@ -111,15 +115,19 @@ export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: Fiat[];
-    }>(`/api/Asset/FindFiatBySymbol/${encodeURIComponent($symbol)}`, {
+    }>(`/api/Asset/FindFiatBySymbol${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, {
         ...opts
     });
 }
-export function setAssetForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
+export function setExternalIdForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: boolean;
-    }>(`/api/Asset/SetAssetForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+        data: AssetData;
+    }>(`/api/Asset/SetExternalIdForSymbol${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -129,7 +137,9 @@ export function setVisibilityForSymbol($symbol: string, body?: boolean, opts?: O
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Asset/SetVisibilityForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+    }>(`/api/Asset/SetVisibilityForSymbol${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -139,7 +149,9 @@ export function setFiatForSymbol($symbol: string, body?: boolean, opts?: Oazapft
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Asset/SetFiatForSymbol/${encodeURIComponent($symbol)}`, oazapfts.json({
+    }>(`/api/Asset/SetFiatForSymbol${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -173,7 +185,8 @@ export function getMeasuringsByDay(days: number, { $symbol }: {
         data: {
             [key: string]: AssetMeasuringDto[];
         };
-    }>(`/api/CryptoTracker/GetMeasuringsByDay/${encodeURIComponent(days)}${QS.query(QS.explode({
+    }>(`/api/CryptoTracker/GetMeasuringsByDay${QS.query(QS.explode({
+        days,
         "symbol": $symbol
     }))}`, {
         ...opts
@@ -185,7 +198,9 @@ export function getStandingsByDay(days: number, opts?: Oazapfts.RequestOpts) {
         data: {
             [key: string]: number;
         };
-    }>(`/api/CryptoTracker/GetStandingByDay/${encodeURIComponent(days)}`, {
+    }>(`/api/CryptoTracker/GetStandingByDay${QS.query(QS.explode({
+        days
+    }))}`, {
         ...opts
     });
 }

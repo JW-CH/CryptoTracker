@@ -12,12 +12,14 @@ namespace cryptotracker.webapi.Controllers
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
         private readonly CryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly CryptoTrackerAssetLogic _cryptoTrackerAssetLogic;
 
         public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic)
         {
             _logger = logger;
             _db = db;
             _cryptoTrackerLogic = cryptoTrackerLogic;
+            _cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic);
         }
 
         [HttpGet(Name = "GetAssets")]
@@ -26,8 +28,8 @@ namespace cryptotracker.webapi.Controllers
             return _db.Assets.ToList();
         }
 
-        [HttpGet("{symbol}", Name = "GetAsset")]
-        public AssetData GetAsset(string symbol)
+        [HttpGet(Name = "GetAsset")]
+        public AssetData GetAsset([Required] string symbol)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
             return new AssetData
@@ -43,8 +45,8 @@ namespace cryptotracker.webapi.Controllers
             return await _cryptoTrackerLogic.GetCoinList();
         }
 
-        [HttpGet("{symbol}", Name = "FindCoinsBySymbol")]
-        public async Task<List<Coin>> FindCoinsBySymbol(string symbol)
+        [HttpGet(Name = "FindCoinsBySymbol")]
+        public async Task<List<Coin>> FindCoinsBySymbol([Required] string symbol)
         {
             var coinList = await _cryptoTrackerLogic.GetCoinList();
 
@@ -59,26 +61,59 @@ namespace cryptotracker.webapi.Controllers
             return await _cryptoTrackerLogic.GetFiatList();
         }
 
-        [HttpGet("{symbol}", Name = "FindFiatBySymbol")]
-        public async Task<List<Fiat>> FindFiatBySymbol(string symbol)
+        [HttpGet(Name = "FindFiatBySymbol")]
+        public async Task<List<Fiat>> FindFiatBySymbol([Required] string symbol)
         {
             var fiatList = await _cryptoTrackerLogic.GetFiatList();
 
             return fiatList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
         }
 
-        [HttpPost("{symbol}", Name = "SetAssetForSymbol")]
-        public bool SetAssetForSymbol(string symbol, [FromBody] string externalId)
+        [HttpPost(Name = "SetExternalIdForSymbol")]
+        public async Task<AssetData> SetExternalIdForSymbol([Required] string symbol, [FromBody] string externalId)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+
+            using var tx = _db.Database.BeginTransaction();
+
             asset.ExternalId = externalId;
             _db.SaveChanges();
 
-            return true;
+            var currency = "CHF";
+
+            AssetMetadata metadata;
+            if (asset.IsFiat)
+            {
+                var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [asset.ExternalId]);
+                metadata = fiatDataList.FirstOrDefault();
+            }
+            else
+            {
+                var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [asset.ExternalId]);
+                metadata = coinDataList.FirstOrDefault();
+            }
+
+            if (!string.IsNullOrEmpty(metadata.AssetId))
+            {
+                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata, currency);
+            }
+            else
+            {
+                _logger.LogError($"Metadata not found for {asset.Symbol}");
+            }
+
+            _db.SaveChanges();
+            tx.Commit();
+
+            return new AssetData
+            {
+                Asset = asset,
+                Price = _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault()?.Price ?? 0
+            }; ;
         }
 
-        [HttpPost("{symbol}", Name = "SetVisibilityForSymbol")]
-        public bool SetVisibilityForSymbol(string symbol, [FromBody] bool isHidden)
+        [HttpPost(Name = "SetVisibilityForSymbol")]
+        public bool SetVisibilityForSymbol([Required] string symbol, [FromBody] bool isHidden)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
             asset.IsHidden = isHidden;
@@ -87,8 +122,8 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpPost("{symbol}", Name = "SetFiatForSymbol")]
-        public bool SetFiatForSymbol(string symbol, [FromBody] bool isFiat)
+        [HttpPost(Name = "SetFiatForSymbol")]
+        public bool SetFiatForSymbol([Required] string symbol, [FromBody] bool isFiat)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
@@ -101,9 +136,11 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpPost(Name = "AddAsset")]
-        public bool AddAsset([FromBody] AddAssetDto assetDto)
+        public async Task<bool> AddAsset([FromBody] AddAssetDto assetDto)
         {
             if (_db.Assets.Any(x => x.Symbol.ToLower() == assetDto.Symbol)) throw new Exception("Asset already exists");
+
+            using var tx = _db.Database.BeginTransaction();
 
             var asset = new Asset
             {
@@ -115,6 +152,32 @@ namespace cryptotracker.webapi.Controllers
 
             _db.Assets.Add(asset);
             _db.SaveChanges();
+
+            var currency = "CHF";
+
+            AssetMetadata? metadata = null; ;
+            if (asset.IsFiat)
+            {
+                var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [asset.ExternalId]);
+                metadata = fiatDataList.FirstOrDefault();
+            }
+            else
+            {
+                var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [asset.ExternalId]);
+                metadata = coinDataList.FirstOrDefault();
+            }
+
+            if (metadata.HasValue)
+            {
+                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata.Value, currency);
+            }
+            else
+            {
+                throw new Exception($"Metadata not found for {asset.Symbol}");
+            }
+
+            _db.SaveChanges();
+            tx.Commit();
 
             return true;
         }

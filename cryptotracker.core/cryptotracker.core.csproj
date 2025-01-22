@@ -13,4 +13,8 @@
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\cryptotracker.database\cryptotracker.database.csproj" />
+  </ItemGroup>
+
 </Project>

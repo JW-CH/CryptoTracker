@@ -17,35 +17,45 @@
 		);
 	}
 
-	function SetVisibility() {
-		api.setVisibilityForSymbol(assetData?.asset.symbol ?? '', !hidden).then(() => {
+	async function SetVisibility() {
+		let request = await api.setVisibilityForSymbol(assetData?.asset.symbol ?? '', !hidden);
+
+		if (request.data) {
 			hidden = !hidden;
-		});
+		}
 	}
 
-	function SetIsFiat() {
+	async function SetIsFiat() {
 		if (!assetData?.asset.symbol) return;
 
-		api.setFiatForSymbol(assetData.asset.symbol, !isFiat).then(() => {
+		let request = await api.setFiatForSymbol(assetData.asset.symbol, !isFiat);
+
+		if (request.data) {
 			isFiat = !isFiat;
-		});
+		}
 	}
 
-	function ResetAsset() {
+	async function ResetAsset() {
 		if (!assetData?.asset.symbol) return;
 
-		api.resetAsset(assetData.asset.symbol).then(async () => {
+		let request = await api.resetAsset(assetData.asset.symbol);
+
+		if (request.data) {
 			assetData = null;
 			assetData = await LoadAssetData();
-		});
+		}
 	}
 
-	function setAssetData() {
+	async function setAssetData() {
 		if (!assetData?.asset.symbol) return;
 
 		if (!selectedCoin) return;
 
-		api.setAssetForSymbol(assetData.asset.symbol, selectedCoin);
+		let request = await api.setExternalIdForSymbol(assetData.asset.symbol, selectedCoin);
+
+		if (request.data) {
+			assetData = request.data;
+		}
 	}
 
 	async function LoadAssetData() {

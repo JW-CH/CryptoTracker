@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Models;
 using cryptotracker.database.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -19,8 +20,8 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-        [HttpGet("{days}", Name = "GetMeasuringsByDay")]
-        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay(int days = 7, string? symbol = null)
+        [HttpGet(Name = "GetMeasuringsByDay")]
+        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateTime>();
             for (int i = 0; i < 7; i++)
@@ -45,8 +46,8 @@ namespace cryptotracker.webapi.Controllers
             return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
-        [HttpGet("{days}", Name = "GetStandingsByDay")]
-        public Dictionary<DateTime, decimal> GetStandingByDay(int days = 7)
+        [HttpGet(Name = "GetStandingsByDay")]
+        public Dictionary<DateTime, decimal> GetStandingByDay([Required] int days = 7)
         {
             var dayList = new List<DateTime>();
             for (int i = 0; i < 7; i++)

@@ -139,7 +139,6 @@ namespace cryptotracker.core.Logic
                     throw new NotImplementedException($"Integration {integration.Type} was not implemented!");
             }
         }
-
         private async Task<decimal> GetCardanoAvailableBalances(HttpClient client, string input)
         {
             async Task<(decimal balance, int transactions)> GetCardanoAmountFromAddress(HttpClient client, string address)
@@ -198,7 +197,6 @@ namespace cryptotracker.core.Logic
                 return (await GetCardanoAmountFromAddress(client, input)).balance;
             }
         }
-
         private async Task<decimal> GetRippleAvailableBalances(HttpClient client, string address)
         {
             var apiUrl = $"https://api.xrpscan.com/api/v1/account/{address}";
@@ -434,6 +432,8 @@ namespace cryptotracker.core.Logic
 
             var result = new List<AssetMetadata>();
 
+            if (fiatIds.Count == 0) return result;
+
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={string.Join(",", fiatIds)}";
@@ -458,10 +458,12 @@ namespace cryptotracker.core.Logic
                 return result;
             }
 
+            var fiatList = await GetFiatList();
+
             foreach (var item in rates)
             {
                 var id = item.Key;
-                var name = "";
+                var name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == item.Key.ToLower()).Name ?? item.Key;
                 var image = "";
                 var symbol = item.Key;
                 var price = item.Value;

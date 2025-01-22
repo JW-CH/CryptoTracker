@@ -56,7 +56,7 @@
 		});
 
 		if (request.data) {
-			window.location.href = '/assets/';
+			window.location.href = '/assets/' + symbol;
 		}
 	}
 </script>
