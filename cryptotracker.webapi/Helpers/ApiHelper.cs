@@ -1,5 +1,6 @@
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
+using Microsoft.EntityFrameworkCore;
 
 public static class ApiHelper
 {
@@ -40,6 +41,7 @@ public static class ApiHelper
             .ToList();
 
         var assetMeasurings = db.AssetMeasurings
+            .Include(x => x.Integration)
             .Where(x => x.Timestamp.Date <= day.Date)
             .Where(x => allSymbols.Contains(x.Symbol))
             .Where(x => allIntegrations.Contains(x.IntegrationId))

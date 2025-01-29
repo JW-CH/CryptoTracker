@@ -3,7 +3,7 @@
 	import * as api from '$lib/cryptotrackerApi';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 
-	export let integrations: api.IntegrationDetails[] = [];
+	export let integrations: api.IntegrationDto[] = [];
 	export let hidden: boolean = false;
 	export let skeleton: boolean = false;
 </script>

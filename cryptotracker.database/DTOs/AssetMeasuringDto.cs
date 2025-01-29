@@ -2,40 +2,30 @@
 
 namespace cryptotracker.database.DTOs
 {
-    public class AssetDto
-    {
-        public required string Id { get; set; }
-        public string? Name { get; set; }
-        public string? Image { get; set; }
-        public bool IsHidden { get; set; }
-
-        public static AssetDto FromModel(Asset asset)
-        {
-            return new AssetDto()
-            {
-                Id = asset.Symbol,
-                Name = asset.Name,
-                Image = asset.Image,
-                IsHidden = asset.IsHidden
-            };
-        }
-    }
-
     public class AssetMeasuringDto
     {
         public required AssetDto Asset { get; set; }
-        public decimal Price { get; set; }
-        public decimal Amount { get; set; }
-        public decimal TotalValue { get; set; }
+        public required decimal Price { get; set; }
+        public required decimal TotalAmount { get; set; }
+        public required decimal TotalValue { get; set; }
+        public required List<IntegrationShit> IntegrationValues { get; set; }
 
         public static AssetMeasuringDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
+            var groupedMeasurings = measurings.GroupBy(x => x.Integration);
+            var integrationValues = groupedMeasurings.Select(x => new IntegrationShit
+            {
+                Integration = IntegrationDto.FromModel(x.Key),
+                Amount = x.Sum(y => y.Amount)
+            }).ToList();
+
             var amt = measurings.Sum(x => x.Amount);
 
             return new AssetMeasuringDto()
             {
                 Asset = AssetDto.FromModel(asset),
-                Amount = amt,
+                IntegrationValues = integrationValues,
+                TotalAmount = amt,
                 Price = price,
                 TotalValue = amt * price,
             };
@@ -44,13 +34,29 @@ namespace cryptotracker.database.DTOs
         {
             if (measuring.Asset == null) throw new Exception("Asset is null");
 
+            List<IntegrationShit> integrationValues = new()
+            {
+                new IntegrationShit()
+                {
+                    Integration = IntegrationDto.FromModel(measuring.Integration),
+                    Amount = measuring.Amount
+                }
+            };
+
             return new AssetMeasuringDto()
             {
                 Asset = AssetDto.FromModel(measuring.Asset),
-                Amount = measuring.Amount,
+                IntegrationValues = integrationValues,
+                TotalAmount = measuring.Amount,
                 Price = price,
                 TotalValue = measuring.Amount * price,
             };
         }
+    }
+
+    public struct IntegrationShit()
+    {
+        public required IntegrationDto Integration { get; set; }
+        public required decimal Amount { get; set; }
     }
 }

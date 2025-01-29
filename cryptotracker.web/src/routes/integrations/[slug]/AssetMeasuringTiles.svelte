@@ -37,7 +37,7 @@
 							{measuring.asset.name ? measuring.asset.name : measuring.asset.id}
 						</p>
 						<div class="col-span-2">
-							<p>{measuring.amount?.toFixed(2)} {measuring.asset.id}</p>
+							<p>{measuring.totalAmount?.toFixed(2)} {measuring.asset.id}</p>
 							<!-- <p>{measuring.totalValue?.toFixed(2)} CHF</p> -->
 						</div>
 					</div>

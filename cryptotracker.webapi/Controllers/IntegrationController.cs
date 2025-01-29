@@ -23,9 +23,9 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet(Name = "GetIntegrations")]
-        public List<IntegrationDetails> GetIntegrations()
+        public List<IntegrationDto> GetIntegrations()
         {
-            return _db.ExchangeIntegrations.Select(IntegrationDetails.FromIntegration).ToList();
+            return _db.ExchangeIntegrations.Select(IntegrationDto.FromModel).ToList();
         }
 
         [HttpGet(Name = "GetIntegrationDetails")]
@@ -110,11 +110,7 @@ namespace cryptotracker.webapi.Controllers
 
         public struct IntegrationDetails
         {
-            public required Guid Id { get; set; }
-            public required string Name { get; set; }
-            public string? Description { get; set; }
-            public required bool IsManual { get; set; }
-            public required bool IsHidden { get; set; }
+            public required IntegrationDto Integration { get; set; }
             public required List<AssetMeasuringDto> Measurings { get; set; }
 
             public static IntegrationDetails FromIntegration(ExchangeIntegration integration) => FromIntegration(integration, new());
@@ -123,11 +119,7 @@ namespace cryptotracker.webapi.Controllers
             {
                 return new IntegrationDetails()
                 {
-                    Id = integration.Id,
-                    Name = integration.Name,
-                    Description = integration.Description,
-                    IsManual = integration.IsManual,
-                    IsHidden = integration.IsHidden,
+                    Integration = IntegrationDto.FromModel(integration),
                     Measurings = measurings ?? new()
                 };
             }

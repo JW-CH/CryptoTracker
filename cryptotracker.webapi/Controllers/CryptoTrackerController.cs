@@ -20,11 +20,18 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
+
+        [HttpGet(Name = "GetIntegrationMeasuringByDay")]
+        public object GetIntegrationMeasuringByDay(string? symbol = null)
+        {
+            return null;
+        }
+
         [HttpGet(Name = "GetMeasuringsByDay")]
         public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateTime>();
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < days; i++)
             {
                 DateTime date = DateTime.Today.AddDays(-i);
                 dayList.Add(date.Date);

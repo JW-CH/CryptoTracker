@@ -433,10 +433,31 @@ namespace cryptotracker.core.Logic
             var result = new List<AssetMetadata>();
 
             if (fiatIds.Count == 0) return result;
+            var fiatSymbols = string.Join(",", fiatIds);
+
+            var fiatList = await GetFiatList();
+
+            if (fiatIds.Contains(currency.ToLower()))
+            {
+                result.Add(new AssetMetadata()
+                {
+                    AssetId = currency,
+                    Symbol = currency,
+                    Image = "",
+                    Currency = currency,
+                    Name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == currency.ToLower()).Name ?? currency,
+                    Price = 1
+                });
+            }
+
+            if (fiatSymbols == currency.ToLower())
+            {
+                return result;
+            }
 
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-            string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={string.Join(",", fiatIds)}";
+            string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={fiatSymbols}";
             var response = await client.GetAsync(apiUrl);
 
             if (!response.IsSuccessStatusCode)
@@ -458,8 +479,6 @@ namespace cryptotracker.core.Logic
                 return result;
             }
 
-            var fiatList = await GetFiatList();
-
             foreach (var item in rates)
             {
                 var id = item.Key;
@@ -476,19 +495,6 @@ namespace cryptotracker.core.Logic
                     Currency = currency,
                     Name = name,
                     Price = price
-                });
-            }
-
-            if (fiatIds.Contains(currency.ToLower()))
-            {
-                result.Add(new AssetMetadata()
-                {
-                    AssetId = currency,
-                    Symbol = currency,
-                    Image = "",
-                    Currency = currency,
-                    Name = "",
-                    Price = 1
                 });
             }
 

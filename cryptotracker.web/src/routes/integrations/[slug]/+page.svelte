@@ -21,11 +21,11 @@
 		<AssetMeasuringTiles skeleton={true} />
 	</div>
 {:else}
-	{#if details.isManual}
-		<Button href="/integrations/add/{details.id}">Manuelle Messung hinzufügen</Button>
+	{#if details.integration.isManual}
+		<Button href="/integrations/add/{details.integration.id}">Manuelle Messung hinzufügen</Button>
 		<Button>Reset</Button>
 	{/if}
-	<p>{details.name}</p>
+	<p>{details.integration.name}</p>
 	<p class="text-center">Inkludiert:</p>
 	<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
 		<AssetMeasuringTiles measurings={details.measurings!} hidden={false} />

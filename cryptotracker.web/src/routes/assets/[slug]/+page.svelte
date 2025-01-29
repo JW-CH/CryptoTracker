@@ -141,7 +141,7 @@
 									{
 										name: assetData.asset.symbol ?? '',
 										data: Object.values(measurings.data).map(
-											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.amount ?? 0
+											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.totalAmount ?? 0
 										)
 									}
 								]}
@@ -167,6 +167,33 @@
 							/>
 						</Card.Content>
 					</Card.Root>
+				{:catch error}
+					<p>{error.message}</p>
+				{/await}
+			</div>
+			<p>Integrationen:</p>
+			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				{#await api.getMeasuringsByDay(7, { $symbol: assetData.asset.symbol ?? '' })}
+					<p>loading</p>
+				{:then measurings}
+					{#if measurings.data && Object.keys(measurings.data).length > 0}
+						{#each Object.values(measurings.data)
+							.at(-1)
+							?.at(0)?.integrationValues! as integrationItem}
+							<a href="/integrations/{integrationItem.integration.id}">
+								<Card.Root>
+									<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+										<Card.Title class="text-center text-sm font-medium"
+											>{integrationItem.integration.name}</Card.Title
+										>
+									</Card.Header>
+									<Card.Content>
+										{integrationItem.integration.name}: {integrationItem.amount?.toFixed(2)}
+									</Card.Content>
+								</Card.Root>
+							</a>
+						{/each}
+					{/if}
 				{:catch error}
 					<p>{error.message}</p>
 				{/await}

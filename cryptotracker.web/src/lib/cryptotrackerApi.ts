@@ -44,18 +44,26 @@ export type AssetDto = {
     image?: string | null;
     isHidden?: boolean;
 };
-export type AssetMeasuringDto = {
-    asset: AssetDto;
-    price?: number;
-    amount?: number;
-    totalValue?: number;
-};
-export type IntegrationDetails = {
+export type IntegrationDto = {
     id: string;
     name: string | null;
     description?: string | null;
-    isManual: boolean;
-    isHidden: boolean;
+    isHidden?: boolean;
+    isManual?: boolean;
+};
+export type IntegrationShit = {
+    integration: IntegrationDto;
+    amount: number;
+};
+export type AssetMeasuringDto = {
+    asset: AssetDto;
+    price: number;
+    totalAmount: number;
+    totalValue: number;
+    integrationValues: IntegrationShit[] | null;
+};
+export type IntegrationDetails = {
+    integration: IntegrationDto;
     measurings: AssetMeasuringDto[] | null;
 };
 export type AddIntegrationDto = {
@@ -177,6 +185,15 @@ export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
         body
     }));
 }
+export function getIntegrationMeasuringByDay({ $symbol }: {
+    $symbol?: string;
+} = {}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/api/CryptoTracker/GetIntegrationMeasuringByDay${QS.query(QS.explode({
+        "symbol": $symbol
+    }))}`, {
+        ...opts
+    });
+}
 export function getMeasuringsByDay(days: number, { $symbol }: {
     $symbol?: string;
 } = {}, opts?: Oazapfts.RequestOpts) {
@@ -223,7 +240,7 @@ export function getLatestStanding(opts?: Oazapfts.RequestOpts) {
 export function getIntegrations(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: IntegrationDetails[];
+        data: IntegrationDto[];
     }>("/api/Integration/GetIntegrations", {
         ...opts
     });
