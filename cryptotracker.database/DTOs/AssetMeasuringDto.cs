@@ -2,6 +2,27 @@
 
 namespace cryptotracker.database.DTOs
 {
+    public class AssetMeasurementDto
+    {
+        public Guid Id { get; set; }
+        public required string Symbol { get; set; }
+        public required Guid IntegrationId { get; set; }
+        public DateTime Timestamp { get; set; }
+        public decimal Amount { get; set; }
+
+        public static AssetMeasurementDto FromModel(AssetMeasuring measuring)
+        {
+            return new AssetMeasurementDto()
+            {
+                Id = measuring.Id,
+                Symbol = measuring.Symbol,
+                IntegrationId = measuring.IntegrationId,
+                Timestamp = measuring.Timestamp,
+                Amount = measuring.Amount
+            };
+        }
+    }
+
     public class AssetMeasuringDto
     {
         public required AssetDto Asset { get; set; }

@@ -22,8 +22,8 @@
 	</div>
 {:else}
 	{#if details.integration.isManual}
-		<Button href="/integrations/add/{details.integration.id}">Manuelle Messung hinzufügen</Button>
-		<Button>Reset</Button>
+		<Button href="/integrations/{details.integration.id}/add">Manuelle Messung hinzufügen</Button>
+		<Button href="/integrations/{details.integration.id}/measurings">Messungen verwalten</Button>
 	{/if}
 	<p>{details.integration.name}</p>
 	<p class="text-center">Inkludiert:</p>

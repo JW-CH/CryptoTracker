@@ -75,6 +75,13 @@ export type AddMeasurementDto = {
     date?: string;
     amount?: number;
 };
+export type AssetMeasurementDto = {
+    id?: string;
+    "symbol": string | null;
+    integrationId: string;
+    timestamp?: string;
+    amount?: number;
+};
 export function getAssets(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
@@ -275,5 +282,25 @@ export function addIntegrationMeasurement(id: string, addMeasurementDto?: AddMea
         ...opts,
         method: "POST",
         body: addMeasurementDto
+    }));
+}
+export function getMeasuringsByIntegration(id: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: AssetMeasurementDto[];
+    }>(`/api/Measuring/GetMeasuringsByIntegration${QS.query(QS.explode({
+        id
+    }))}`, {
+        ...opts
+    });
+}
+export function deleteMeasuringById(body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Measuring/DeleteMeasuringById", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
     }));
 }

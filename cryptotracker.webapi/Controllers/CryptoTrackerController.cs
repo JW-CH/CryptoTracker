@@ -20,13 +20,6 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-
-        [HttpGet(Name = "GetIntegrationMeasuringByDay")]
-        public object GetIntegrationMeasuringByDay(string? symbol = null)
-        {
-            return null;
-        }
-
         [HttpGet(Name = "GetMeasuringsByDay")]
         public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay([Required] int days = 7, string? symbol = null)
         {
@@ -75,7 +68,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet(Name = "GetLatestMeasurings")]
         public List<AssetMeasuringDto> GetLatestMeasurings()
         {
-            var day = _db.AssetMeasurings.Max(x => x.Timestamp.Date);
+            var day = DateTime.Today;
 
             return ApiHelper.GetAssetDayMeasuring(_db, day);
         }
@@ -83,7 +76,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet(Name = "GetLatestStanding")]
         public decimal GetLatestStanding()
         {
-            var day = _db.AssetMeasurings.Max(x => x.Timestamp.Date);
+            var day = DateTime.Today;
 
             return ApiHelper.GetAssetDayMeasuring(_db, day).Sum(x => x.TotalValue);
         }

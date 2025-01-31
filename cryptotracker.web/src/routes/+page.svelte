@@ -27,7 +27,13 @@
 		let topMeasuring = sortedMeasuring.slice(0, 7);
 		let otherMeasuring = sortedMeasuring.slice(7);
 		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
-		return topMeasuring.concat({ asset: { id: 'Other' }, totalValue: otherFiatValue });
+		return topMeasuring.concat({
+			asset: { id: 'Other' },
+			totalValue: otherFiatValue,
+			price: 0,
+			totalAmount: 0,
+			integrationValues: []
+		});
 	}
 </script>
 

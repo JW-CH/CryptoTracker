@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { generateGUID } from '$lib/helpers';
+	import { goto } from '$app/navigation';
 	import { Chart } from 'chart.js/auto';
 	import { onMount } from 'svelte';
 
@@ -16,7 +17,17 @@
 		let ctx: any = document.getElementById(id);
 		let myChart = new Chart(ctx, {
 			type: 'pie',
-			data: data
+			data: data,
+			options: {
+				onClick: (event, elements) => {
+					if (elements.length > 0) {
+						let index = elements[0].index;
+						const label = labels[index];
+						if (label == 'Other') return;
+						goto(`/assets/${label}`);
+					}
+				}
+			}
 		});
 	});
 

@@ -31,3 +31,4 @@ WebUI:
   - [x] Integration Manuell hinzufügen
   - [x] Messung manuell hinzufügen
 - [ ] Fehlermeldungen im UI anzeigen (Toast)
+- [ ] Manuelle Messungen löschen
