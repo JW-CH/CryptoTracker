@@ -5,8 +5,19 @@
 	import { onMount } from 'svelte';
 	import LineChart from '../../../components/charts/LineChart.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 
-	let assetData: api.AssetData | null = null;
+	interface DailyMeasurings {
+		date: string;
+		measurings: api.MessungDto[];
+	}
+
+	let assetInitialized: boolean = false;
+	let assetData: api.AssetData;
+
+	let measuringsInitialized: boolean = false;
+	let dailyMeasurings: DailyMeasurings[] = [];
+
 	let selectedCoin: string = '';
 	let isFiat: boolean = false;
 	let hidden: boolean = false;
@@ -41,7 +52,6 @@
 		let request = await api.resetAsset(assetData.asset.symbol);
 
 		if (request.data) {
-			assetData = null;
 			assetData = await LoadAssetData();
 		}
 	}
@@ -67,171 +77,177 @@
 		return data;
 	}
 
+	async function LoadMessungen() {
+		let request = await api.getMeasuringsByDays(7, { $symbol: assetData.asset.symbol ?? '' });
+
+		var dates = StringKeysToDates(Object.keys(request.data));
+		var values = Object.values(request.data);
+
+		for (let key in Object.keys(request.data)) {
+			let date = dates[key];
+			let val = values[key];
+			dailyMeasurings.push({ date: date, measurings: val });
+		}
+		measuringsInitialized = true;
+	}
+
 	onMount(async () => {
 		assetData = await LoadAssetData();
+		assetInitialized = true;
+
+		await LoadMessungen();
 	});
 </script>
 
-{#if assetData}
-	<Button on:click={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
-	<Button on:click={ResetAsset}>Reset</Button>
-	{#if assetData.asset.name}
-		<div class="space-y-4">
-			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-center text-sm font-medium">Name</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						{assetData.asset.name}
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-center text-sm font-medium">Symbol</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						{assetData.asset.symbol}
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-center text-sm font-medium">Aktueller Preis</Card.Title>
-					</Card.Header>
-					<Card.Content>{assetData.price} CHF</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-center text-sm font-medium">Logo</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<img class="h-10" src={assetData.asset?.image} alt={assetData.asset.name} />
-					</Card.Content>
-				</Card.Root>
-			</div>
-
-			<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-				{#await api.getMeasuringsByDay(7, { $symbol: assetData.asset.symbol ?? '' })}
-					<Card.Root class="col-span-4">
-						<Card.Header>
-							<Card.Title>Bestand letzte 7 Tage</Card.Title>
-						</Card.Header>
-						<Card.Content>
-							<LineChart skeleton={true} />
-						</Card.Content>
-					</Card.Root>
-					<Card.Root class="col-span-4">
-						<Card.Header>
-							<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
-						</Card.Header>
-						<Card.Content>
-							<LineChart skeleton={true} />
-						</Card.Content>
-					</Card.Root>
-				{:then measurings}
-					<Card.Root class="col-span-4">
-						<Card.Header>
-							<Card.Title>Bestand letzte 7 Tage</Card.Title>
-						</Card.Header>
-						<Card.Content>
-							<LineChart
-								fill={true}
-								labels={StringKeysToDates(Object.keys(measurings.data))}
-								datasets={[
-									{
-										name: assetData.asset.symbol ?? '',
-										data: Object.values(measurings.data).map(
-											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.totalAmount ?? 0
-										)
-									}
-								]}
-							/>
-						</Card.Content>
-					</Card.Root>
-					<Card.Root class="col-span-4">
-						<Card.Header>
-							<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
-						</Card.Header>
-						<Card.Content>
-							<LineChart
-								fill={true}
-								labels={StringKeysToDates(Object.keys(measurings.data))}
-								datasets={[
-									{
-										name: 'CHF',
-										data: Object.values(measurings.data).map(
-											(x) => x.find((y) => y.asset.id === assetData?.asset.symbol)?.totalValue ?? 0
-										)
-									}
-								]}
-							/>
-						</Card.Content>
-					</Card.Root>
-				{:catch error}
-					<p>{error.message}</p>
-				{/await}
-			</div>
-			<p>Integrationen:</p>
-			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				{#await api.getMeasuringsByDay(7, { $symbol: assetData.asset.symbol ?? '' })}
-					<p>loading</p>
-				{:then measurings}
-					{#if measurings.data && Object.keys(measurings.data).length > 0}
-						{#each Object.values(measurings.data)
-							.at(-1)
-							?.at(0)?.integrationValues! as integrationItem}
-							<a href="/integrations/{integrationItem.integration.id}">
-								<Card.Root>
-									<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-										<Card.Title class="text-center text-sm font-medium"
-											>{integrationItem.integration.name}</Card.Title
-										>
-									</Card.Header>
-									<Card.Content>
-										{integrationItem.integration.name}: {integrationItem.amount?.toFixed(2)}
-									</Card.Content>
-								</Card.Root>
-							</a>
-						{/each}
-					{/if}
-				{:catch error}
-					<p>{error.message}</p>
-				{/await}
-			</div>
-		</div>
-	{:else if assetData?.asset.symbol}
-		{#if !selectedCoin}
-			<Button on:click={SetIsFiat}>{isFiat ? 'Kein Fiat' : 'Fiat'}</Button>
-		{/if}
-		<Card.Root class="col-span-4">
-			<Card.Header>
-				<Card.Title>Externe ID verknüpfen</Card.Title>
-			</Card.Header>
-			<Card.Content>
-				<select
-					class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-					bind:value={selectedCoin}
-				>
-					{#key isFiat}
-						{#if isFiat}
-							{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
-									<option value={coin.symbol}>{coin.name}</option>
-								{/each}
-							{/await}
-						{:else}
-							{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
-									<option value={coin.id}>{coin.name}</option>
-								{/each}
-							{/await}
-						{/if}
-					{/key}
-				</select>
-				<Button on:click={setAssetData}>Speichern</Button>
-			</Card.Content>
-		</Card.Root>
+<Button on:click={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
+<Button on:click={ResetAsset}>Reset</Button>
+{#if assetInitialized && assetData?.asset.symbol && !assetData?.asset.name}
+	{#if !selectedCoin}
+		<Button on:click={SetIsFiat}>{isFiat ? 'Kein Fiat' : 'Fiat'}</Button>
 	{/if}
+	<Card.Root class="col-span-4">
+		<Card.Header>
+			<Card.Title>Externe ID verknüpfen</Card.Title>
+		</Card.Header>
+		<Card.Content>
+			<select
+				class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+				bind:value={selectedCoin}
+			>
+				{#key isFiat}
+					{#if isFiat}
+						{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
+							{#each coins.data as coin}
+								<option value={coin.symbol}>{coin.name}</option>
+							{/each}
+						{/await}
+					{:else}
+						{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
+							{#each coins.data as coin}
+								<option value={coin.id}>{coin.name}</option>
+							{/each}
+						{/await}
+					{/if}
+				{/key}
+			</select>
+			<Button on:click={setAssetData}>Speichern</Button>
+		</Card.Content>
+	</Card.Root>
 {:else}
-	<p>Loading...</p>
+	<div class="space-y-4">
+		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+			<Card.Root>
+				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+					<Card.Title class="text-center text-sm font-medium">Name</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#if assetInitialized}
+						{assetData.asset.name}
+					{:else}
+						<Skeleton class="h-6 w-1/2 bg-gray-200" />
+					{/if}
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+					<Card.Title class="text-center text-sm font-medium">Symbol</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#if assetInitialized}
+						{assetData.asset.symbol}
+					{:else}
+						<Skeleton class="h-6 w-1/2 bg-gray-200" />
+					{/if}
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+					<Card.Title class="text-center text-sm font-medium">Aktueller Preis</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#if assetInitialized}
+						{assetData.price} CHF
+					{:else}
+						<Skeleton class="h-6 w-1/2 bg-gray-200" />
+					{/if}
+				</Card.Content>
+			</Card.Root>
+			<Card.Root>
+				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+					<Card.Title class="text-center text-sm font-medium">Logo</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#if assetInitialized}
+						<img class="h-10" src={assetData.asset?.image} alt={assetData.asset.name} />
+					{:else}
+						<Skeleton class="h-10 w-10 bg-gray-200" />
+					{/if}
+				</Card.Content>
+			</Card.Root>
+		</div>
+		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
+			<Card.Root class="col-span-4">
+				<Card.Header>
+					<Card.Title>Bestand letzte 7 Tage</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#key measuringsInitialized}
+						<LineChart
+							skeleton={!measuringsInitialized}
+							fill={true}
+							labels={dailyMeasurings.map((x) => x.date)}
+							datasets={[
+								{
+									name: assetData?.asset.symbol ?? '',
+									// take the first measuring because it is filtered by the asset symbol
+									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
+								}
+							]}
+						/>
+					{/key}
+				</Card.Content>
+			</Card.Root>
+			<Card.Root class="col-span-4">
+				<Card.Header>
+					<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					{#key measuringsInitialized}
+						<LineChart
+							skeleton={!measuringsInitialized}
+							fill={true}
+							labels={dailyMeasurings.map((x) => x.date)}
+							datasets={[
+								{
+									name: 'CHF',
+									// take the first measuring because it is filtered by the asset symbol
+									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
+								}
+							]}
+						/>
+					{/key}
+				</Card.Content>
+			</Card.Root>
+		</div>
+		<p>Integrationen:</p>
+		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+			{#if measuringsInitialized && dailyMeasurings.length > 0}
+				<!-- loop through the last measuring (today) and the first integration (filtered) value -->
+				{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
+					<a href="/integrations/{integrationItem.integration.id}">
+						<Card.Root>
+							<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+								<Card.Title class="text-center text-sm font-medium"
+									>{integrationItem.integration.name}</Card.Title
+								>
+							</Card.Header>
+							<Card.Content>
+								{integrationItem.integration.name}: {integrationItem.amount?.toFixed(2)}
+							</Card.Content>
+						</Card.Root>
+					</a>
+				{/each}
+			{/if}
+		</div>
+	</div>
 {/if}

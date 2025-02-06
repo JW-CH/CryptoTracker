@@ -20,8 +20,8 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-        [HttpGet(Name = "GetMeasuringsByDay")]
-        public Dictionary<DateTime, List<AssetMeasuringDto>> GetMeasuringsByDay([Required] int days = 7, string? symbol = null)
+        [HttpGet(Name = "GetMeasuringsByDays")]
+        public Dictionary<DateTime, List<MessungDto>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateTime>();
             for (int i = 0; i < days; i++)
@@ -30,7 +30,7 @@ namespace cryptotracker.webapi.Controllers
                 dayList.Add(date.Date);
             }
 
-            var result = new Dictionary<DateTime, List<AssetMeasuringDto>>();
+            var result = new Dictionary<DateTime, List<MessungDto>>();
             foreach (var day in dayList.ToList())
             {
                 if (symbol != null)
@@ -66,7 +66,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet(Name = "GetLatestMeasurings")]
-        public List<AssetMeasuringDto> GetLatestMeasurings()
+        public List<MessungDto> GetLatestMeasurings()
         {
             var day = DateTime.Today;
 

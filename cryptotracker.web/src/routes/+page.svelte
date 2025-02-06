@@ -18,7 +18,7 @@
 		);
 	}
 
-	function TrimMeasurings(data: api.AssetMeasuringDto[]) {
+	function TrimMeasurings(data: api.MessungDto[]) {
 		let sortedMeasuring = data.sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
 		if (!summarize || sortedMeasuring.length <= 7) {
 			return sortedMeasuring;
@@ -28,7 +28,7 @@
 		let otherMeasuring = sortedMeasuring.slice(7);
 		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
 		return topMeasuring.concat({
-			asset: { id: 'Other' },
+			asset: { symbol: 'Other' },
 			totalValue: otherFiatValue,
 			price: 0,
 			totalAmount: 0,
@@ -48,6 +48,8 @@
 					<Skeleton class="h-6 w-1/2 bg-gray-200" />
 				{:then standing}
 					<div class="text-2xl font-bold">{standing.data.toFixed(2)} CHF</div>
+				{:catch error}
+					<p>{error.message}</p>
 				{/await}
 			</Card.Content>
 		</Card.Root>
@@ -63,9 +65,11 @@
 					<PieChart skeleton={true} />
 				{:then measuring}
 					<PieChart
-						labels={TrimMeasurings(measuring.data).map((x) => x.asset.id ?? '')}
+						labels={TrimMeasurings(measuring.data).map((x) => x.asset.symbol ?? '')}
 						values={TrimMeasurings(measuring.data).map((x) => x.totalValue ?? 0)}
 					/>
+				{:catch error}
+					<p>{error.message}</p>
 				{/await}
 			</Card.Content>
 		</Card.Root>
@@ -92,18 +96,18 @@
 				<Card.Title>Zusammensetzung letzte 7 Tage</Card.Title>
 			</Card.Header>
 			<Card.Content>
-				{#await api.getMeasuringsByDay(7)}
+				{#await api.getMeasuringsByDays(7)}
 					<LineChart skeleton={true} />
 				{:then stats}
 					{#each Object.values(stats.data).flat() as stat}
-						{AddAsset(stat.asset.id ?? '')}
+						{AddAsset(stat.asset.symbol ?? '')}
 					{/each}
 					<LineChart
 						labels={StringKeysToDates(Object.keys(stats.data))}
 						datasets={Array.from(assets).map((assetId) => ({
 							name: assetId,
 							data: Object.values(stats.data).map(
-								(x) => x.find((y) => y.asset.id === assetId)?.totalValue ?? 0
+								(x) => x.find((y) => y.asset.symbol === assetId)?.totalValue ?? 0
 							)
 						}))}
 					/>

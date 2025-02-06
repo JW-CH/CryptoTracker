@@ -2,7 +2,7 @@
 
 namespace cryptotracker.database.DTOs
 {
-    public class AssetMeasurementDto
+    public class AssetMeasuringDto
     {
         public Guid Id { get; set; }
         public required string Symbol { get; set; }
@@ -10,9 +10,9 @@ namespace cryptotracker.database.DTOs
         public DateTime Timestamp { get; set; }
         public decimal Amount { get; set; }
 
-        public static AssetMeasurementDto FromModel(AssetMeasuring measuring)
+        public static AssetMeasuringDto FromModel(AssetMeasuring measuring)
         {
-            return new AssetMeasurementDto()
+            return new AssetMeasuringDto()
             {
                 Id = measuring.Id,
                 Symbol = measuring.Symbol,
@@ -23,7 +23,7 @@ namespace cryptotracker.database.DTOs
         }
     }
 
-    public class AssetMeasuringDto
+    public class MessungDto
     {
         public required AssetDto Asset { get; set; }
         public required decimal Price { get; set; }
@@ -31,7 +31,7 @@ namespace cryptotracker.database.DTOs
         public required decimal TotalValue { get; set; }
         public required List<IntegrationShit> IntegrationValues { get; set; }
 
-        public static AssetMeasuringDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
+        public static MessungDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
             var groupedMeasurings = measurings.GroupBy(x => x.Integration);
             var integrationValues = groupedMeasurings.Select(x => new IntegrationShit
@@ -42,7 +42,7 @@ namespace cryptotracker.database.DTOs
 
             var amt = measurings.Sum(x => x.Amount);
 
-            return new AssetMeasuringDto()
+            return new MessungDto()
             {
                 Asset = AssetDto.FromModel(asset),
                 IntegrationValues = integrationValues,
@@ -51,7 +51,7 @@ namespace cryptotracker.database.DTOs
                 TotalValue = amt * price,
             };
         }
-        public static AssetMeasuringDto FromModel(AssetMeasuring measuring, decimal price)
+        public static MessungDto FromModel(AssetMeasuring measuring, decimal price)
         {
             if (measuring.Asset == null) throw new Exception("Asset is null");
 
@@ -64,7 +64,7 @@ namespace cryptotracker.database.DTOs
                 }
             };
 
-            return new AssetMeasuringDto()
+            return new MessungDto()
             {
                 Asset = AssetDto.FromModel(measuring.Asset),
                 IntegrationValues = integrationValues,

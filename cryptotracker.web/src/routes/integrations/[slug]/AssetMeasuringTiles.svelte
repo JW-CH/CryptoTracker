@@ -3,7 +3,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
 
-	export let measurings: api.AssetMeasuringDto[] = [];
+	export let measurings: api.MessungDto[] = [];
 	export let hidden: boolean = false;
 	export let skeleton: boolean = false;
 </script>
@@ -22,7 +22,7 @@
 	{/each}
 {:else}
 	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
-		<a href="/assets/{measuring.asset.id}">
+		<a href="/assets/{measuring.asset.symbol}">
 			<Card.Root class="flex h-full flex-col">
 				<Card.Content class="flex-grow">
 					<div class="grid grid-cols-6 items-center gap-4">
@@ -34,10 +34,10 @@
 							alt={measuring.asset.name}
 						/>
 						<p class="col-span-3 text-center">
-							{measuring.asset.name ? measuring.asset.name : measuring.asset.id}
+							{measuring.asset.name ? measuring.asset.name : measuring.asset.symbol}
 						</p>
 						<div class="col-span-2">
-							<p>{measuring.totalAmount?.toFixed(2)} {measuring.asset.id}</p>
+							<p>{measuring.totalAmount?.toFixed(2)} {measuring.asset.symbol}</p>
 							<!-- <p>{measuring.totalValue?.toFixed(2)} CHF</p> -->
 						</div>
 					</div>

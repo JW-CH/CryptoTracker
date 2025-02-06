@@ -9,14 +9,15 @@
 </script>
 
 {#if skeleton}
-	{#each { length: 2 } as _}
-		<div class="flex flex-col space-y-3">
-			<Skeleton class="h-[125px] rounded-xl bg-gray-200" />
-			<div class="space-y-2">
-				<Skeleton class="h-4 w-[250px] bg-gray-200" />
-				<Skeleton class="h-4 w-[200px] bg-gray-200" />
-			</div>
-		</div>
+	{#each { length: 8 } as _}
+		<Card.Root class="flex h-full flex-col">
+			<Card.Header>
+				<Card.Title class="self-center">
+					<Skeleton class="h-4 w-[150px] bg-gray-200" />
+				</Card.Title>
+			</Card.Header>
+			<Card.Content class="flex-grow"></Card.Content>
+		</Card.Root>
 	{/each}
 {:else}
 	{#each integrations.filter((x) => x.isHidden == hidden) as integration}

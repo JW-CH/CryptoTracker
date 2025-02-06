@@ -18,7 +18,7 @@
 		});
 	});
 
-	let measurings: api.AssetMeasurementDto[] = [];
+	let measurings: api.AssetMeasuringDto[] = [];
 </script>
 
 Messungen für {page.params.slug}

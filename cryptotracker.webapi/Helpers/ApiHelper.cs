@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 public static class ApiHelper
 {
-    public static List<AssetMeasuringDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, string? symbol = null, Guid? integrationId = null)
+    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, string? symbol = null, Guid? integrationId = null)
     {
         var assets = db.Assets.AsQueryable();
 
@@ -26,9 +26,9 @@ public static class ApiHelper
         return GetAssetDayMeasuring(db, day, assets.ToList(), integrations.ToList());
     }
 
-    public static List<AssetMeasuringDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, List<Asset> assets, List<ExchangeIntegration> integrations)
+    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, List<Asset> assets, List<ExchangeIntegration> integrations)
     {
-        var result = new List<AssetMeasuringDto>();
+        var result = new List<MessungDto>();
 
         var allSymbols = assets.Select(x => x.Symbol).ToList();
         var allIntegrations = integrations.Select(x => x.Id).ToList();
@@ -69,7 +69,7 @@ public static class ApiHelper
                 allMeasurings.AddRange(measurings);
             }
 
-            var dto = AssetMeasuringDto.SumFromModels(asset, allMeasurings, priceHistory?.Price ?? 0m);
+            var dto = MessungDto.SumFromModels(asset, allMeasurings, priceHistory?.Price ?? 0m);
 
             result.Add(dto);
         }

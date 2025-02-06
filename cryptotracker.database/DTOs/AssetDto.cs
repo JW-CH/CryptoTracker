@@ -4,7 +4,7 @@ namespace cryptotracker.database.DTOs
 {
     public class AssetDto
     {
-        public required string Id { get; set; }
+        public required string Symbol { get; set; }
         public string? Name { get; set; }
         public string? Image { get; set; }
         public bool IsHidden { get; set; }
@@ -13,7 +13,7 @@ namespace cryptotracker.database.DTOs
         {
             return new AssetDto()
             {
-                Id = asset.Symbol,
+                Symbol = asset.Symbol,
                 Name = asset.Name,
                 Image = asset.Image,
                 IsHidden = asset.IsHidden
