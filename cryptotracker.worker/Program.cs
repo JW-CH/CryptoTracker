@@ -165,7 +165,7 @@ void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, stri
         asset = new Asset()
         {
             Symbol = symbol,
-            IsFiat = false,
+            AssetType = AssetType.Crypto,
             IsHidden = false
         };
         logger.LogTrace($"Adding new Asset: {asset.Symbol}");

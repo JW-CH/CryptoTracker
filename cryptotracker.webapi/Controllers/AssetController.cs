@@ -82,7 +82,7 @@ namespace cryptotracker.webapi.Controllers
             var currency = "CHF";
 
             AssetMetadata metadata;
-            if (asset.IsFiat)
+            if (asset.AssetType == AssetType.Fiat)
             {
                 var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [asset.ExternalId]);
                 metadata = fiatDataList.FirstOrDefault();
@@ -122,14 +122,14 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpPost(Name = "SetFiatForSymbol")]
-        public bool SetFiatForSymbol([Required] string symbol, [FromBody] bool isFiat)
+        [HttpPost(Name = "SetAssetTypeForSymbol")]
+        public bool SetAssetTypeForSymbol([Required] string symbol, [FromBody] AssetType assetType)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
             if (!string.IsNullOrEmpty(asset.ExternalId)) throw new Exception("Asset already has an external id and cannot be set as fiat");
 
-            asset.IsFiat = isFiat;
+            asset.AssetType = assetType;
             _db.SaveChanges();
 
             return true;
@@ -146,7 +146,7 @@ namespace cryptotracker.webapi.Controllers
             {
                 Symbol = assetDto.Symbol,
                 ExternalId = assetDto.ExternalId,
-                IsFiat = assetDto.IsFiat,
+                AssetType = assetDto.AssetType,
                 IsHidden = false
             };
 
@@ -156,15 +156,19 @@ namespace cryptotracker.webapi.Controllers
             var currency = "CHF";
 
             AssetMetadata? metadata = null; ;
-            if (asset.IsFiat)
+
+            switch (assetDto.AssetType)
             {
-                var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [asset.ExternalId]);
-                metadata = fiatDataList.FirstOrDefault();
-            }
-            else
-            {
-                var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [asset.ExternalId]);
-                metadata = coinDataList.FirstOrDefault();
+                case AssetType.Crypto:
+                    var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [assetDto.ExternalId]);
+                    metadata = coinDataList.FirstOrDefault();
+                    break;
+                case AssetType.Fiat:
+                    var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [assetDto.ExternalId]);
+                    metadata = fiatDataList.FirstOrDefault();
+                    break;
+                default:
+                    throw new Exception($"Asset type {assetDto.AssetType} not supported");
             }
 
             if (metadata.HasValue)
@@ -200,7 +204,7 @@ namespace cryptotracker.webapi.Controllers
         public struct AddAssetDto
         {
             public string Symbol { get; set; }
-            public bool IsFiat { get; set; }
+            public AssetType AssetType { get; set; }
             public string ExternalId { get; set; }
         }
 

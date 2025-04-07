@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace cryptotracker.database.Models
 {
@@ -9,7 +10,23 @@ namespace cryptotracker.database.Models
         public string? ExternalId { get; set; }
         public string? Name { get; set; }
         public string? Image { get; set; }
-        public required bool IsFiat { get; set; }
+        public required AssetType AssetType { get; set; }
         public required bool IsHidden { get; set; }
+    }
+
+    public enum AssetType
+    {
+        [Description("Fiat")]
+        Fiat,
+        [Description("Crypto")]
+        Crypto,
+        [Description("Stock")]
+        Stock,
+        [Description("ETF")]
+        ETF,
+        [Description("Commodity")]
+        Commodity,
+        [Description("Real Estate")]
+        RealEstate
     }
 }

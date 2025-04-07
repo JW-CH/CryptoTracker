@@ -61,7 +61,7 @@ namespace cryptotracker.core.Logic
 
             if (coinList != null)
             {
-                foreach (var asset in assets.Where(x => !x.IsFiat))
+                foreach (var asset in assets.Where(x => x.AssetType == AssetType.Crypto))
                 {
                     Coin? coin = null;
                     if (string.IsNullOrWhiteSpace(asset.ExternalId))
@@ -99,7 +99,7 @@ namespace cryptotracker.core.Logic
 
             if (fiatList != null)
             {
-                foreach (var asset in assets.Where(x => x.IsFiat))
+                foreach (var asset in assets.Where(x => x.AssetType == AssetType.Fiat))
                 {
                     Fiat? fiat = null;
                     if (string.IsNullOrWhiteSpace(asset.ExternalId))
@@ -132,12 +132,12 @@ namespace cryptotracker.core.Logic
                 db.SaveChanges();
             }
 
-            var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.IsFiat }).ToList();
+            var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToList();
 
             if (foundExternalIds.Count == 0) return;
             var currency = "chf";
-            var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => !x.IsFiat).Select(x => x.ExternalId!).ToList());
-            var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.IsFiat).Select(x => x.ExternalId!).ToList());
+            var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList());
+            var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
 
             var all = coinDataList.Union(fiatDataList).ToList();
 

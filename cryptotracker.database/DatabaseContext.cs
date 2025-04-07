@@ -8,6 +8,15 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<AssetMeasuring> AssetMeasurings { get; set; }
     public DbSet<AssetPriceHistory> AssetPriceHistory { get; set; }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Asset>()
+            .Property(a => a.AssetType)
+            .HasConversion<string>();
+
+        base.OnModelCreating(modelBuilder);
+    }
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<decimal>().HavePrecision(18, 10);
