@@ -12,12 +12,13 @@ export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
 };
 const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {};
+export type AssetType = 0 | 1 | 2 | 3 | 4 | 5;
 export type Asset = {
     "symbol": string | null;
     externalId?: string | null;
     name?: string | null;
     image?: string | null;
-    isFiat: boolean;
+    assetType: AssetType;
     isHidden: boolean;
 };
 export type AssetData = {
@@ -35,7 +36,7 @@ export type Fiat = {
 };
 export type AddAssetDto = {
     "symbol"?: string | null;
-    isFiat?: boolean;
+    assetType?: AssetType;
     externalId?: string | null;
 };
 export type AssetDto = {
@@ -160,16 +161,16 @@ export function setVisibilityForSymbol($symbol: string, body?: boolean, opts?: O
         body
     }));
 }
-export function setFiatForSymbol($symbol: string, body?: boolean, opts?: Oazapfts.RequestOpts) {
+export function setAssetTypeForSymbol($symbol: string, assetType?: AssetType, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Asset/SetFiatForSymbol${QS.query(QS.explode({
+    }>(`/api/Asset/SetAssetTypeForSymbol${QS.query(QS.explode({
         "symbol": $symbol
     }))}`, oazapfts.json({
         ...opts,
         method: "POST",
-        body
+        body: assetType
     }));
 }
 export function addAsset(addAssetDto?: AddAssetDto, opts?: Oazapfts.RequestOpts) {
@@ -191,6 +192,20 @@ export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
         method: "POST",
         body
     }));
+}
+export function getMeasuringsByDate({ date, $symbol }: {
+    date?: string;
+    $symbol?: string;
+} = {}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: MessungDto[];
+    }>(`/api/CryptoTracker/GetMeasuringsByDate${QS.query(QS.explode({
+        date,
+        "symbol": $symbol
+    }))}`, {
+        ...opts
+    });
 }
 export function getMeasuringsByDays(days: number, { $symbol }: {
     $symbol?: string;

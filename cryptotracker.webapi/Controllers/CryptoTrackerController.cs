@@ -20,6 +20,12 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
+        [HttpGet(Name = "GetMeasuringsByDate")]
+        public List<MessungDto> GetMeasuringsByDate(DateTime date, string? symbol = null)
+        {
+            return ApiHelper.GetAssetDayMeasuring(_db, date.ToLocalTime(), symbol);
+        }
+
         [HttpGet(Name = "GetMeasuringsByDays")]
         public Dictionary<DateTime, List<MessungDto>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {

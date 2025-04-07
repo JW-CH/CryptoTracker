@@ -2,8 +2,8 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
-	import LineChart from '../components/charts/LineChart.svelte';
-	import PieChart from '../components/charts/PieChart.svelte';
+	import LineChart from '$lib/components/charts/LineChart.svelte';
+	import PieChart from '$lib/components/charts/PieChart.svelte';
 
 	let assets: Set<string> = new Set<string>();
 	let summarize: boolean = true;

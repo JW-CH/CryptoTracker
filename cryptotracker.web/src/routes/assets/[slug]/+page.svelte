@@ -3,9 +3,9 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as api from '$lib/cryptotrackerApi';
 	import { onMount } from 'svelte';
-	import LineChart from '../../../components/charts/LineChart.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import LineChart from '$lib/components/charts/LineChart.svelte';
 
 	interface DailyMeasurings {
 		date: string;

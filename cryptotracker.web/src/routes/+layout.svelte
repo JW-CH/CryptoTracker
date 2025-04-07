@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Navbar from '$lib/components/navigation/navbar.svelte';
+	import NavBreadcrumb from '$lib/components/navigation/NavBreadcrumb.svelte';
 	import '../app.css';
-	import Footer from '../components/footer.svelte';
-	import Navbar from '../components/navigation/navbar.svelte';
-	import NavBreadcrumb from '../components/navigation/NavBreadcrumb.svelte';
 	let { children } = $props();
 </script>
 
