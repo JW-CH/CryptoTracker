@@ -5,43 +5,47 @@
 
 	let symbol: string = $state('');
 	let externalId: string = $state('');
-	let isFiat: boolean = $state(false);
+	let assetType: api.AssetType = $state('Fiat');
 
 	let values: api.Coin[] | api.Fiat[] | null = $state(null);
 
 	import { onMount } from 'svelte';
 
 	onMount(async () => {
-		values = await GetStuff(isFiat);
+		values = await GetStuff(assetType);
 	});
 
 	$effect(() => {
-		GetStuff(isFiat).then((value) => (values = value));
+		GetStuff(assetType).then((value) => (values = value));
 	});
 
-	async function GetStuff(isFiat: boolean) {
-		if (isFiat) {
-			let request = await api.getFiats();
+	async function GetStuff(assettype: api.AssetType) {
+		let request;
+		switch (assettype) {
+			case 'Fiat':
+				request = await api.getFiats();
 
-			if (request.status != 200) {
+				if (request.status != 200) {
+					return [];
+				}
+
+				return request.data;
+			case 'Crypto':
+				request = await api.getCoins();
+
+				if (request.status != 200) {
+					return [];
+				}
+
+				return request.data;
+			default:
 				return [];
-			}
-
-			return request.data;
-		} else {
-			let request = await api.getCoins();
-
-			if (request.status != 200) {
-				return [];
-			}
-
-			return request.data;
 		}
 	}
 
 	async function AddIntegration() {
 		if (!symbol) return;
-		if (isFiat) {
+		if (assetType) {
 			externalId = (values as api.Fiat[]).find((x) => x.symbol === symbol)?.symbol || '';
 		} else {
 			externalId = (values as api.Coin[]).find((x) => x.symbol === symbol)?.id ?? '';
@@ -52,7 +56,7 @@
 		let request = await api.addAsset({
 			symbol: symbol,
 			externalId: externalId,
-			isFiat: isFiat
+			assetType: assetType
 		});
 
 		if (request.data) {
@@ -67,17 +71,23 @@
 	</Card.Header>
 	<Card.Content class="flex items-center">
 		<div>
-			Fiat
-			<input
-				bind:checked={isFiat}
-				type="checkbox"
-				class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-			/>
+			AssetType:
+			<select
+				class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+				bind:value={assetType}
+			>
+				<option value="Fiat">Fiat</option>
+				<option value="Crypto">Crypto</option>
+				<option value="Stock">Stock</option>
+				<option value="ETF">ETF</option>
+				<!-- <option value="Commodity">Commodity</option>
+				<option value="RealEstate">RealEstate</option> -->
+			</select>
 		</div>
 		<div>
 			asset:
 			<select
-				class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+				class="min-w-48 rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
 				bind:value={symbol}
 			>
 				{#key values}

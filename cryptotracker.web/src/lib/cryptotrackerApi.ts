@@ -12,7 +12,7 @@ export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
 };
 const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {};
-export type AssetType = 0 | 1 | 2 | 3 | 4 | 5;
+export type AssetType = "Fiat" | "Crypto" | "Stock" | "ETF" | "Commodity" | "RealEstate";
 export type Asset = {
     "symbol": string | null;
     externalId?: string | null;
