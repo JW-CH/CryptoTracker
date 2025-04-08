@@ -7,11 +7,15 @@ namespace cryptotracker.core.Logic
     {
         private ILogger _logger;
         private readonly CryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly IFiatLogic _fiatLogic;
+        private readonly IStockLogic _stockLogic;
 
-        public CryptoTrackerAssetLogic(ILogger logger, CryptoTrackerLogic cryptoTrackerLogic)
+        public CryptoTrackerAssetLogic(ILogger logger, CryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
         {
             _logger = logger;
-            this._cryptoTrackerLogic = cryptoTrackerLogic;
+            _cryptoTrackerLogic = cryptoTrackerLogic;
+            _fiatLogic = fiatLogic;
+            _stockLogic = stockLogic;
         }
 
         public void UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata, string currency)
@@ -94,7 +98,7 @@ namespace cryptotracker.core.Logic
                 db.SaveChanges();
             }
 
-            var fiatList = _cryptoTrackerLogic.GetFiatList().Result;
+            var fiatList = _fiatLogic.GetFiatList().Result;
             _logger.LogTrace($"Fetched {fiatList.Count()} fiats");
 
             if (fiatList != null)
@@ -137,9 +141,10 @@ namespace cryptotracker.core.Logic
             if (foundExternalIds.Count == 0) return;
             var currency = "chf";
             var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList());
-            var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
+            var fiatDataList = await _fiatLogic.GetFiatsByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
+            var stockDataList = await _stockLogic.GetStocksByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Stock).Select(x => x.ExternalId!).ToList());
 
-            var all = coinDataList.Union(fiatDataList).ToList();
+            var all = coinDataList.Union(fiatDataList).Union(stockDataList).ToList();
 
             foreach (var item in all)
             {

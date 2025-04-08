@@ -12,14 +12,18 @@ namespace cryptotracker.webapi.Controllers
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
         private readonly CryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly IFiatLogic _fiatLogic;
+        private readonly IStockLogic _stockLogic;
         private readonly CryptoTrackerAssetLogic _cryptoTrackerAssetLogic;
 
-        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic)
+        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
         {
             _logger = logger;
             _db = db;
             _cryptoTrackerLogic = cryptoTrackerLogic;
-            _cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic);
+            _fiatLogic = fiatLogic;
+            _stockLogic = stockLogic;
+            _cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
         }
 
         [HttpGet(Name = "GetAssets")]
@@ -58,13 +62,13 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet(Name = "GetFiats")]
         public async Task<List<Fiat>> GetFiats()
         {
-            return await _cryptoTrackerLogic.GetFiatList();
+            return await _fiatLogic.GetFiatList();
         }
 
         [HttpGet(Name = "FindFiatBySymbol")]
         public async Task<List<Fiat>> FindFiatBySymbol([Required] string symbol)
         {
-            var fiatList = await _cryptoTrackerLogic.GetFiatList();
+            var fiatList = await _fiatLogic.GetFiatList();
 
             return fiatList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
         }
@@ -84,8 +88,7 @@ namespace cryptotracker.webapi.Controllers
             AssetMetadata metadata;
             if (asset.AssetType == AssetType.Fiat)
             {
-                var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [asset.ExternalId]);
-                metadata = fiatDataList.FirstOrDefault();
+                metadata = await _fiatLogic.GetFiatByIdAsync(currency, asset.ExternalId);
             }
             else
             {
@@ -164,8 +167,10 @@ namespace cryptotracker.webapi.Controllers
                     metadata = coinDataList.FirstOrDefault();
                     break;
                 case AssetType.Fiat:
-                    var fiatDataList = await _cryptoTrackerLogic.GetFiatData(currency, [assetDto.ExternalId]);
-                    metadata = fiatDataList.FirstOrDefault();
+                    metadata = await _fiatLogic.GetFiatByIdAsync(currency, assetDto.ExternalId);
+                    break;
+                case AssetType.Stock:
+                    metadata = await _stockLogic.GetStockByIdAsync(currency, assetDto.ExternalId);
                     break;
                 default:
                     throw new Exception($"Asset type {assetDto.AssetType} not supported");

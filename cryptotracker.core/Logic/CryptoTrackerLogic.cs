@@ -426,80 +426,7 @@ namespace cryptotracker.core.Logic
             var list = JsonSerializer.Deserialize<BitpandaAssetWallet>(json);
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
-        public async Task<List<AssetMetadata>> GetFiatData(string currency, List<string> fiatIds)
-        {
-            fiatIds = fiatIds.Distinct().Select(x => x.ToLower()).ToList();
 
-            var result = new List<AssetMetadata>();
-
-            if (fiatIds.Count == 0) return result;
-            var fiatSymbols = string.Join(",", fiatIds);
-
-            var fiatList = await GetFiatList();
-
-            if (fiatIds.Contains(currency.ToLower()))
-            {
-                result.Add(new AssetMetadata()
-                {
-                    AssetId = currency,
-                    Symbol = currency,
-                    Image = "",
-                    Currency = currency,
-                    Name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == currency.ToLower()).Name ?? currency,
-                    Price = 1
-                });
-            }
-
-            if (fiatSymbols == currency.ToLower())
-            {
-                return result;
-            }
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-            string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={fiatSymbols}";
-            var response = await client.GetAsync(apiUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError($"Failed to fetch Fiat balances: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return result;
-            }
-
-            var data = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
-
-            var ratesProperty = data.GetProperty("rates");
-
-            var rates = JsonSerializer.Deserialize<Dictionary<string, decimal>>(ratesProperty);
-
-            if (rates == null)
-            {
-                _logger.LogError($"Failed to fetch Fiat balances: No balances were returned");
-                return result;
-            }
-
-            foreach (var item in rates)
-            {
-                var id = item.Key;
-                var name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == item.Key.ToLower()).Name ?? item.Key;
-                var image = "";
-                var symbol = item.Key;
-                var price = item.Value;
-
-                result.Add(new AssetMetadata()
-                {
-                    AssetId = id,
-                    Symbol = symbol,
-                    Image = image,
-                    Currency = currency,
-                    Name = name,
-                    Price = price
-                });
-            }
-
-            return result;
-        }
         public async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
         {
             var result = new List<AssetMetadata>();
@@ -547,35 +474,6 @@ namespace cryptotracker.core.Logic
 
             return result;
         }
-        private List<Fiat>? _fiatList;
-        public async Task<List<Fiat>> GetFiatList()
-        {
-            if (_fiatList != null) return _fiatList;
-
-            var client = new HttpClient();
-            var url = "https://api.frankfurter.app/currencies";
-            var response = await client.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError($"Failed to fetch Fiat list: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return new();
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var fiatDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-
-            if (fiatDictionary == null)
-            {
-                _logger.LogError($"Failed to fetch Fiat list");
-                return new();
-            }
-
-            _fiatList = fiatDictionary.Select(kvp => new Fiat { Symbol = kvp.Key, Name = kvp.Value }).ToList();
-
-            return _fiatList;
-        }
         private List<Coin>? _coinList;
         public async Task<List<Coin>> GetCoinList()
         {
@@ -608,11 +506,7 @@ namespace cryptotracker.core.Logic
         }
     }
 
-    public struct Fiat
-    {
-        public string Symbol { get; set; }
-        public string Name { get; set; }
-    }
+
     public struct Coin
     {
         [JsonPropertyName("id")]

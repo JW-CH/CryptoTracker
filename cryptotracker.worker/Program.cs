@@ -72,7 +72,9 @@ if (loglevelNotLoaded)
 logger.LogInformation($"Integrations: {config.Integrations.Count}");
 
 var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
-var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic);
+var fiatLogic = new FiatLogic(logger);
+var stockLogic = new YahooFinanceStockLogic(logger);
+var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
 optionsBuilder.UseMySQL(config.ConnectionString);

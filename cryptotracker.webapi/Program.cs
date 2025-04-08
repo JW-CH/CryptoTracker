@@ -42,6 +42,19 @@ builder.Services.AddSingleton(srv =>
     var logger = srv.GetRequiredService<ILogger<CryptoTrackerLogic>>();
     return new CryptoTrackerLogic(logger);
 });
+
+builder.Services.AddSingleton<IFiatLogic>(srv =>
+{
+    var logger = srv.GetRequiredService<ILogger<FiatLogic>>();
+    return new FiatLogic(logger);
+});
+
+builder.Services.AddSingleton<IStockLogic>(srv =>
+{
+    var logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
+    return new YahooFinanceStockLogic(logger);
+});
+
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
 {
     var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
