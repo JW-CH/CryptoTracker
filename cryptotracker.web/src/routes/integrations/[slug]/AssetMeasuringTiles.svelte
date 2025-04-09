@@ -11,7 +11,7 @@
 {#if skeleton}
 	{#each { length: 6 * 4 } as _}
 		<Card.Root class="flex h-full flex-col">
-			<Card.Content class="grow">
+			<Card.Content class="flex-grow">
 				<div class="grid grid-cols-5 items-center gap-4">
 					<Skeleton class="h-10 w-full bg-gray-200" />
 					<Skeleton class="col-span-2 h-4 w-full bg-gray-200" />
@@ -24,7 +24,7 @@
 	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
 		<a href="/assets/{measuring.asset.symbol}">
 			<Card.Root class="flex h-full flex-col">
-				<Card.Content class="grow">
+				<Card.Content class="flex-grow">
 					<div class="grid grid-cols-6 items-center gap-4">
 						<img
 							class="w-3/4"

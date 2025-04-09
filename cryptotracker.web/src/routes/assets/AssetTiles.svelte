@@ -16,7 +16,7 @@
 					<Skeleton class="h-4 w-[100px] bg-gray-200" /></Card.Title
 				>
 			</Card.Header>
-			<Card.Content class="grow">
+			<Card.Content class="flex-grow">
 				<Skeleton class="h-32 w-full bg-gray-200" />
 			</Card.Content>
 		</Card.Root>
@@ -28,7 +28,7 @@
 				<Card.Header>
 					<Card.Title class="text-center">{asset.name ? asset.name : asset.symbol}</Card.Title>
 				</Card.Header>
-				<Card.Content class="grow">
+				<Card.Content class="flex-grow">
 					<img
 						class="w-max"
 						src={asset.image
