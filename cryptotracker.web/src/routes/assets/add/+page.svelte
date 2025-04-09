@@ -44,11 +44,16 @@
 	}
 
 	async function AddIntegration() {
+		console.log('AddIntegration', symbol, externalId, assetType);
 		if (!symbol) return;
-		if (assetType) {
+		if (assetType == 'Fiat') {
 			externalId = (values as api.Fiat[]).find((x) => x.symbol === symbol)?.symbol || '';
-		} else {
+		} else if (assetType == 'Crypto') {
 			externalId = (values as api.Coin[]).find((x) => x.symbol === symbol)?.id ?? '';
+		} else if (assetType == 'Stock') {
+			externalId = symbol;
+		} else {
+			externalId = '';
 		}
 
 		if (!externalId) return;
@@ -86,16 +91,26 @@
 		</div>
 		<div>
 			asset:
-			<select
-				class="min-w-48 rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-				bind:value={symbol}
-			>
-				{#key values}
-					{#each values ?? [] as item}
-						<option value={item.symbol}>{item.name}</option>
-					{/each}
-				{/key}
-			</select>
+			{#if assetType === 'Fiat' || assetType === 'Crypto'}
+				<select
+					class="min-w-48 rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+					bind:value={symbol}
+				>
+					{#key values}
+						{#each values ?? [] as item}
+							<option value={item.symbol}>{item.name}</option>
+						{/each}
+					{/key}
+				</select>
+			{:else if assetType === 'Stock'}
+				<input
+					bind:value={symbol}
+					type="text"
+					class="min-w-48 rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
+				/>
+			{:else}
+				NOT SUPPORTED
+			{/if}
 		</div>
 		<Button on:click={AddIntegration}>Speichern</Button>
 	</Card.Content>
