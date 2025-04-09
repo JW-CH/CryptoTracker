@@ -10,9 +10,9 @@ public class YahooFinanceStockLogic : IStockLogic
         _logger = logger;
     }
 
-    public async Task<IEnumerable<Stock>> GetAllStocksAsync()
+    public Task<IEnumerable<Stock>> GetAllStocksAsync()
     {
-        return new List<Stock>();
+        throw new NotImplementedException();
     }
 
     public async Task<AssetMetadata> GetStockByIdAsync(string currency, string id)
