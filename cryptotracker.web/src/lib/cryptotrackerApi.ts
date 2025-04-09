@@ -183,6 +183,16 @@ export function addAsset(addAssetDto?: AddAssetDto, opts?: Oazapfts.RequestOpts)
         body: addAssetDto
     }));
 }
+export function deleteAsset(body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Asset/DeleteAsset", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
+}
 export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;

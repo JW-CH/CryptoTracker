@@ -141,7 +141,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost(Name = "AddAsset")]
         public async Task<bool> AddAsset([FromBody] AddAssetDto assetDto)
         {
-            if (_db.Assets.Any(x => x.Symbol.ToLower() == assetDto.Symbol)) throw new Exception("Asset already exists");
+            if (_db.Assets.Any(x => x.Symbol.ToLower() == assetDto.Symbol)) return true;
 
             using var tx = _db.Database.BeginTransaction();
 
@@ -187,6 +187,20 @@ namespace cryptotracker.webapi.Controllers
 
             _db.SaveChanges();
             tx.Commit();
+
+            return true;
+        }
+        [HttpPost(Name = "DeleteAsset")]
+        public bool DeleteAsset([FromBody] string symbol)
+        {
+            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+
+            if (_db.AssetMeasurings.Any(x => x.Asset == asset))
+                throw new Exception("Asset has measurings and cannot be deleted");
+
+            _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
+            _db.Assets.Remove(asset);
+            _db.SaveChanges();
 
             return true;
         }

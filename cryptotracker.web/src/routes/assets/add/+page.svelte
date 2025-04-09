@@ -44,7 +44,6 @@
 	}
 
 	async function AddIntegration() {
-		console.log('AddIntegration', symbol, externalId, assetType);
 		if (!symbol) return;
 		if (assetType == 'Fiat') {
 			externalId = (values as api.Fiat[]).find((x) => x.symbol === symbol)?.symbol || '';
@@ -64,7 +63,7 @@
 			assetType: assetType
 		});
 
-		if (request.data) {
+		if (request.status == 200) {
 			window.location.href = '/assets/' + symbol;
 		}
 	}

@@ -57,6 +57,20 @@
 		}
 	}
 
+	async function DeleteAsset() {
+		if (!assetData?.asset.symbol) return;
+
+		let request = await api.deleteAsset(assetData.asset.symbol);
+
+		if (request.status != 200) {
+			return;
+		}
+
+		if (request.data) {
+			window.location.href = '/assets';
+		}
+	}
+
 	async function setAssetData() {
 		if (!assetData?.asset.symbol) return;
 
@@ -103,6 +117,7 @@
 
 <Button on:click={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
 <Button on:click={ResetAsset}>Reset</Button>
+<Button on:click={DeleteAsset} class="btn bg-destructive">Löschen</Button>
 {#if assetInitialized && assetData?.asset.symbol && !assetData?.asset.name}
 	{#if !selectedCoin}
 		AssetType:
