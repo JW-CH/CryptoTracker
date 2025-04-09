@@ -16,7 +16,7 @@
 					<Skeleton class="h-4 w-[150px] bg-gray-200" />
 				</Card.Title>
 			</Card.Header>
-			<Card.Content class="flex-grow"></Card.Content>
+			<Card.Content class="grow"></Card.Content>
 		</Card.Root>
 	{/each}
 {:else}
@@ -26,7 +26,7 @@
 				<Card.Header>
 					<Card.Title class="text-center">{integration.name}</Card.Title>
 				</Card.Header>
-				<Card.Content class="flex-grow"></Card.Content>
+				<Card.Content class="grow"></Card.Content>
 			</Card.Root>
 		</a>
 	{/each}
