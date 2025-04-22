@@ -75,6 +75,8 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddHostedService<UpdateService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
