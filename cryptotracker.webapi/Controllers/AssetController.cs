@@ -98,7 +98,7 @@ namespace cryptotracker.webapi.Controllers
 
             if (!string.IsNullOrEmpty(metadata.AssetId))
             {
-                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata, currency);
+                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata);
             }
             else
             {
@@ -178,7 +178,7 @@ namespace cryptotracker.webapi.Controllers
 
             if (metadata.HasValue)
             {
-                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata.Value, currency);
+                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata.Value);
             }
             else
             {

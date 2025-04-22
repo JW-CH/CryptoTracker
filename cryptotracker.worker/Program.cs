@@ -73,7 +73,7 @@ logger.LogInformation($"Integrations: {config.Integrations.Count}");
 
 var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
 var fiatLogic = new FiatLogic(logger);
-var stockLogic = new YahooFinanceStockLogic(logger);
+var stockLogic = new YahooFinanceStockLogic(logger, fiatLogic);
 var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();

@@ -18,7 +18,7 @@ namespace cryptotracker.core.Logic
             _stockLogic = stockLogic;
         }
 
-        public void UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata, string currency)
+        public void UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata)
         {
             var asset = db.Assets.FirstOrDefault(a => a.ExternalId == metadata.AssetId);
 
@@ -30,7 +30,7 @@ namespace cryptotracker.core.Logic
             if (string.IsNullOrWhiteSpace(asset.Image))
                 asset.Image = metadata.Image;
 
-            var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.Today && p.Currency == currency);
+            var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.Today);
 
             if (price == null)
             {
@@ -38,7 +38,7 @@ namespace cryptotracker.core.Logic
                 {
                     Symbol = asset.Symbol,
                     Date = DateTime.Today,
-                    Currency = currency,
+                    Currency = metadata.Currency,
                     Price = metadata.Price,
                 };
 
@@ -49,7 +49,25 @@ namespace cryptotracker.core.Logic
             else
             {
                 _logger.LogTrace($"Update AssetPriceHistory for {price.Symbol}, {price.Date} from {price.Price} {price.Currency} to {metadata.Price} {price.Currency}");
-                price.Price = metadata.Price;
+                if (price.Currency != metadata.Currency)
+                {
+                    _logger.LogTrace($"Update AssetPriceHistory currency for {price.Symbol}, {price.Date} from {price.Currency} to {metadata.Currency}");
+
+                    db.AssetPriceHistory.Remove(price);
+
+                    price = new AssetPriceHistory()
+                    {
+                        Symbol = asset.Symbol,
+                        Date = DateTime.Today,
+                        Currency = metadata.Currency,
+                        Price = metadata.Price,
+                    };
+                    db.AssetPriceHistory.Add(price);
+                }
+                else
+                {
+                    price.Price = metadata.Price;
+                }
             }
         }
 
@@ -148,7 +166,7 @@ namespace cryptotracker.core.Logic
 
             foreach (var item in all)
             {
-                UpdateMetadataForAsset(db, item, currency);
+                UpdateMetadataForAsset(db, item);
             }
 
             db.SaveChanges();

@@ -5,9 +5,11 @@ using YahooFinanceApi;
 public class YahooFinanceStockLogic : IStockLogic
 {
     private ILogger _logger;
-    public YahooFinanceStockLogic(ILogger logger)
+    private IFiatLogic _fiatLogic;
+    public YahooFinanceStockLogic(ILogger logger, IFiatLogic fiatLogic)
     {
         _logger = logger;
+        _fiatLogic = fiatLogic;
     }
 
     public Task<IEnumerable<Stock>> GetAllStocksAsync()
@@ -36,23 +38,35 @@ public class YahooFinanceStockLogic : IStockLogic
         .Fields(Field.Symbol, Field.ShortName, Field.RegularMarketPrice, Field.Currency)
         .QueryAsync();
 
+        Dictionary<string, decimal> fiatPrices = new Dictionary<string, decimal>();
+
         foreach (var security in securities)
         {
             _logger.LogTrace($"GetStocksByIdsAsync: {security.Key} - {security.Value.RegularMarketPrice}");
+
+            var price = Convert.ToDecimal(security.Value.RegularMarketPrice);
+
+            if (security.Value.Currency.ToLower() != currency.ToLower())
+            {
+                if (!fiatPrices.ContainsKey(security.Value.Currency))
+                {
+                    var fiatMetaData = await _fiatLogic.GetFiatByIdAsync(security.Value.Currency, currency);
+                    fiatPrices.Add(security.Value.Currency, fiatMetaData.Price);
+                }
+                price = price * fiatPrices[security.Value.Currency];
+            }
 
             var assetMetaData = new AssetMetadata
             {
                 AssetId = security.Key,
                 Name = security.Value.ShortName ?? security.Key,
-                Price = Convert.ToDecimal(security.Value.RegularMarketPrice),
-                Currency = security.Value.Currency,
+                Price = price,
+                Currency = currency,
                 Symbol = security.Value.Symbol
             };
 
             result.Add(assetMetaData);
         }
-
-        _logger.LogTrace($"Finished GetStocksByIdsAsync");
 
         return result;
     }

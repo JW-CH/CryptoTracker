@@ -52,7 +52,8 @@ builder.Services.AddSingleton<IFiatLogic>(srv =>
 builder.Services.AddSingleton<IStockLogic>(srv =>
 {
     var logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
-    return new YahooFinanceStockLogic(logger);
+    var fiatLogic = srv.GetRequiredService<IFiatLogic>();
+    return new YahooFinanceStockLogic(logger, fiatLogic);
 });
 
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>

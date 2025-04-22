@@ -10,45 +10,47 @@ public class FiatLogic : IFiatLogic
         _logger = logger;
     }
 
-    public async Task<AssetMetadata> GetFiatByIdAsync(string currency, string id)
+    public async Task<AssetMetadata> GetFiatByIdAsync(string baseCurrency, string currency)
     {
-        var assetMetaDataResults = await GetFiatsByIdsAsync(currency, new List<string> { id });
+        var assetMetaDataResults = await GetFiatsByIdsAsync(baseCurrency, new List<string> { currency });
 
         return assetMetaDataResults.FirstOrDefault();
     }
 
-    public async Task<List<AssetMetadata>> GetFiatsByIdsAsync(string currency, List<string> ids)
+    public async Task<List<AssetMetadata>> GetFiatsByIdsAsync(string baseCurrency, List<string> currencies)
     {
-        ids = ids.Distinct().Select(x => x.ToLower()).ToList();
+        _logger.LogTrace($"GetFiatsByIdsAsync: {baseCurrency} - {string.Join(",", currencies)}");
+
+        currencies = currencies.Distinct().Select(x => x.ToLower()).ToList();
 
         var result = new List<AssetMetadata>();
 
-        if (ids.Count == 0) return result;
-        var fiatSymbols = string.Join(",", ids);
+        if (currencies.Count == 0) return result;
+        var fiatSymbols = string.Join(",", currencies);
 
         var fiatList = await GetFiatList();
 
-        if (ids.Contains(currency.ToLower()))
+        if (currencies.Contains(baseCurrency.ToLower()))
         {
             result.Add(new AssetMetadata()
             {
-                AssetId = currency,
-                Symbol = currency,
+                AssetId = baseCurrency,
+                Symbol = baseCurrency,
                 Image = "",
-                Currency = currency,
-                Name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == currency.ToLower()).Name ?? currency,
+                Currency = baseCurrency,
+                Name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == baseCurrency.ToLower()).Name ?? baseCurrency,
                 Price = 1
             });
         }
 
-        if (fiatSymbols == currency.ToLower())
+        if (fiatSymbols == baseCurrency.ToLower())
         {
             return result;
         }
 
         var client = new HttpClient();
         client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-        string apiUrl = $"https://api.frankfurter.app/latest?base={currency}&symbols={fiatSymbols}";
+        string apiUrl = $"https://api.frankfurter.app/latest?base={baseCurrency}&symbols={fiatSymbols}";
         var response = await client.GetAsync(apiUrl);
 
         if (!response.IsSuccessStatusCode)
@@ -72,6 +74,8 @@ public class FiatLogic : IFiatLogic
 
         foreach (var item in rates)
         {
+            _logger.LogTrace($"GetFiatsByIdsAsync: {item.Key} - {item.Value}");
+
             var id = item.Key;
             var name = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == item.Key.ToLower()).Name ?? item.Key;
             var image = "";
@@ -83,7 +87,7 @@ public class FiatLogic : IFiatLogic
                 AssetId = id,
                 Symbol = symbol,
                 Image = image,
-                Currency = currency,
+                Currency = baseCurrency,
                 Name = name,
                 Price = price
             });
