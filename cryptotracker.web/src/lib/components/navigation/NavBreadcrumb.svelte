@@ -7,25 +7,33 @@
 	let url = ['/'];
 
 	function addItemToUrl(item: string) {
+		console.log('item', item);
 		url.push(item + '/');
+	}
+
+	function getUrl(index: number) {
+		let url = ['/'];
+		for (let i = 1; i <= index; i++) {
+			url.push(list[i] + '/');
+		}
+		return url.join('');
 	}
 </script>
 
 <Breadcrumb.Root class="my-4">
 	<Breadcrumb.List>
-		{#each list as item}
-			{#if item == ''}
+		{#each list as item, index}
+			{#if index == 0}
 				<Breadcrumb.Item>
 					<Breadcrumb.Link asChild let:attrs>
-						<a href={url.join('')}>home</a>
+						<a href={getUrl(index)}>home</a>
 					</Breadcrumb.Link>
 				</Breadcrumb.Item>
 			{:else}
-				{addItemToUrl(item)}
 				<Breadcrumb.Separator />
 				<Breadcrumb.Item>
 					<Breadcrumb.Link asChild let:attrs>
-						<a href={url.join('')}>{item}</a>
+						<a href={getUrl(index)}>{item}</a>
 					</Breadcrumb.Link>
 				</Breadcrumb.Item>
 			{/if}
