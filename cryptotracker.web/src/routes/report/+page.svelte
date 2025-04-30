@@ -15,7 +15,7 @@
 			date = new Date(dateString);
 		}
 
-		let req = await api.getMeasuringsByDate({ date: date.toISOString() });
+		let req = await api.getMeasuringsByDate(date.toISOString());
 		data = req.data;
 	});
 </script>

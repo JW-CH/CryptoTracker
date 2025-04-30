@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     public class IntegrationController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;
@@ -28,7 +28,7 @@ namespace cryptotracker.webapi.Controllers
             return _db.ExchangeIntegrations.Select(IntegrationDto.FromModel).ToList();
         }
 
-        [HttpGet(Name = "GetIntegrationDetails")]
+        [HttpGet("{id}/detail", Name = "GetIntegrationDetails")]
         public IntegrationDetails? GetIntegrationDetails([Required] Guid id)
         {
             var integration = _db.ExchangeIntegrations.Include(x => x.AssetMeasurings).ThenInclude(x => x.Asset).FirstOrDefault(x => x.Id == id);

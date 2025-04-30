@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     public class CryptoTrackerController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;
@@ -20,13 +20,13 @@ namespace cryptotracker.webapi.Controllers
             _config = config;
         }
 
-        [HttpGet(Name = "GetMeasuringsByDate")]
-        public List<MessungDto> GetMeasuringsByDate(DateTime date, string? symbol = null)
+        [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
+        public List<MessungDto> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
             return ApiHelper.GetAssetDayMeasuring(_db, date.ToLocalTime(), symbol);
         }
 
-        [HttpGet(Name = "GetMeasuringsByDays")]
+        [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
         public Dictionary<DateTime, List<MessungDto>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateTime>();
@@ -52,7 +52,7 @@ namespace cryptotracker.webapi.Controllers
             return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
-        [HttpGet(Name = "GetStandingsByDay")]
+        [HttpGet("standing/days/{days}", Name = "GetStandingsByDay")]
         public Dictionary<DateTime, decimal> GetStandingByDay([Required] int days = 7)
         {
             var dayList = new List<DateTime>();
@@ -71,7 +71,7 @@ namespace cryptotracker.webapi.Controllers
             return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
 
-        [HttpGet(Name = "GetLatestMeasurings")]
+        [HttpGet("measuring", Name = "GetLatestMeasurings")]
         public List<MessungDto> GetLatestMeasurings()
         {
             var day = DateTime.Today;
@@ -79,7 +79,7 @@ namespace cryptotracker.webapi.Controllers
             return ApiHelper.GetAssetDayMeasuring(_db, day);
         }
 
-        [HttpGet(Name = "GetLatestStanding")]
+        [HttpGet("standing", Name = "GetLatestStanding")]
         public decimal GetLatestStanding()
         {
             var day = DateTime.Today;

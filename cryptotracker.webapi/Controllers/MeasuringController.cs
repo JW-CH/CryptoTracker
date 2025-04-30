@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     public class MeasuringController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;
@@ -22,7 +22,7 @@ namespace cryptotracker.webapi.Controllers
             _cryptoTrackerLogic = cryptoTrackerLogic;
         }
 
-        [HttpGet(Name = "GetMeasuringsByIntegration")]
+        [HttpGet("{id}", Name = "GetMeasuringsByIntegration")]
         public List<AssetMeasuringDto> GetMeasuringsByIntegration([Required] Guid id)
         {
             return _db.AssetMeasurings.Where(x => x.IntegrationId == id).Select(AssetMeasuringDto.FromModel).ToList();
@@ -65,7 +65,7 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpPost(Name = "DeleteMeasuringById")]
+        [HttpDelete("{id}", Name = "DeleteMeasuringById")]
         public bool DeleteMeasuringById([FromBody] Guid id)
         {
             var measuring = _db.AssetMeasurings.Include(x => x.Integration).Where(x => x.Id == id).FirstOrDefault();

@@ -21,6 +21,11 @@ export type Asset = {
     assetType: AssetType;
     isHidden: boolean;
 };
+export type AddAssetDto = {
+    "symbol"?: string | null;
+    assetType?: AssetType;
+    externalId?: string | null;
+};
 export type AssetData = {
     asset: Asset;
     price: number;
@@ -33,11 +38,6 @@ export type Coin = {
 export type Fiat = {
     "symbol"?: string | null;
     name?: string | null;
-};
-export type AddAssetDto = {
-    "symbol"?: string | null;
-    assetType?: AssetType;
-    externalId?: string | null;
 };
 export type AssetDto = {
     "symbol": string | null;
@@ -63,13 +63,13 @@ export type MessungDto = {
     totalValue: number;
     integrationValues: IntegrationShit[] | null;
 };
-export type IntegrationDetails = {
-    integration: IntegrationDto;
-    measurings: MessungDto[] | null;
-};
 export type AddIntegrationDto = {
     name?: string | null;
     description?: string | null;
+};
+export type IntegrationDetails = {
+    integration: IntegrationDto;
+    measurings: MessungDto[] | null;
 };
 export type AssetMeasuringDto = {
     id?: string;
@@ -87,97 +87,15 @@ export function getAssets(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: Asset[];
-    }>("/api/Asset/GetAssets", {
+    }>("/api/Asset", {
         ...opts
     });
-}
-export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: AssetData;
-    }>(`/api/Asset/GetAsset${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, {
-        ...opts
-    });
-}
-export function getCoins(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: Coin[];
-    }>("/api/Asset/GetCoins", {
-        ...opts
-    });
-}
-export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: Coin[];
-    }>(`/api/Asset/FindCoinsBySymbol${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, {
-        ...opts
-    });
-}
-export function getFiats(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: Fiat[];
-    }>("/api/Asset/GetFiats", {
-        ...opts
-    });
-}
-export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: Fiat[];
-    }>(`/api/Asset/FindFiatBySymbol${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, {
-        ...opts
-    });
-}
-export function setExternalIdForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: AssetData;
-    }>(`/api/Asset/SetExternalIdForSymbol${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body
-    }));
-}
-export function setVisibilityForSymbol($symbol: string, body?: boolean, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: boolean;
-    }>(`/api/Asset/SetVisibilityForSymbol${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body
-    }));
-}
-export function setAssetTypeForSymbol($symbol: string, assetType?: AssetType, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: boolean;
-    }>(`/api/Asset/SetAssetTypeForSymbol${QS.query(QS.explode({
-        "symbol": $symbol
-    }))}`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: assetType
-    }));
 }
 export function addAsset(addAssetDto?: AddAssetDto, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>("/api/Asset/AddAsset", oazapfts.json({
+    }>("/api/Asset", oazapfts.json({
         ...opts,
         method: "POST",
         body: addAssetDto
@@ -187,31 +105,99 @@ export function deleteAsset(body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>("/api/Asset/DeleteAsset", oazapfts.json({
+    }>("/api/Asset", oazapfts.json({
+        ...opts,
+        method: "DELETE",
+        body
+    }));
+}
+export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: AssetData;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}`, {
+        ...opts
+    });
+}
+export function getCoins(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Coin[];
+    }>("/api/Asset/coin", {
+        ...opts
+    });
+}
+export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Coin[];
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/coin`, {
+        ...opts
+    });
+}
+export function getFiats(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Fiat[];
+    }>("/api/Asset/fiat", {
+        ...opts
+    });
+}
+export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: Fiat[];
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/fiat`, {
+        ...opts
+    });
+}
+export function setExternalIdForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: AssetData;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/ExternalId`, oazapfts.json({
         ...opts,
         method: "POST",
         body
     }));
 }
-export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
+export function setVisibilityForSymbol($symbol: string, body?: boolean, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>("/api/Asset/ResetAsset", oazapfts.json({
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/Visibility`, oazapfts.json({
         ...opts,
         method: "POST",
         body
     }));
 }
-export function getMeasuringsByDate({ date, $symbol }: {
-    date?: string;
+export function setAssetTypeForSymbol($symbol: string, assetType?: AssetType, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/AssetType`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: assetType
+    }));
+}
+export function resetAsset($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/Reset`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body
+    }));
+}
+export function getMeasuringsByDate(date: string, { $symbol }: {
     $symbol?: string;
 } = {}, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: MessungDto[];
-    }>(`/api/CryptoTracker/GetMeasuringsByDate${QS.query(QS.explode({
-        date,
+    }>(`/api/CryptoTracker/measuring/date/${encodeURIComponent(date)}${QS.query(QS.explode({
         "symbol": $symbol
     }))}`, {
         ...opts
@@ -225,8 +211,7 @@ export function getMeasuringsByDays(days: number, { $symbol }: {
         data: {
             [key: string]: MessungDto[];
         };
-    }>(`/api/CryptoTracker/GetMeasuringsByDays${QS.query(QS.explode({
-        days,
+    }>(`/api/CryptoTracker/measuring/days/${encodeURIComponent(days)}${QS.query(QS.explode({
         "symbol": $symbol
     }))}`, {
         ...opts
@@ -238,9 +223,7 @@ export function getStandingsByDay(days: number, opts?: Oazapfts.RequestOpts) {
         data: {
             [key: string]: number;
         };
-    }>(`/api/CryptoTracker/GetStandingByDay${QS.query(QS.explode({
-        days
-    }))}`, {
+    }>(`/api/CryptoTracker/standing/days/${encodeURIComponent(days)}`, {
         ...opts
     });
 }
@@ -248,7 +231,7 @@ export function getLatestMeasurings(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: MessungDto[];
-    }>("/api/CryptoTracker/GetLatestMeasurings", {
+    }>("/api/CryptoTracker/measuring", {
         ...opts
     });
 }
@@ -256,7 +239,7 @@ export function getLatestStanding(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: number;
-    }>("/api/CryptoTracker/GetLatestStanding", {
+    }>("/api/CryptoTracker/standing", {
         ...opts
     });
 }
@@ -264,17 +247,7 @@ export function getIntegrations(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: IntegrationDto[];
-    }>("/api/Integration/GetIntegrations", {
-        ...opts
-    });
-}
-export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: IntegrationDetails;
-    }>(`/api/Integration/GetIntegrationDetails${QS.query(QS.explode({
-        id
-    }))}`, {
+    }>("/api/Integration", {
         ...opts
     });
 }
@@ -282,41 +255,47 @@ export function addIntegration(addIntegrationDto?: AddIntegrationDto, opts?: Oaz
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>("/api/Integration/AddIntegration", oazapfts.json({
+    }>("/api/Integration", oazapfts.json({
         ...opts,
         method: "POST",
         body: addIntegrationDto
     }));
 }
+export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: IntegrationDetails;
+    }>(`/api/Integration/${encodeURIComponent(id)}/detail`, {
+        ...opts
+    });
+}
 export function getMeasuringsByIntegration(id: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: AssetMeasuringDto[];
-    }>(`/api/Measuring/GetMeasuringsByIntegration${QS.query(QS.explode({
-        id
-    }))}`, {
+    }>(`/api/Measuring/${encodeURIComponent(id)}`, {
         ...opts
     });
+}
+export function deleteMeasuringById(id: string, body?: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Measuring/${encodeURIComponent(id)}`, oazapfts.json({
+        ...opts,
+        method: "DELETE",
+        body
+    }));
 }
 export function addIntegrationMeasuring(id: string, addMeasuringDto?: AddMeasuringDto, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Measuring/AddIntegrationMeasuring${QS.query(QS.explode({
+    }>(`/api/Measuring${QS.query(QS.explode({
         id
     }))}`, oazapfts.json({
         ...opts,
         method: "POST",
         body: addMeasuringDto
-    }));
-}
-export function deleteMeasuringById(body?: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: boolean;
-    }>("/api/Measuring/DeleteMeasuringById", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body
     }));
 }
