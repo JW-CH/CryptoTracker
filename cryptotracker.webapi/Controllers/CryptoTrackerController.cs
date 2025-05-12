@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
 using cryptotracker.database.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +12,9 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
-        private readonly CryptotrackerConfig _config;
+        private readonly ICryptotrackerConfig _config;
 
-        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptotrackerConfig config)
+        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptotrackerConfig config)
         {
             _logger = logger;
             _db = db;

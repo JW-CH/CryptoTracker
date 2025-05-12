@@ -1,3 +1,4 @@
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
@@ -6,10 +7,10 @@ public class UpdateService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<UpdateService> _logger;
-    private readonly CryptotrackerConfig _config;
+    private readonly ICryptotrackerConfig _config;
     private readonly TimeSpan _delay;
 
-    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, CryptotrackerConfig config)
+    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, ICryptotrackerConfig config)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;

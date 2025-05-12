@@ -1,4 +1,4 @@
-worker:
+old_worker:
 	dotnet run --project ./cryptotracker.worker
 
 web:
@@ -15,18 +15,6 @@ docker_push_web_dev:
 	
 docker_push_web:
 	docker push janmer/cryptotracker_web:latest
-
-docker_build_worker_dev:
-	docker buildx build --target final . -f ./cryptotracker.worker/Dockerfile -t janmer/cryptotracker_worker:dev
-
-docker_build_worker:
-	docker buildx build --target final . -f ./cryptotracker.worker/Dockerfile -t janmer/cryptotracker_worker:latest
-	
-docker_push_worker_dev:
-	docker push janmer/cryptotracker_worker:dev
-
-docker_push_worker:
-	docker push janmer/cryptotracker_worker:latest
 
 ef_remove_migration:
 	dotnet ef migrations remove  --project cryptotracker.database --startup-project cryptotracker.webapi

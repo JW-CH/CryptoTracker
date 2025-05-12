@@ -10,6 +10,8 @@
     <PackageReference Include="CardanoSharp.Wallet" Version="5.1.0" />
     <PackageReference Include="CryptoClients.Net" Version="2.7.1" />
     <PackageReference Include="NBitcoin" Version="7.0.46" />
+    <PackageReference Include="ThreeFourteen.AlphaVantage" Version="1.0.3" />
+    <PackageReference Include="TwelveDataSharp" Version="1.1.0" />
     <PackageReference Include="YahooFinanceApi" Version="2.3.3" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
   </ItemGroup>

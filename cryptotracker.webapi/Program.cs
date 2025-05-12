@@ -1,11 +1,12 @@
 using System.Text.Json.Serialization;
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var config = NewMethod(builder);
+var config = GetConfig(builder);
 
 LogLevel level = LogLevel.Information;
 if (!string.IsNullOrWhiteSpace(config.LogLevel))
@@ -32,7 +33,7 @@ builder.Services.AddLogging(builder =>
             builder.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         });
 
-builder.Services.AddSingleton(srv =>
+builder.Services.AddSingleton<ICryptotrackerConfig>(srv =>
 {
     return config;
 });
@@ -51,14 +52,15 @@ builder.Services.AddSingleton<IFiatLogic>(srv =>
 
 builder.Services.AddSingleton<IStockLogic>(srv =>
 {
-    var logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
+    var logger = srv.GetRequiredService<ILogger<EmptyStockLogic>>();
     var fiatLogic = srv.GetRequiredService<IFiatLogic>();
-    return new YahooFinanceStockLogic(logger, fiatLogic);
+    var config = srv.GetRequiredService<ICryptotrackerConfig>();
+    return new EmptyStockLogic(logger);
 });
 
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
 {
-    var config = serviceProvider.GetRequiredService<CryptotrackerConfig>();
+    var config = serviceProvider.GetRequiredService<ICryptotrackerConfig>();
     var connectionString = config?.ConnectionString ?? "";
     options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
     options.EnableSensitiveDataLogging(false);
@@ -100,7 +102,7 @@ app.MapFallbackToFile("/index.html");
 
 app.Run();
 
-static CryptotrackerConfig NewMethod(WebApplicationBuilder builder)
+static CryptotrackerConfig GetConfig(WebApplicationBuilder builder)
 {
     var root = Directory.GetCurrentDirectory();
 
