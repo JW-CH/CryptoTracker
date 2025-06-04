@@ -55,7 +55,12 @@ builder.Services.AddSingleton<IStockLogic>(srv =>
     var logger = srv.GetRequiredService<ILogger<EmptyStockLogic>>();
     var fiatLogic = srv.GetRequiredService<IFiatLogic>();
     var config = srv.GetRequiredService<ICryptotrackerConfig>();
-    return new EmptyStockLogic(logger);
+
+    if (string.IsNullOrWhiteSpace(config?.StockApi))
+    {
+        return new EmptyStockLogic(logger);
+    }
+    return new YahooFinanceStockLogic(logger, fiatLogic);
 });
 
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>

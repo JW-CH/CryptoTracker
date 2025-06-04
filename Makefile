@@ -3,6 +3,9 @@ old_worker:
 
 web:
 	dotnet run --project ./cryptotracker.webapi
+	
+api:
+	npm --prefix cryptotracker.web run api
 
 docker_build_web_dev:
 	docker buildx build --target final . -t janmer/cryptotracker_web:dev
