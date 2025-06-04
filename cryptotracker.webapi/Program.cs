@@ -86,6 +86,12 @@ builder.Services.AddHostedService<UpdateService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    db.Database.Migrate(); // apply apply migrations to database
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
