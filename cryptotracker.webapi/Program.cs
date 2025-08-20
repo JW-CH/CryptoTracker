@@ -1,8 +1,14 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
+using cryptotracker.webapi.auth;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +84,55 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+builder.Services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+
+if (config.Oidc == null)
+{
+    throw new Exception("OIDC configuration is missing in the config file.");
+}
+
+var authBuilder = builder.Services
+  .AddAuthentication(options =>
+  {
+      options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+      options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+  })
+  .AddCookie()
+  .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+  {
+      options.GetClaimsFromUserInfoEndpoint = true;
+
+      options.Events = new OpenIdConnectEvents
+      {
+          OnTokenValidated = async ctx =>
+          {
+              // Provision user in a scoped service
+              var svc = ctx.HttpContext.RequestServices.GetRequiredService<IUserProvisioningService>();
+              await svc.UpsertFromOidcAsync(ctx.Principal!);
+          }
+      };
+  });
+
+// Update OIDC config with our custom options
+authBuilder.Services.AddOptions<OpenIdConnectOptions>(OpenIdConnectDefaults.AuthenticationScheme)
+    .Configure<ICryptotrackerConfig>((oidcOptions, config) =>
+    {
+        if (config.Oidc == null)
+        {
+            throw new Exception("OIDC configuration is missing in the config file.");
+        }
+
+        oidcOptions.Authority = config.Oidc.Authority;
+        oidcOptions.ClientId = config.Oidc.ClientId;
+        oidcOptions.ClientSecret = config.Oidc.ClientSecret;
+        oidcOptions.ResponseType = OpenIdConnectResponseType.Code;
+
+        oidcOptions.Scope.Clear();
+        oidcOptions.Scope.Add("openid");
+        oidcOptions.Scope.Add("profile");
+        oidcOptions.Scope.Add("email");
+    });
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -111,9 +166,46 @@ app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
 
+// 3) Login endpoint → triggers OIDC challenge
+app.MapGet("/user/login", (HttpContext http) =>
+{
+    var props = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+    {
+        RedirectUri = "/" // where to go after successful login
+    };
+    return Results.Challenge(props, new[] { OpenIdConnectDefaults.AuthenticationScheme });
+});
+
+// 4) Logout (local cookie + OP sign-out)
+app.MapGet("/user/logout", async (HttpContext http) =>
+{
+    await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    await http.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme,
+        new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        {
+            RedirectUri = "/"
+        });
+    return Results.Redirect("/");
+});
+
+// 5) Optional: whoami route for debugging
+app.MapGet("/user/me", (HttpContext http) =>
+{
+    if (!(http.User.Identity?.IsAuthenticated ?? false))
+        return Results.Json(new { authenticated = false });
+
+    return Results.Json(new
+    {
+        authenticated = true,
+        name = http.User.FindFirst(ClaimTypes.Name)?.Value ?? http.User.FindFirst("preferred_username")?.Value ?? "Unknown",
+        sub = http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
+        email = http.User.FindFirst(ClaimTypes.Email)?.Value
+    });
+});
+
 app.Run();
 
-static CryptotrackerConfig GetConfig(WebApplicationBuilder builder)
+static ICryptotrackerConfig GetConfig(WebApplicationBuilder builder)
 {
     var root = Directory.GetCurrentDirectory();
 

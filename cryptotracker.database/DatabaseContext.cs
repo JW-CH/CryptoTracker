@@ -7,6 +7,7 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<Asset> Assets { get; set; }
     public DbSet<AssetMeasuring> AssetMeasurings { get; set; }
     public DbSet<AssetPriceHistory> AssetPriceHistory { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

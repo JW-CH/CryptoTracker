@@ -1,6 +1,7 @@
 <script lang="ts">
 	import NavItem from './nav-item.svelte';
 	import { cn } from '$lib/utils.js';
+	import { user } from '$lib/stores/user';
 
 	let className: string | undefined | null = undefined;
 	export { className as class };
@@ -20,6 +21,12 @@
 			<NavItem path="integrations" text="Integrationen" />
 			<NavItem path="assets" text="Vermögenswerte" />
 			<NavItem path="info" text="Info" />
+			{#if $user.authenticated}
+				<NavItem path="user/me" text="Profil ({$user.name})" />
+				<NavItem path="user/logout" text="Logout" />
+			{:else}
+				<NavItem path="user/login" text="Login" />
+			{/if}
 		</nav>
 	</div>
 </div>

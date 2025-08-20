@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace cryptotracker.database.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20250818123952_usertable")]
+    partial class usertable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -149,17 +152,9 @@ namespace cryptotracker.database.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
-
                     b.HasKey("UserId");
 
                     b.HasIndex("AuthProviderId")
-                        .IsUnique();
-
-                    b.HasIndex("UserName")
                         .IsUnique();
 
                     b.ToTable("Users");

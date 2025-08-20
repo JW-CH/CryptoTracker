@@ -2,12 +2,14 @@ using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
 using cryptotracker.database.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace cryptotracker.webapi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CryptoTrackerController : ControllerBase
     {
         private readonly ILogger<CryptoTrackerController> _logger;

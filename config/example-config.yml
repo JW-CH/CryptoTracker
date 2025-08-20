@@ -9,3 +9,7 @@ integrations:
     key: key
     secret: secret
     description: description
+oidc:
+  clientid: your_client_id
+  clientsecret: your_client_secret
+  authority: https://your-oidc-provider.com

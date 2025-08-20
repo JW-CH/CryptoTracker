@@ -8,6 +8,7 @@ namespace cryptotracker.core.Models
     public class CryptotrackerConfig : ICryptotrackerConfig
     {
         public string ConnectionString { get; set; } = string.Empty;
+        public CryptoTrackerOidc Oidc { get; set; } = new();
         public int Interval { get; set; } = 60;
         public string LogLevel { get; set; } = "Information";
         public string? StockApi { get; set; } = "";
