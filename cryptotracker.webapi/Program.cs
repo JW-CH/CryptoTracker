@@ -201,6 +201,7 @@ if (app.Environment.IsProduction())
     app.UseStaticFiles();
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

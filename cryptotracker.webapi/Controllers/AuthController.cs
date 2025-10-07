@@ -33,6 +33,7 @@ namespace cryptotracker.webapi.Controllers
             }
             return Unauthorized();
         }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -54,6 +55,13 @@ namespace cryptotracker.webapi.Controllers
             var jwt = _jwtService.GenerateJwtToken(user);
             _jwtService.SetJwtCookie(Response, jwt);
 
+            return Ok();
+        }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("jwt");
             return Ok();
         }
 
