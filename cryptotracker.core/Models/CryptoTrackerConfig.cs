@@ -5,25 +5,27 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace cryptotracker.core.Models
 {
-    public class CryptotrackerConfig : ICryptotrackerConfig
+    public class CryptoTrackerConfig : ICryptoTrackerConfig
     {
         public string ConnectionString { get; set; } = string.Empty;
         public int Interval { get; set; } = 60;
+        public CryptoTrackerAuth Auth { get; set; } = new();
+        public CryptoTrackerOidc Oidc { get; set; } = new();
         public string LogLevel { get; set; } = "Information";
         public string? StockApi { get; set; } = "";
-        public List<CryptotrackerIntegration> Integrations { get; set; } = new();
+        public List<CryptoTrackerIntegration> Integrations { get; set; } = new();
 
-        public static CryptotrackerConfig LoadFromJson(string input)
+        public static CryptoTrackerConfig LoadFromJson(string input)
         {
             throw new NotImplementedException();
         }
 
-        public static CryptotrackerConfig LoadFromYml(string input)
+        public static CryptoTrackerConfig LoadFromYml(string input)
         {
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(LowerCaseNamingConvention.Instance)
                 .Build();
-            return deserializer.Deserialize<CryptotrackerConfig>(input);
+            return deserializer.Deserialize<CryptoTrackerConfig>(input);
         }
     }
 }

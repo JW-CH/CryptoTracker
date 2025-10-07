@@ -7,10 +7,10 @@ public class UpdateService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<UpdateService> _logger;
-    private readonly ICryptotrackerConfig _config;
+    private readonly ICryptoTrackerConfig _config;
     private readonly TimeSpan _delay;
 
-    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, ICryptotrackerConfig config)
+    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, ICryptoTrackerConfig config)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -91,7 +91,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, string symbol, decimal balance)
+    void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
     {
         var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
 

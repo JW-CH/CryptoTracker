@@ -12,9 +12,9 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
-        private readonly ICryptotrackerConfig _config;
+        private readonly ICryptoTrackerConfig _config;
 
-        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptotrackerConfig config)
+        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerConfig config)
         {
             _logger = logger;
             _db = db;

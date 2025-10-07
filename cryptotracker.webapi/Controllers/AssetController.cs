@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace cryptotracker.webapi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class AssetController : ControllerBase

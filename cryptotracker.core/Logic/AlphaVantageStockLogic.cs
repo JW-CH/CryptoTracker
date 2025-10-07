@@ -9,7 +9,7 @@ public class AlphaVantageStockLogic : IStockLogic
     private readonly IFiatLogic _fiatLogic;
     private readonly AlphaVantage _client;
 
-    public AlphaVantageStockLogic(ILogger logger, IFiatLogic fiatLogic, ICryptotrackerConfig config)
+    public AlphaVantageStockLogic(ILogger logger, IFiatLogic fiatLogic, ICryptoTrackerConfig config)
     {
         _logger = logger;
         _fiatLogic = fiatLogic;
