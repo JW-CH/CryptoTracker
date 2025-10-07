@@ -132,6 +132,7 @@ builder.Services.AddAuthentication(options =>
     oidcOptions.ClientId = config.Oidc.ClientId;
     oidcOptions.ClientSecret = config.Oidc.ClientSecret;
     oidcOptions.ResponseType = OpenIdConnectResponseType.Code;
+    oidcOptions.CallbackPath = "/api/signin-oidc";
 
     oidcOptions.Scope.Clear();
     oidcOptions.Scope.Add("openid");
