@@ -2,11 +2,13 @@ using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Logic;
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace cryptotracker.webapi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class MeasuringController : ControllerBase
