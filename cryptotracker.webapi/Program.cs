@@ -8,6 +8,7 @@ using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -111,7 +112,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(secretKey)
     };
 
-    // Token aus Cookie lesen
     jwtOptions.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
@@ -128,7 +128,6 @@ builder.Services.AddAuthentication(options =>
 // OpenID Connect (OIDC Provider, z. B. PocketID)
 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, oidcOptions =>
 {
-    oidcOptions.SignInScheme = JwtBearerDefaults.AuthenticationScheme; // ClaimsPrincipal nach JWT-Validierung
     oidcOptions.Authority = config.Oidc.Authority;
     oidcOptions.ClientId = config.Oidc.ClientId;
     oidcOptions.ClientSecret = config.Oidc.ClientSecret;
@@ -149,19 +148,15 @@ builder.Services.AddAuthentication(options =>
             if (!string.IsNullOrEmpty(email))
             {
                 var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
+                var user = await userManager.FindByEmailAsync(email) ?? new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
+                if (user.Id == null) await userManager.CreateAsync(user);
 
-                var user = await userManager.FindByEmailAsync(email);
-                if (user == null)
-                {
-                    user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
-                    await userManager.CreateAsync(user);
-                }
-
-                // generate JWT
                 var jwt = jwtService.GenerateJwtToken(user);
-
-                // set JWT as cookie
                 jwtService.SetJwtCookie(ctx.Response, jwt);
+            }
+            else
+            {
+                throw new Exception("Email claim not found");
             }
         }
     };
@@ -181,6 +176,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<UpdateService>();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto
+});
 
 using (var scope = app.Services.CreateScope())
 {

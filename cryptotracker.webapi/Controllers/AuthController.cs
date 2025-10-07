@@ -1,6 +1,8 @@
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,13 @@ namespace cryptotracker.webapi.Controllers
             _userManager = userManager;
             _config = config;
             _jwtService = jwtService;
+        }
+
+        [HttpGet("oidc-login")]
+        public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
+        {
+            var props = new AuthenticationProperties { RedirectUri = returnUrl };
+            return Challenge(props, OpenIdConnectDefaults.AuthenticationScheme);
         }
 
         [HttpPost("login")]
