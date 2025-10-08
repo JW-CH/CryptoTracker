@@ -24,7 +24,8 @@ namespace cryptotracker.webapi.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, "user")
+                new Claim(ClaimTypes.Role, "user"),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
             };
 
             var key = new SymmetricSecurityKey(secretKey);

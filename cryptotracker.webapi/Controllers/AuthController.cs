@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +25,30 @@ namespace cryptotracker.webapi.Controllers
             _jwtService = jwtService;
         }
 
-        [HttpGet("oidc-login")]
+        [Authorize]
+        [HttpGet("me", Name = "GetMe")]
+        public async Task<ActionResult<MeResponse>> Me()
+        {
+            Console.WriteLine("Me called");
+            Console.WriteLine(User?.Identity?.IsAuthenticated);
+            var email = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            Console.WriteLine($"Claims: {string.Join(", ", User?.Claims?.Select(c => $"{c.Type}: {c.Value}") ?? Array.Empty<string>())}");
+            if (email == null)
+                throw new ArgumentNullException("User not found");
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+                return Unauthorized();
+
+            return Ok(new MeResponse(user.UserName, user.Email, user.UserName));
+        }
+
+        public record MeResponse(string? UserName, string? Email, string? DisplayName);
+
+        [HttpGet("oidc-login", Name = "OidcLogin")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
+            Console.WriteLine("OIDC Login called");
             var targetUrl = string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl)
                 ? "/"
                 : returnUrl;
@@ -34,7 +57,7 @@ namespace cryptotracker.webapi.Controllers
             return Challenge(props, OpenIdConnectDefaults.AuthenticationScheme);
         }
 
-        [HttpPost("login")]
+        [HttpPost("login", Name = "Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByNameAsync(request.Username);
@@ -47,7 +70,7 @@ namespace cryptotracker.webapi.Controllers
             return Unauthorized();
         }
 
-        [HttpPost("register")]
+        [HttpPost("register", Name = "Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var existingUser = await _userManager.FindByNameAsync(request.Username);
@@ -71,7 +94,7 @@ namespace cryptotracker.webapi.Controllers
             return Ok();
         }
 
-        [HttpPost("logout")]
+        [HttpPost("logout", Name = "Logout")]
         public IActionResult Logout()
         {
             Response.Cookies.Delete("jwt");
