@@ -39,6 +39,15 @@ export type Fiat = {
     "symbol"?: string | null;
     name?: string | null;
 };
+export type LoginRequest = {
+    username?: string | null;
+    password?: string | null;
+};
+export type RegisterRequest = {
+    username?: string | null;
+    email?: string | null;
+    password?: string | null;
+};
 export type AssetDto = {
     "symbol": string | null;
     name?: string | null;
@@ -190,6 +199,35 @@ export function resetAsset($symbol: string, body?: string, opts?: Oazapfts.Reque
         method: "POST",
         body
     }));
+}
+export function getApiAuthOidcLogin({ returnUrl }: {
+    returnUrl?: string;
+} = {}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText(`/api/Auth/oidc-login${QS.query(QS.explode({
+        returnUrl
+    }))}`, {
+        ...opts
+    });
+}
+export function postApiAuthLogin(loginRequest?: LoginRequest, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/api/Auth/login", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: loginRequest
+    }));
+}
+export function postApiAuthRegister(registerRequest?: RegisterRequest, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/api/Auth/register", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: registerRequest
+    }));
+}
+export function postApiAuthLogout(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchText("/api/Auth/logout", {
+        ...opts,
+        method: "POST"
+    });
 }
 export function getMeasuringsByDate(date: string, { $symbol }: {
     $symbol?: string;
