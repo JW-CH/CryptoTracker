@@ -18,7 +18,7 @@ namespace cryptotracker.webapi.Services
 
         public string GenerateJwtToken(ApplicationUser user)
         {
-            var secretKey = Encoding.UTF8.GetBytes(_config.Auth.Secret ?? throw new Exception("JWT Secret not configured"));
+            var secretKey = Encoding.UTF8.GetBytes(_config.Auth.Secret!);
 
             var claims = new[]
             {
