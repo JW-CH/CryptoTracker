@@ -17,9 +17,9 @@
 			<NavItem path="/info" text="Info" />
 			{#if $user != null}
 				<NavItem text="Profil ({$user.displayName ?? $user.email})" />
-				<NavItem path="auth/logout" text="Logout" />
+				<NavItem path="/auth/logout" text="Logout" />
 			{:else}
-				<NavItem path="auth/login" text="Login" />
+				<NavItem path="/auth/login" text="Login" />
 			{/if}
 		</nav>
 	</div>
