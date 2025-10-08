@@ -186,7 +186,8 @@ builder.Services.AddAuthentication(options =>
             }
             else
             {
-                throw new Exception("Email claim not found");
+                ctx.Fail("Email claim not found");
+                return;
             }
         }
     };
