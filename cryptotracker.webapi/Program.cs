@@ -64,14 +64,17 @@ builder.Services.AddSingleton<IFiatLogic>(srv =>
 
 builder.Services.AddSingleton<IStockLogic>(srv =>
 {
-    var logger = srv.GetRequiredService<ILogger<EmptyStockLogic>>();
+    ILogger logger;
     var fiatLogic = srv.GetRequiredService<IFiatLogic>();
     var config = srv.GetRequiredService<ICryptoTrackerConfig>();
 
     if (string.IsNullOrWhiteSpace(config?.StockApi))
     {
+        logger = srv.GetRequiredService<ILogger<EmptyStockLogic>>();
         return new EmptyStockLogic(logger);
     }
+
+    logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
     return new YahooFinanceStockLogic(logger, fiatLogic);
 });
 
