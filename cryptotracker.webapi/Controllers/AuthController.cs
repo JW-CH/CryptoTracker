@@ -29,18 +29,15 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("me", Name = "GetMe")]
         public async Task<ActionResult<MeResponse>> Me()
         {
-            Console.WriteLine("Me called");
-            Console.WriteLine(User?.Identity?.IsAuthenticated);
             var email = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            Console.WriteLine($"Claims: {string.Join(", ", User?.Claims?.Select(c => $"{c.Type}: {c.Value}") ?? Array.Empty<string>())}");
             if (email == null)
-                throw new ArgumentNullException("User not found");
+                return Unauthorized("User not found");
 
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
                 return Unauthorized();
 
-            return Ok(new MeResponse(user.UserName, user.Email, user.UserName));
+            return Ok(new MeResponse(user.UserName, user.Email, user.DisplayName));
         }
 
         public record MeResponse(string? UserName, string? Email, string? DisplayName);
@@ -48,7 +45,6 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("oidc-login", Name = "OidcLogin")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
-            Console.WriteLine("OIDC Login called");
             var targetUrl = string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl)
                 ? "/"
                 : returnUrl;

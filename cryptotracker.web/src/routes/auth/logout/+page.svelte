@@ -6,11 +6,10 @@
 	onMount(async () => {
 		try {
 			await api.logout();
-			goto('/auth/login');
 		} catch (err) {
 			console.error('Logout failed', err);
-		} finally {
-			window.location.href = '/auth/login';
 		}
+
+		goto('/auth/login');
 	});
 </script>

@@ -13,15 +13,11 @@
 		try {
 			const currentPath = page.url.pathname;
 
-			console.log(`Current path: ${currentPath}`);
-
 			if (currentPath.startsWith('/auth/')) {
 				return;
 			}
 
 			const res = await api.getMe();
-
-			console.log(res);
 
 			if (res.status === 200) {
 				const data = await res.data;
@@ -29,7 +25,8 @@
 				return;
 			}
 		} catch {
-			// ignore
+			// Authentication check failed, redirecting to login
+			console.error('Authentication check failed');
 		}
 
 		user.set(null);

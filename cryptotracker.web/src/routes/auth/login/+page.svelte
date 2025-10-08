@@ -12,8 +12,6 @@
 		try {
 			const response = await api.login({ username: email, password });
 
-			console.log(response);
-
 			if (response.status === 200) {
 				goto('/');
 			} else {
@@ -67,7 +65,7 @@
 			type="button"
 			class="w-full rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
 			on:click={() => {
-				goto('/api/auth/oidc-login');
+				window.location.href = '/api/auth/oidc-login';
 			}}
 		>
 			Login with OIDC

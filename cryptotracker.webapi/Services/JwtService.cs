@@ -18,6 +18,9 @@ namespace cryptotracker.webapi.Services
 
         public string GenerateJwtToken(ApplicationUser user)
         {
+            if (string.IsNullOrEmpty(user.Email))
+                throw new ArgumentException("User email is required for JWT generation", nameof(user));
+
             var secretKey = Encoding.UTF8.GetBytes(_config.Auth.Secret!);
 
             var claims = new[]
