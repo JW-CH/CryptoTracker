@@ -1,11 +1,10 @@
 <script lang="ts">
 	export let text: string;
-	export let path: string | undefined = undefined;
+	export let path: string = '';
 </script>
 
 {#if path === ''}
-	<!-- svelte-ignore a11y_missing_attribute -->
-	<a class="text-gray-800 hover:text-blue-400">{text}</a>
+	<span class="cursor-default text-gray-800">{text}</span>
 {:else}
 	<a class="text-gray-800 hover:text-blue-400" href={path}>{text}</a>
 {/if}

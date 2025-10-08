@@ -2,7 +2,7 @@
 	import { user } from '$lib/stores/user';
 	import * as api from '$lib/cryptotrackerApi';
 	import { afterNavigate, goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/state';
 	import Navbar from '$lib/components/navigation/navbar.svelte';
 	import NavBreadcrumb from '$lib/components/navigation/NavBreadcrumb.svelte';
@@ -24,9 +24,9 @@
 				user.set(data);
 				return;
 			}
-		} catch {
+		} catch (err) {
 			// Authentication check failed, redirecting to login
-			console.error('Authentication check failed');
+			console.error('Authentication check failed', err);
 		}
 
 		user.set(null);
@@ -35,10 +35,10 @@
 
 	onMount(() => {
 		checkAuth();
+	});
 
-		afterNavigate(() => {
-			checkAuth();
-		});
+	afterNavigate(() => {
+		checkAuth();
 	});
 </script>
 

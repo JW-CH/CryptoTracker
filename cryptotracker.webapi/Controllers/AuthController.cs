@@ -31,11 +31,11 @@ namespace cryptotracker.webapi.Controllers
         {
             var email = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             if (email == null)
-                return Unauthorized("User not found");
+                return Unauthorized("Email claim not found");
 
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
-                return Unauthorized();
+                return Unauthorized("User not found");
 
             return Ok(new MeResponse(user.UserName, user.Email, user.DisplayName));
         }
