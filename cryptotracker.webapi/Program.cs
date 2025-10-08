@@ -78,7 +78,7 @@ builder.Services.AddSingleton<IStockLogic>(srv =>
     return new YahooFinanceStockLogic(logger, fiatLogic);
 });
 
-builder.Services.AddTransient<JwtService>();
+builder.Services.AddSingleton<JwtService>();
 
 // DbContext
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
