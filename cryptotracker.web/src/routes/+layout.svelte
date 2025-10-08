@@ -2,7 +2,7 @@
 	import { user } from '$lib/stores/user';
 	import * as api from '$lib/cryptotrackerApi';
 	import { afterNavigate, goto } from '$app/navigation';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import Navbar from '$lib/components/navigation/navbar.svelte';
 	import NavBreadcrumb from '$lib/components/navigation/NavBreadcrumb.svelte';
