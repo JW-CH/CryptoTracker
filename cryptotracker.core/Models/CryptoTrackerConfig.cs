@@ -32,7 +32,8 @@ namespace cryptotracker.core.Models
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(LowerCaseNamingConvention.Instance)
                 .Build();
-            return deserializer.Deserialize<CryptoTrackerConfig>(input);
+            return deserializer.Deserialize<CryptoTrackerConfig>(input)
+                   ?? throw new InvalidOperationException("Unable to deserialize CryptoTracker config from YAML.");
         }
     }
 }
