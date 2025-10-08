@@ -36,7 +36,7 @@ namespace cryptotracker.core.Logic
             _logger = logger;
         }
 
-        public async Task<IEnumerable<BalanceResult>> GetAvailableIntegrationBalances(CryptotrackerIntegration integration)
+        public async Task<IEnumerable<BalanceResult>> GetAvailableIntegrationBalances(CryptoTrackerIntegration integration)
         {
             _logger.LogTrace($"Fetching balances for integration {integration.Name}");
 

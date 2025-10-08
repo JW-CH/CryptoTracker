@@ -1,6 +1,6 @@
 ﻿namespace cryptotracker.core.Models
 {
-    public class CryptotrackerIntegration
+    public class CryptoTrackerIntegration
     {
         public string Name { get; set; }
         public string Type { get; set; }
@@ -9,7 +9,7 @@
         public string Passphrase { get; set; }
         public string Description { get; set; }
 
-        public CryptotrackerIntegration()
+        public CryptoTrackerIntegration()
         {
             Name = string.Empty;
             Type = string.Empty;
@@ -19,7 +19,7 @@
             Description = string.Empty;
         }
 
-        public CryptotrackerIntegration(string name, string type, string key, string secret, string passphrase, string description)
+        public CryptoTrackerIntegration(string name, string type, string key, string secret, string passphrase, string description)
         {
             Name = name;
             Type = type;

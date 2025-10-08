@@ -24,13 +24,13 @@ else
     ymlConfigPath = Path.Combine(root, "..", "..", "..", "..", "config", "config.yml");
 }
 
-CryptotrackerConfig config;
+CryptoTrackerConfig config;
 
 if (File.Exists(ymlConfigPath))
 {
     var yml = File.ReadAllText(ymlConfigPath);
 
-    config = CryptotrackerConfig.LoadFromYml(yml);
+    config = CryptoTrackerConfig.LoadFromYml(yml);
 }
 else
 {
@@ -145,7 +145,7 @@ async Task Import()
 }
 
 
-void AddMeasuring(DatabaseContext db, CryptotrackerIntegration integration, string symbol, decimal balance)
+void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
 {
     var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
 
