@@ -18,13 +18,17 @@ namespace cryptotracker.webapi.Services
 
         public string GenerateJwtToken(ApplicationUser user)
         {
+            if (string.IsNullOrEmpty(user.Email))
+                throw new ArgumentException("User email is required for JWT generation", nameof(user));
+
             var secretKey = Encoding.UTF8.GetBytes(_config.Auth.Secret!);
 
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, "user")
+                new Claim(ClaimTypes.Role, "user"),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
             };
 
             var key = new SymmetricSecurityKey(secretKey);

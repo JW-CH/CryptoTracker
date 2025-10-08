@@ -4,13 +4,6 @@
 
 	let list = page.url.pathname == '/' ? [''] : page.url.pathname.toLowerCase().split('/');
 
-	let url = ['/'];
-
-	function addItemToUrl(item: string) {
-		console.log('item', item);
-		url.push(item + '/');
-	}
-
 	function getUrl(index: number) {
 		let url = ['/'];
 		for (let i = 1; i <= index; i++) {

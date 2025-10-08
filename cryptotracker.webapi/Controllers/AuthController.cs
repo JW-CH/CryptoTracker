@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,7 +25,24 @@ namespace cryptotracker.webapi.Controllers
             _jwtService = jwtService;
         }
 
-        [HttpGet("oidc-login")]
+        [Authorize]
+        [HttpGet("me", Name = "GetMe")]
+        public async Task<ActionResult<MeResponse>> Me()
+        {
+            var email = User?.Claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            if (email == null)
+                return Unauthorized("Email claim not found");
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+                return Unauthorized("User not found");
+
+            return Ok(new MeResponse(user.UserName, user.Email, user.DisplayName));
+        }
+
+        public record MeResponse(string? UserName, string? Email, string? DisplayName);
+
+        [HttpGet("oidc-login", Name = "OidcLogin")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
             var targetUrl = string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl)
@@ -34,7 +53,7 @@ namespace cryptotracker.webapi.Controllers
             return Challenge(props, OpenIdConnectDefaults.AuthenticationScheme);
         }
 
-        [HttpPost("login")]
+        [HttpPost("login", Name = "Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByNameAsync(request.Username);
@@ -47,7 +66,7 @@ namespace cryptotracker.webapi.Controllers
             return Unauthorized();
         }
 
-        [HttpPost("register")]
+        [HttpPost("register", Name = "Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var existingUser = await _userManager.FindByNameAsync(request.Username);
@@ -71,7 +90,7 @@ namespace cryptotracker.webapi.Controllers
             return Ok();
         }
 
-        [HttpPost("logout")]
+        [HttpPost("logout", Name = "Logout")]
         public IActionResult Logout()
         {
             Response.Cookies.Delete("jwt");
