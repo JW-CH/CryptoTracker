@@ -22,6 +22,10 @@ Tracking:
 - [x] Preis tracking per Asset
 - [x] Automatischer abgleich für Assets
 
+Auth:
+- [X] Username/Password Login
+- [X] OIDC-Login
+
 WebUI:
 - [x] Anzeige Verlauf
 - [x] Assets verwalten (Ein-/ Ausblenden, Coingecko zugehörigkeit ändern)
