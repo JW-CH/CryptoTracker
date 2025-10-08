@@ -13,7 +13,7 @@ namespace cryptotracker.core.Models
         public CryptoTrackerAuth Auth { get; set; } = new();
         public CryptoTrackerOidc Oidc { get; set; } = new();
         public string LogLevel { get; set; } = "Information";
-        public string? StockApi { get; set; } = "";
+        public string? StockApi { get; set; } = null;
         public List<CryptoTrackerIntegration> Integrations { get; set; } = new();
 
         public static CryptoTrackerConfig LoadFromJson(string input)
