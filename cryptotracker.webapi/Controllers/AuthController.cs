@@ -26,7 +26,11 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("oidc-login")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
-            var props = new AuthenticationProperties { RedirectUri = returnUrl };
+            var targetUrl = string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl)
+                ? "/"
+                : returnUrl;
+
+            var props = new AuthenticationProperties { RedirectUri = targetUrl };
             return Challenge(props, OpenIdConnectDefaults.AuthenticationScheme);
         }
 

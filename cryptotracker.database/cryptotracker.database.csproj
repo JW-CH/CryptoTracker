@@ -13,7 +13,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.20" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.17" />
   </ItemGroup>
 
 </Project>

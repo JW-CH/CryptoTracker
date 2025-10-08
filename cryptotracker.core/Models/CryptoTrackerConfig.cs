@@ -1,4 +1,5 @@
 ﻿
+using System.Text.Json;
 using cryptotracker.core.Interfaces;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -17,7 +18,13 @@ namespace cryptotracker.core.Models
 
         public static CryptoTrackerConfig LoadFromJson(string input)
         {
-            throw new NotImplementedException();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            return JsonSerializer.Deserialize<CryptoTrackerConfig>(input, options)
+                   ?? throw new InvalidOperationException("Unable to deserialize CryptoTracker config from JSON.");
         }
 
         public static CryptoTrackerConfig LoadFromYml(string input)

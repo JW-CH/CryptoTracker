@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -6,6 +7,7 @@ using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -80,6 +82,10 @@ builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
 {
     var config = serviceProvider.GetRequiredService<ICryptoTrackerConfig>();
     var connectionString = config?.ConnectionString ?? "";
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("ConnectionString is missing. Configure CryptoTracker:ConnectionString.");
+    }
     options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
     options.EnableSensitiveDataLogging(false);
 });
@@ -91,6 +97,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 
 // JWT Auth
 var secretKey = Encoding.UTF8.GetBytes(config.Auth.Secret ?? throw new Exception("JWT Secret not configured"));
+if (secretKey.Length < 32)
+{
+    throw new Exception("JWT Secret must be at least 32 bytes (256 bits) for HMAC SHA256");
+}
 
 // Authentication
 builder.Services.AddAuthentication(options =>
@@ -98,6 +108,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
+// Required for OIDC sign-in (OpenIdConnect needs a sign-in handler)
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
 // JWT-Validation
 .AddJwtBearer(jwtOptions =>
 {
@@ -116,10 +128,14 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            var cookie = context.Request.Cookies["jwt"];
-            if (!string.IsNullOrEmpty(cookie))
+            // Prefer Bearer header; fall back to cookie
+            if (!context.Request.Headers.ContainsKey("Authorization"))
             {
-                context.Token = cookie;
+                var cookie = context.Request.Cookies["jwt"];
+                if (!string.IsNullOrEmpty(cookie))
+                {
+                    context.Token = cookie;
+                }
             }
             return Task.CompletedTask;
         }
@@ -139,6 +155,8 @@ builder.Services.AddAuthentication(options =>
     oidcOptions.Scope.Add("profile");
     oidcOptions.Scope.Add("email");
 
+    oidcOptions.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
     oidcOptions.Events = new OpenIdConnectEvents
     {
         OnTokenValidated = async ctx =>
@@ -149,9 +167,17 @@ builder.Services.AddAuthentication(options =>
             if (!string.IsNullOrEmpty(email))
             {
                 var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
-                var user = await userManager.FindByEmailAsync(email) ?? new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
-                if (user.Id == null) await userManager.CreateAsync(user);
-
+                var user = await userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
+                    var createResult = await userManager.CreateAsync(user);
+                    if (!createResult.Succeeded)
+                    {
+                        ctx.Fail("User creation failed");
+                        return;
+                    }
+                }
                 var jwt = jwtService.GenerateJwtToken(user);
                 jwtService.SetJwtCookie(ctx.Response, jwt);
             }
