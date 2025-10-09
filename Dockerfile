@@ -31,7 +31,7 @@ COPY --chown=node:node ./cryptotracker.web ./
 RUN npm run build && npm prune --omit=dev
 
 # Stage 4: Final production stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-jammy AS final
 
 WORKDIR /app
 
