@@ -73,7 +73,7 @@ namespace cryptotracker.core.Logic
                 case "kucoin":
                     using (var kucoinClient = new KucoinRestClient(xy =>
                     {
-                        xy.ApiCredentials = new KucoinApiCredentials(integration.Key, integration.Secret, integration.Passphrase);
+                        xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret, integration.Passphrase);
                     }))
                     {
                         var accounts = await GetKucoinAvailableAccounts(kucoinClient);
@@ -310,7 +310,7 @@ namespace cryptotracker.core.Logic
         }
         private async Task<List<KucoinAccount>> GetKucoinAvailableAccounts(IKucoinRestClient client)
         {
-            WebCallResult<IEnumerable<KucoinAccount>>? result = null;
+            WebCallResult<KucoinAccount[]>? result = null;
             List<KucoinAccount> accounts = new();
 
             result = await client.SpotApi.Account.GetAccountsAsync();
@@ -327,7 +327,7 @@ namespace cryptotracker.core.Logic
         }
         private async Task<IEnumerable<CryptoComBalance>> GetCryptoComAvailableAccounts(ICryptoComRestClient client)
         {
-            WebCallResult<IEnumerable<CryptoComBalances>>? result = null;
+            WebCallResult<CryptoComBalances[]>? result = null;
             List<CryptoComBalance> accounts = new();
 
             result = await client.ExchangeApi.Account.GetBalancesAsync();
