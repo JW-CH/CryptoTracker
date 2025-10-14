@@ -229,38 +229,34 @@
 			</Card.Root>
 		</div>
 		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-			{#key dailyMeasurings}
+			{#key [dailyMeasurings, measuringsInitialized]}
 				<CardWithDays className="col-span-4" title="Bestand" bind:selectedRange={range}>
-					{#key measuringsInitialized}
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: assetData?.asset.symbol ?? '',
-									// take the first measuring because it is filtered by the asset symbol
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
-								}
-							]}
-						/>
-					{/key}
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: assetData?.asset.symbol ?? '',
+								// take the first measuring because it is filtered by the asset symbol
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
+							}
+						]}
+					/>
 				</CardWithDays>
 				<CardWithDays className="col-span-4" title="Wert Bestand" bind:selectedRange={range}>
-					{#key measuringsInitialized}
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: 'CHF',
-									// take the first measuring because it is filtered by the asset symbol
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
-								}
-							]}
-						/>
-					{/key}
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: 'CHF',
+								// take the first measuring because it is filtered by the asset symbol
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
+							}
+						]}
+					/>
 				</CardWithDays>
 			{/key}
 		</div>
