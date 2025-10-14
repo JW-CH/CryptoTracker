@@ -88,6 +88,12 @@
 
 	async function LoadAssetData() {
 		let request = await api.getAsset(page.params.slug ?? '');
+
+		if (request.status != 200) {
+			console.error('Error loading asset data');
+			return;
+		}
+
 		let data = request.data;
 		selectedCoin = data.asset.externalId ?? '';
 		hidden = data.asset.isHidden ?? false;
@@ -96,9 +102,9 @@
 		return data;
 	}
 
-	async function LoadMessungen(days: number) {
+	async function LoadMessungen(days: number, symbol: string) {
 		measuringsInitialized = false;
-		let request = await api.getMeasuringsByDays(days, { $symbol: assetData?.asset.symbol ?? '' });
+		let request = await api.getMeasuringsByDays(days, { $symbol: symbol });
 
 		var dates = StringKeysToDates(Object.keys(request.data));
 		var values = Object.values(request.data);
@@ -115,15 +121,26 @@
 
 	let lastRange: number | undefined;
 	$effect(() => {
+		if (!assetData?.asset.symbol) return;
+
 		if (range !== lastRange) {
-			LoadMessungen(range);
+			LoadMessungen(range, assetData.asset.symbol);
 			lastRange = range;
 		}
 	});
 
 	onMount(async () => {
 		assetData = await LoadAssetData();
+
+		if (!assetData) {
+			console.error('No asset data found');
+			return;
+		}
+
 		assetInitialized = true;
+
+		await LoadMessungen(range, assetData.asset.symbol!);
+		lastRange = range;
 	});
 </script>
 
