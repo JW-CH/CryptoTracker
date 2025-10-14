@@ -8,6 +8,7 @@
 
 	let assets: Set<string> = new Set<string>();
 	let summarize: boolean = true;
+	let selectedRange = $state<number>(14);
 
 	function AddAsset(assetId: string) {
 		assets.add(assetId);
@@ -74,8 +75,8 @@
 				{/await}
 			</Card.Content>
 		</Card.Root>
-		<CardWithDays className="col-span-4" title="Wert" let:range>
-			{#await api.getStandingsByDay(range)}
+		<CardWithDays className="col-span-4" title="Wert" bind:selectedRange>
+			{#await api.getStandingsByDay(selectedRange)}
 				<LineChart skeleton={true} />
 			{:then standings}
 				<LineChart
@@ -87,8 +88,8 @@
 				<p>{error.message}</p>
 			{/await}
 		</CardWithDays>
-		<CardWithDays className="col-span-4" title="Zusammensetzung" let:range>
-			{#await api.getMeasuringsByDays(range)}
+		<CardWithDays className="col-span-4" title="Zusammensetzung" bind:selectedRange>
+			{#await api.getMeasuringsByDays(selectedRange)}
 				<LineChart skeleton={true} />
 			{:then stats}
 				{#each Object.values(stats.data).flat() as stat}

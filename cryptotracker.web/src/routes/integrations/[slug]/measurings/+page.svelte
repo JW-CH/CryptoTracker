@@ -13,7 +13,7 @@
 	}
 
 	onMount(async () => {
-		api.getMeasuringsByIntegration(page.params.slug).then((response) => {
+		api.getMeasuringsByIntegration(page.params.slug ?? '').then((response) => {
 			measurings = response.data;
 		});
 	});
@@ -27,7 +27,7 @@ Messungen für {page.params.slug}
 		<div class="items-center">
 			{measuring.timestamp} - {measuring.symbol}: {measuring.amount}
 		</div>
-		<Button on:click={() => deleteMeasuring(measuring.id!)} variant="destructive" class="w-min"
+		<Button onclick={() => deleteMeasuring(measuring.id!)} variant="destructive" class="w-min"
 			>X</Button
 		>
 	</div>
