@@ -11,11 +11,10 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"api": "oazapfts http://localhost:5106/swagger/v1/swagger.json src/lib/cryptotrackerApi.ts"
+		"api": "oazapfts ../openApi/swagger.json src/lib/cryptotrackerApi.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.3",
-		"@sveltejs/adapter-auto": "^6.0.1",
 		"@sveltejs/kit": "^2.46.4",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"@tailwindcss/postcss": "^4.1.11",
@@ -28,7 +27,7 @@
 		"eslint-plugin-svelte": "^3.12.4",
 		"globals": "^16.4.0",
 		"lucide-svelte": "^0.545.0",
-		"oazapfts": "^6.1.0",
+		"oazapfts": "^6.3.1",
 		"prettier": "^3.3.2",
 		"prettier-plugin-svelte": "^3.2.6",
 		"prettier-plugin-tailwindcss": "^0.6.13",
