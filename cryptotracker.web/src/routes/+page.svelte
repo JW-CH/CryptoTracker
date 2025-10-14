@@ -4,6 +4,7 @@
 	import * as api from '$lib/cryptotrackerApi';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
 	import PieChart from '$lib/components/charts/PieChart.svelte';
+	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
 	let assets: Set<string> = new Set<string>();
 	let summarize: boolean = true;
@@ -73,48 +74,38 @@
 				{/await}
 			</Card.Content>
 		</Card.Root>
-		<Card.Root class="col-span-4">
-			<Card.Header>
-				<Card.Title>Wert letzte 7 Tage</Card.Title>
-			</Card.Header>
-			<Card.Content>
-				{#await api.getStandingsByDay(7)}
-					<LineChart skeleton={true} />
-				{:then standings}
-					<LineChart
-						fill={true}
-						labels={StringKeysToDates(Object.keys(standings.data))}
-						datasets={[{ name: 'CHF', data: Object.values(standings.data) }]}
-					/>
-				{:catch error}
-					<p>{error.message}</p>
-				{/await}
-			</Card.Content>
-		</Card.Root>
-		<Card.Root class="col-span-4">
-			<Card.Header>
-				<Card.Title>Zusammensetzung letzte 7 Tage</Card.Title>
-			</Card.Header>
-			<Card.Content>
-				{#await api.getMeasuringsByDays(7)}
-					<LineChart skeleton={true} />
-				{:then stats}
-					{#each Object.values(stats.data).flat() as stat}
-						{AddAsset(stat.asset.symbol ?? '')}
-					{/each}
-					<LineChart
-						labels={StringKeysToDates(Object.keys(stats.data))}
-						datasets={Array.from(assets).map((assetId) => ({
-							name: assetId,
-							data: Object.values(stats.data).map(
-								(x) => x.find((y) => y.asset.symbol === assetId)?.totalValue ?? 0
-							)
-						}))}
-					/>
-				{:catch error}
-					<p>{error.message}</p>
-				{/await}
-			</Card.Content>
-		</Card.Root>
+		<CardWithDays className="col-span-4" title="Wert" let:range>
+			{#await api.getStandingsByDay(range)}
+				<LineChart skeleton={true} />
+			{:then standings}
+				<LineChart
+					fill={true}
+					labels={StringKeysToDates(Object.keys(standings.data))}
+					datasets={[{ name: 'CHF', data: Object.values(standings.data) }]}
+				/>
+			{:catch error}
+				<p>{error.message}</p>
+			{/await}
+		</CardWithDays>
+		<CardWithDays className="col-span-4" title="Zusammensetzung" let:range>
+			{#await api.getMeasuringsByDays(range)}
+				<LineChart skeleton={true} />
+			{:then stats}
+				{#each Object.values(stats.data).flat() as stat}
+					{AddAsset(stat.asset.symbol ?? '')}
+				{/each}
+				<LineChart
+					labels={StringKeysToDates(Object.keys(stats.data))}
+					datasets={Array.from(assets).map((assetId) => ({
+						name: assetId,
+						data: Object.values(stats.data).map(
+							(x) => x.find((y) => y.asset.symbol === assetId)?.totalValue ?? 0
+						)
+					}))}
+				/>
+			{:catch error}
+				<p>{error.message}</p>
+			{/await}
+		</CardWithDays>
 	</div>
 </div>
