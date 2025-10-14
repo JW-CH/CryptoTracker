@@ -115,22 +115,21 @@ export function addAsset(addAssetDto?: AddAssetDto, opts?: Oazapfts.RequestOpts)
         body: addAssetDto
     }));
 }
-export function deleteAsset(body?: string, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: boolean;
-    }>("/api/Asset", oazapfts.json({
-        ...opts,
-        method: "DELETE",
-        body
-    }));
-}
 export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: AssetData;
     }>(`/api/Asset/${encodeURIComponent($symbol)}`, {
         ...opts
+    });
+}
+export function deleteAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}`, {
+        ...opts,
+        method: "DELETE"
     });
 }
 export function getCoins(opts?: Oazapfts.RequestOpts) {
@@ -195,11 +194,11 @@ export function setAssetTypeForSymbol($symbol: string, assetType?: AssetType, op
         body: assetType
     }));
 }
-export function resetAsset($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
+export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Asset/${encodeURIComponent($symbol)}/Reset`, oazapfts.json({
+    }>("/api/Asset/Reset", oazapfts.json({
         ...opts,
         method: "POST",
         body
@@ -328,15 +327,14 @@ export function getMeasuringsByIntegration(id: string, opts?: Oazapfts.RequestOp
         ...opts
     });
 }
-export function deleteMeasuringById(id: string, body?: string, opts?: Oazapfts.RequestOpts) {
+export function deleteMeasuringById(id: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Measuring/${encodeURIComponent(id)}`, oazapfts.json({
+    }>(`/api/Measuring/${encodeURIComponent(id)}`, {
         ...opts,
-        method: "DELETE",
-        body
-    }));
+        method: "DELETE"
+    });
 }
 export function addIntegrationMeasuring(id: string, addMeasuringDto?: AddMeasuringDto, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
