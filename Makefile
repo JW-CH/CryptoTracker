@@ -5,6 +5,7 @@ web:
 	dotnet run --project ./cryptotracker.webapi
 	
 api:
+	curl http://localhost:5106/swagger/v1/swagger.json -o ./openApi/swagger.json
 	npm --prefix cryptotracker.web run api
 
 docker_build_web_dev:
