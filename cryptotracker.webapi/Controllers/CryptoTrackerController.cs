@@ -58,7 +58,7 @@ namespace cryptotracker.webapi.Controllers
         public Dictionary<DateTime, decimal> GetStandingByDay([Required] int days = 7)
         {
             var dayList = new List<DateTime>();
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < days; i++)
             {
                 DateTime date = DateTime.Today.AddDays(-i);
                 dayList.Add(date.Date);
