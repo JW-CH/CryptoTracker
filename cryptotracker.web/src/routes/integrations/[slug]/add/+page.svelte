@@ -54,6 +54,6 @@
 			type="number"
 			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
 		/>
-		<Button onclick={AddMeasuring}>Speichern</Button>
+		<Button on:click={AddMeasuring}>Speichern</Button>
 	</Card.Content>
 </Card.Root>

@@ -97,7 +97,6 @@
 	}
 
 	async function LoadMessungen(days: number) {
-		console.log('Loading measurings for', days, 'days');
 		measuringsInitialized = false;
 		let request = await api.getMeasuringsByDays(days, { $symbol: assetData?.asset.symbol ?? '' });
 
@@ -117,7 +116,6 @@
 	let lastRange: number | undefined;
 	$effect(() => {
 		if (range !== lastRange) {
-			console.log('Range changed to', range);
 			LoadMessungen(range);
 			lastRange = range;
 		}
