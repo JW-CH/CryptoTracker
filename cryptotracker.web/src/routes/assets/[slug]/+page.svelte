@@ -130,17 +130,17 @@
 	});
 
 	onMount(async () => {
+		lastRange = range;
 		assetData = await LoadAssetData();
 
-		if (!assetData) {
-			console.error('No asset data found');
+		if (!assetData?.asset?.symbol) {
+			console.error('Asset or symbol is missing');
 			return;
 		}
 
 		assetInitialized = true;
 
-		await LoadMessungen(range, assetData.asset.symbol!);
-		lastRange = range;
+		await LoadMessungen(range, assetData.asset.symbol);
 	});
 </script>
 
