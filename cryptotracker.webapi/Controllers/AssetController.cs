@@ -193,8 +193,8 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpDelete(Name = "DeleteAsset")]
-        public bool DeleteAsset([FromBody] string symbol)
+        [HttpDelete("{symbol}", Name = "DeleteAsset")]
+        public bool DeleteAsset([Required] string symbol)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
@@ -208,7 +208,7 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpPost("{symbol}/Reset", Name = "ResetAsset")]
+        [HttpPost("Reset", Name = "ResetAsset")]
         public bool ResetAsset([FromBody] string symbol)
         {
             var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");

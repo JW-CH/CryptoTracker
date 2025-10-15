@@ -111,6 +111,6 @@
 				NOT SUPPORTED
 			{/if}
 		</div>
-		<Button on:click={AddIntegration}>Speichern</Button>
+		<Button onclick={AddIntegration}>Speichern</Button>
 	</Card.Content>
 </Card.Root>

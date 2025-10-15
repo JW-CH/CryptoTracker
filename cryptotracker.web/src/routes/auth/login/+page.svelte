@@ -29,8 +29,9 @@
 		<div class="mb-4 rounded bg-red-100 p-4 text-red-700">{error}</div>
 	{/if}
 	<form
-		on:submit|preventDefault={() => {
-			handleLogin();
+		onsubmit={async (event) => {
+			event.preventDefault();
+			await handleLogin();
 		}}
 		class="space-y-4"
 	>
@@ -64,7 +65,7 @@
 		<button
 			type="button"
 			class="w-full rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
-			on:click={() => {
+			onclick={() => {
 				window.location.href = '/api/auth/oidc-login';
 			}}
 		>

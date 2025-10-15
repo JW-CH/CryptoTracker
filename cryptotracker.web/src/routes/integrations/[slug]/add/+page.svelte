@@ -19,7 +19,7 @@
 	async function AddMeasuring() {
 		if (!date || !selectedAsset || (!amount && amount != 0)) return;
 
-		let request = await api.addIntegrationMeasuring(page.params.slug, {
+		let request = await api.addIntegrationMeasuring(page.params.slug ?? '', {
 			symbol: selectedAsset,
 			date: date,
 			amount: amount

@@ -6,22 +6,25 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
+	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
 	interface DailyMeasurings {
 		date: string;
 		measurings: api.MessungDto[];
 	}
 
-	let assetInitialized: boolean = false;
-	let assetData: api.AssetData;
+	let assetInitialized = $state<boolean>(false);
+	let assetData = $state<api.AssetData>();
 
-	let measuringsInitialized: boolean = false;
-	let dailyMeasurings: DailyMeasurings[] = [];
+	let range = $state<number>(7);
 
-	let selectedCoin: string = '';
-	let selectedAssetType: api.AssetType = 'Fiat';
-	let assetType: api.AssetType = 'Fiat';
-	let hidden: boolean = false;
+	let measuringsInitialized = $state<boolean>(false);
+	let dailyMeasurings = $state<DailyMeasurings[]>([]);
+
+	let selectedCoin = $state<string>('');
+	let selectedAssetType = $state<api.AssetType>('Fiat');
+	let assetType = $state<api.AssetType>('Fiat');
+	let hidden = $state<boolean>(false);
 
 	function StringKeysToDates(arr: string[]) {
 		return arr.map((x) =>
@@ -84,7 +87,13 @@
 	}
 
 	async function LoadAssetData() {
-		let request = await api.getAsset(page.params.slug);
+		let request = await api.getAsset(page.params.slug ?? '');
+
+		if (request.status != 200) {
+			console.error('Error loading asset data');
+			return;
+		}
+
 		let data = request.data;
 		selectedCoin = data.asset.externalId ?? '';
 		hidden = data.asset.isHidden ?? false;
@@ -93,11 +102,14 @@
 		return data;
 	}
 
-	async function LoadMessungen() {
-		let request = await api.getMeasuringsByDays(7, { $symbol: assetData.asset.symbol ?? '' });
+	async function LoadMessungen(days: number, symbol: string) {
+		measuringsInitialized = false;
+		let request = await api.getMeasuringsByDays(days, { $symbol: symbol });
 
 		var dates = StringKeysToDates(Object.keys(request.data));
 		var values = Object.values(request.data);
+
+		dailyMeasurings = [];
 
 		for (let key in Object.keys(request.data)) {
 			let date = dates[key];
@@ -107,17 +119,34 @@
 		measuringsInitialized = true;
 	}
 
+	let lastRange: number | undefined;
+	$effect(() => {
+		if (!assetData?.asset.symbol) return;
+
+		if (range !== lastRange) {
+			LoadMessungen(range, assetData.asset.symbol);
+			lastRange = range;
+		}
+	});
+
 	onMount(async () => {
+		lastRange = range;
 		assetData = await LoadAssetData();
+
+		if (!assetData?.asset?.symbol) {
+			console.error('Asset or symbol is missing');
+			return;
+		}
+
 		assetInitialized = true;
 
-		await LoadMessungen();
+		await LoadMessungen(range, assetData.asset.symbol);
 	});
 </script>
 
-<Button on:click={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
-<Button on:click={ResetAsset}>Reset</Button>
-<Button on:click={DeleteAsset} class="btn bg-destructive">Löschen</Button>
+<Button onclick={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
+<Button onclick={ResetAsset}>Reset</Button>
+<Button onclick={DeleteAsset} class="btn bg-destructive">Löschen</Button>
 {#if assetInitialized && assetData?.asset.symbol && !assetData?.asset.name}
 	{#if !selectedCoin}
 		AssetType:
@@ -132,7 +161,7 @@
 			<!-- <option value="Commodity">Commodity</option>
 				<option value="RealEstate">RealEstate</option> -->
 		</select>
-		<Button on:click={setSelectedAssetType}>Setzen</Button>
+		<Button onclick={setSelectedAssetType}>Setzen</Button>
 	{/if}
 	<Card.Root class="col-span-4">
 		<Card.Header>
@@ -159,7 +188,7 @@
 					{/if}
 				{/key}
 			</select>
-			<Button on:click={setAssetData}>Speichern</Button>
+			<Button onclick={setAssetData}>Speichern</Button>
 		</Card.Content>
 	</Card.Root>
 {:else}
@@ -171,7 +200,7 @@
 				</Card.Header>
 				<Card.Content>
 					{#if assetInitialized}
-						{assetData.asset.name}
+						{assetData?.asset.name}
 					{:else}
 						<Skeleton class="h-6 w-1/2 bg-gray-200" />
 					{/if}
@@ -183,7 +212,7 @@
 				</Card.Header>
 				<Card.Content>
 					{#if assetInitialized}
-						{assetData.asset.symbol}
+						{assetData?.asset.symbol}
 					{:else}
 						<Skeleton class="h-6 w-1/2 bg-gray-200" />
 					{/if}
@@ -195,7 +224,7 @@
 				</Card.Header>
 				<Card.Content>
 					{#if assetInitialized}
-						{assetData.price} CHF
+						{assetData?.price} CHF
 					{:else}
 						<Skeleton class="h-6 w-1/2 bg-gray-200" />
 					{/if}
@@ -207,7 +236,7 @@
 				</Card.Header>
 				<Card.Content>
 					{#if assetInitialized}
-						<img class="h-10" src={assetData.asset?.image} alt={assetData.asset.name} />
+						<img class="h-10" src={assetData?.asset?.image} alt={assetData?.asset.name} />
 					{:else}
 						<Skeleton class="h-10 w-10 bg-gray-200" />
 					{/if}
@@ -215,48 +244,36 @@
 			</Card.Root>
 		</div>
 		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-			<Card.Root class="col-span-4">
-				<Card.Header>
-					<Card.Title>Bestand letzte 7 Tage</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#key measuringsInitialized}
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: assetData?.asset.symbol ?? '',
-									// take the first measuring because it is filtered by the asset symbol
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
-								}
-							]}
-						/>
-					{/key}
-				</Card.Content>
-			</Card.Root>
-			<Card.Root class="col-span-4">
-				<Card.Header>
-					<Card.Title>Wert Bestand letzte 7 Tage</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#key measuringsInitialized}
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: 'CHF',
-									// take the first measuring because it is filtered by the asset symbol
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
-								}
-							]}
-						/>
-					{/key}
-				</Card.Content>
-			</Card.Root>
+			{#key [dailyMeasurings, measuringsInitialized]}
+				<CardWithDays class="col-span-4" title="Bestand" bind:selectedRange={range}>
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: assetData?.asset.symbol ?? '',
+								// take the first measuring because it is filtered by the asset symbol
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
+							}
+						]}
+					/>
+				</CardWithDays>
+				<CardWithDays class="col-span-4" title="Wert Bestand" bind:selectedRange={range}>
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: 'CHF',
+								// take the first measuring because it is filtered by the asset symbol
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
+							}
+						]}
+					/>
+				</CardWithDays>
+			{/key}
 		</div>
 		<p>Integrationen:</p>
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

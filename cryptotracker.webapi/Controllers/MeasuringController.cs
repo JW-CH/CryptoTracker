@@ -68,7 +68,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpDelete("{id}", Name = "DeleteMeasuringById")]
-        public bool DeleteMeasuringById([FromBody] Guid id)
+        public bool DeleteMeasuringById([Required] Guid id)
         {
             var measuring = _db.AssetMeasurings.Include(x => x.Integration).Where(x => x.Id == id).FirstOrDefault();
 
