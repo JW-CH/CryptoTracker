@@ -75,7 +75,7 @@
 				{/await}
 			</Card.Content>
 		</Card.Root>
-		<CardWithDays className="col-span-4" title="Wert" bind:selectedRange>
+		<CardWithDays class="col-span-4" title="Wert" bind:selectedRange>
 			{#await api.getStandingsByDay(selectedRange)}
 				<LineChart skeleton={true} />
 			{:then standings}
@@ -88,7 +88,7 @@
 				<p>{error.message}</p>
 			{/await}
 		</CardWithDays>
-		<CardWithDays className="col-span-4" title="Zusammensetzung" bind:selectedRange>
+		<CardWithDays class="col-span-4" title="Zusammensetzung" bind:selectedRange>
 			{#await api.getMeasuringsByDays(selectedRange)}
 				<LineChart skeleton={true} />
 			{:then stats}

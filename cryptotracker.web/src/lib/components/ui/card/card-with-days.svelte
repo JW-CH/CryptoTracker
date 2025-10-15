@@ -1,13 +1,20 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
+	import type { HTMLAttributes } from 'svelte/elements';
 
 	interface Props {
 		title?: string;
-		className?: string;
+		class: $$Props['class'];
 		selectedRange?: number;
 	}
 
-	let { title = 'Card Title', className = '', selectedRange = $bindable(7) }: Props = $props();
+	type $$Props = HTMLAttributes<HTMLDivElement>;
+
+	let {
+		title = 'Card Title',
+		class: className = undefined,
+		selectedRange = $bindable(7)
+	}: Props = $props();
 
 	const ranges = [7, 14, 30, 90];
 </script>

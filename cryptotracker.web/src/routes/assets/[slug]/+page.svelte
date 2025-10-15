@@ -245,7 +245,7 @@
 		</div>
 		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
 			{#key [dailyMeasurings, measuringsInitialized]}
-				<CardWithDays className="col-span-4" title="Bestand" bind:selectedRange={range}>
+				<CardWithDays class="col-span-4" title="Bestand" bind:selectedRange={range}>
 					<LineChart
 						skeleton={!measuringsInitialized}
 						fill={true}
@@ -259,7 +259,7 @@
 						]}
 					/>
 				</CardWithDays>
-				<CardWithDays className="col-span-4" title="Wert Bestand" bind:selectedRange={range}>
+				<CardWithDays class="col-span-4" title="Wert Bestand" bind:selectedRange={range}>
 					<LineChart
 						skeleton={!measuringsInitialized}
 						fill={true}
