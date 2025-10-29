@@ -18,14 +18,14 @@
 		{#each list as item, index}
 			{#if index == 0}
 				<Breadcrumb.Item>
-					<Breadcrumb.Link asChild let:attrs>
+					<Breadcrumb.Link>
 						<a href={getUrl(index)}>home</a>
 					</Breadcrumb.Link>
 				</Breadcrumb.Item>
 			{:else}
 				<Breadcrumb.Separator />
 				<Breadcrumb.Item>
-					<Breadcrumb.Link asChild let:attrs>
+					<Breadcrumb.Link>
 						<a href={getUrl(index)}>{item}</a>
 					</Breadcrumb.Link>
 				</Breadcrumb.Item>
