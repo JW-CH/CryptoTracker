@@ -12,8 +12,8 @@
     <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
-    <PackageVersion Include="MySql.EntityFrameworkCore" Version="10.0.0-rc" />
     <PackageVersion Include="NBitcoin" Version="9.0.4" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="ThreeFourteen.AlphaVantage" Version="1.0.3" />

@@ -37,7 +37,7 @@ namespace cryptotracker.webapi.Controllers
 
             if (integration == null) return null;
 
-            var measurings = ApiHelper.GetAssetDayMeasuring(_db, DateTime.Today, integrationId: integration.Id);
+            var measurings = ApiHelper.GetAssetDayMeasuring(_db, DateTime.UtcNow.Date, integrationId: integration.Id);
 
             return IntegrationDetails.FromIntegration(integration, measurings);
         }
