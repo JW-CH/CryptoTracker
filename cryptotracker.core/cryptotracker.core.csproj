@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CardanoSharp.Wallet" Version="5.1.0" />
-    <PackageReference Include="CryptoClients.Net" Version="3.12.0" />
-    <PackageReference Include="NBitcoin" Version="7.0.50" />
-    <PackageReference Include="ThreeFourteen.AlphaVantage" Version="1.0.3" />
-    <PackageReference Include="TwelveDataSharp" Version="1.1.0" />
-    <PackageReference Include="YahooFinanceApi" Version="2.3.3" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <PackageReference Include="CardanoSharp.Wallet" />
+    <PackageReference Include="CryptoClients.Net" />
+    <PackageReference Include="NBitcoin" />
+    <PackageReference Include="ThreeFourteen.AlphaVantage" />
+    <PackageReference Include="TwelveDataSharp" />
+    <PackageReference Include="YahooFinanceApi" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
