@@ -44,7 +44,7 @@
 </script>
 
 {#if skeleton}
-	<Skeleton class="aspect-square w-full bg-gray-200"></Skeleton>
+	<Skeleton class="aspect-square w-full"></Skeleton>
 {:else}
 	<canvas {id}></canvas>
 {/if}

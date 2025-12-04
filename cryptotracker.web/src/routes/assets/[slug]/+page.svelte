@@ -3,15 +3,20 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as api from '$lib/cryptotrackerApi';
 	import { onMount } from 'svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
+	import Badge from '$lib/components/ui/badge/badge.svelte';
 
 	interface DailyMeasurings {
 		date: string;
 		measurings: api.MessungDto[];
 	}
+
+	const selectClasses =
+		'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 	let assetInitialized = $state<boolean>(false);
 	let assetData = $state<api.AssetData>();
@@ -144,108 +149,128 @@
 	});
 </script>
 
-<Button onclick={SetVisibility}>Asset {hidden ? 'Anzeigen' : 'Verstecken'}</Button>
-<Button onclick={ResetAsset}>Reset</Button>
-<Button onclick={DeleteAsset} class="btn bg-destructive">Löschen</Button>
 {#if assetInitialized && assetData?.asset.symbol && !assetData?.asset.name}
-	{#if !selectedCoin}
-		AssetType:
-		<select
-			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-			bind:value={selectedAssetType}
-		>
-			<option value="Fiat">Fiat</option>
-			<option value="Crypto">Crypto</option>
-			<option value="Stock">Stock</option>
-			<option value="ETF">ETF</option>
-			<!-- <option value="Commodity">Commodity</option>
-				<option value="RealEstate">RealEstate</option> -->
-		</select>
-		<Button onclick={setSelectedAssetType}>Setzen</Button>
-	{/if}
-	<Card.Root class="col-span-4">
-		<Card.Header>
-			<Card.Title>Externe ID verknüpfen</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			<select
-				class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-				bind:value={selectedCoin}
-			>
-				{#key assetType}
-					{#if assetType === 'Fiat'}
-						{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
-							{#each coins.data as coin}
-								<option value={coin.symbol}>{coin.name}</option>
-							{/each}
-						{/await}
-					{:else if assetType === 'Crypto'}
-						{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
-							{#each coins.data as coin}
-								<option value={coin.id}>{coin.name}</option>
-							{/each}
-						{/await}
-					{/if}
-				{/key}
-			</select>
-			<Button onclick={setAssetData}>Speichern</Button>
-		</Card.Content>
-	</Card.Root>
+	<section class="mx-auto max-w-4xl space-y-6">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Asset konfigurieren</Card.Title>
+				<Card.Description>
+					Ordne dem Asset eine Quelle zu, damit wir Preis- und Bestandsdaten automatisiert beziehen
+					können.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="space-y-6">
+				{#if !selectedCoin}
+					<div class="space-y-2">
+						<label class="text-muted-foreground text-sm font-medium" for="asset-type"
+							>Asset-Typ</label
+						>
+						<select id="asset-type" class={selectClasses} bind:value={selectedAssetType}>
+							<option value="Fiat">Fiat</option>
+							<option value="Crypto">Crypto</option>
+							<option value="Stock">Stock</option>
+							<option value="ETF">ETF</option>
+						</select>
+						<div class="flex justify-end">
+							<Button size="sm" variant="outline" onclick={setSelectedAssetType}>Übernehmen</Button>
+						</div>
+					</div>
+				{/if}
+				<div class="space-y-2">
+					<label class="text-muted-foreground text-sm font-medium" for="external-id"
+						>Externe ID</label
+					>
+					<select id="external-id" class={selectClasses} bind:value={selectedCoin}>
+						{#key assetType}
+							{#if assetType === 'Fiat'}
+								{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
+									{#each coins.data as coin}
+										<option value={coin.symbol}>{coin.name}</option>
+									{/each}
+								{/await}
+							{:else if assetType === 'Crypto'}
+								{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
+									{#each coins.data as coin}
+										<option value={coin.id}>{coin.name}</option>
+									{/each}
+								{/await}
+							{/if}
+						{/key}
+					</select>
+				</div>
+			</Card.Content>
+			<Card.Footer class="border-border bg-muted/40 flex items-center justify-end gap-2 border-t">
+				<Button variant="outline" size="sm" onclick={ResetAsset}>Zurücksetzen</Button>
+				<Button variant="destructive" size="sm" onclick={DeleteAsset}>Löschen</Button>
+				<Button size="sm" onclick={setAssetData}>Verknüpfen</Button>
+			</Card.Footer>
+		</Card.Root>
+	</section>
 {:else}
-	<div class="space-y-4">
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-			<Card.Root>
-				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-center text-sm font-medium">Name</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if assetInitialized}
-						{assetData?.asset.name}
-					{:else}
-						<Skeleton class="h-6 w-1/2 bg-gray-200" />
-					{/if}
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-center text-sm font-medium">Symbol</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if assetInitialized}
-						{assetData?.asset.symbol}
-					{:else}
-						<Skeleton class="h-6 w-1/2 bg-gray-200" />
-					{/if}
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-center text-sm font-medium">Aktueller Preis</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if assetInitialized}
-						{assetData?.price} CHF
-					{:else}
-						<Skeleton class="h-6 w-1/2 bg-gray-200" />
-					{/if}
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-					<Card.Title class="text-center text-sm font-medium">Logo</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if assetInitialized}
-						<img class="h-10" src={assetData?.asset?.image} alt={assetData?.asset.name} />
-					{:else}
-						<Skeleton class="h-10 w-10 bg-gray-200" />
-					{/if}
-				</Card.Content>
-			</Card.Root>
-		</div>
-		<div class="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-			{#key [dailyMeasurings, measuringsInitialized]}
-				<CardWithDays class="col-span-4" title="Bestand" bind:selectedRange={range}>
+	<section class="space-y-8">
+		<Card.Root>
+			<Card.Content class="space-y-6">
+				<div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+					<div class="flex items-center gap-4">
+						{#if assetInitialized}
+							{#if assetData?.asset.image}
+								<div
+									class="border-border bg-background flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border p-2"
+								>
+									<img
+										class="h-full w-full object-contain"
+										src={assetData.asset.image}
+										alt={assetData.asset.name}
+									/>
+								</div>
+							{:else}
+								<div class="border-border h-16 w-16 rounded-full border border-dashed"></div>
+							{/if}
+						{:else}
+							<Skeleton class="h-16 w-16 rounded-full" />
+						{/if}
+						<div class="space-y-1">
+							{#if assetInitialized}
+								<h1 class="text-2xl font-semibold tracking-tight">
+									{assetData?.asset.name ?? assetData?.asset.symbol}
+								</h1>
+								<p class="text-muted-foreground text-sm uppercase">
+									{assetData?.asset.symbol}
+									<Badge class="ml-2 uppercase">{assetData?.asset.assetType}</Badge>
+								</p>
+							{:else}
+								<div class="space-y-2">
+									<Skeleton class="h-6 w-48" />
+									<Skeleton class="h-4 w-24" />
+								</div>
+							{/if}
+						</div>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
+						<div>
+							<p class="text-muted-foreground text-xs font-medium">Aktueller Preis</p>
+							{#if assetInitialized}
+								<p class="mt-2 text-lg font-semibold">{assetData?.price} CHF</p>
+							{:else}
+								<Skeleton class="mt-2 h-6 w-1/2" />
+							{/if}
+						</div>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
+						<ButtonGroup.Root>
+							<Button size="sm" variant="outline" onclick={SetVisibility}>
+								Asset {hidden ? 'anzeigen' : 'ausblenden'}
+							</Button>
+							<Button size="sm" variant="outline" onclick={ResetAsset}>Zurücksetzen</Button>
+							<Button size="sm" variant="destructive" onclick={DeleteAsset}>Löschen</Button>
+						</ButtonGroup.Root>
+					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+		{#key [dailyMeasurings, measuringsInitialized]}
+			<div class="grid gap-4 lg:grid-cols-2">
+				<CardWithDays class="h-full" title="Bestand" bind:selectedRange={range}>
 					<LineChart
 						skeleton={!measuringsInitialized}
 						fill={true}
@@ -253,13 +278,12 @@
 						datasets={[
 							{
 								name: assetData?.asset.symbol ?? '',
-								// take the first measuring because it is filtered by the asset symbol
 								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
 							}
 						]}
 					/>
 				</CardWithDays>
-				<CardWithDays class="col-span-4" title="Wert Bestand" bind:selectedRange={range}>
+				<CardWithDays class="h-full" title="Wert Bestand" bind:selectedRange={range}>
 					<LineChart
 						skeleton={!measuringsInitialized}
 						fill={true}
@@ -267,33 +291,42 @@
 						datasets={[
 							{
 								name: 'CHF',
-								// take the first measuring because it is filtered by the asset symbol
 								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
 							}
 						]}
 					/>
 				</CardWithDays>
-			{/key}
-		</div>
-		<p>Integrationen:</p>
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-			{#if measuringsInitialized && dailyMeasurings.length > 0}
-				<!-- loop through the last measuring (today) and the first integration (filtered) value -->
-				{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
-					<a href="/integrations/{integrationItem.integration.id}">
-						<Card.Root>
-							<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-								<Card.Title class="text-center text-sm font-medium"
-									>{integrationItem.integration.name}</Card.Title
-								>
-							</Card.Header>
-							<Card.Content>
-								{integrationItem.integration.name}: {integrationItem.amount?.toFixed(2)}
-							</Card.Content>
-						</Card.Root>
-					</a>
-				{/each}
-			{/if}
-		</div>
-	</div>
+			</div>
+		{/key}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Integrationen</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				{#if measuringsInitialized && dailyMeasurings.length > 0}
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
+							<a
+								class="border-border bg-background hover:border-primary group block rounded-xl border p-4 transition hover:-translate-y-0.5 hover:shadow-lg"
+								href="/integrations/{integrationItem.integration.id}"
+							>
+								<p class="text-muted-foreground text-sm font-medium">
+									{integrationItem.integration.name}
+								</p>
+								<p class="mt-3 text-xl font-semibold">
+									{integrationItem.amount?.toFixed(2)}
+								</p>
+							</a>
+						{/each}
+					</div>
+				{:else}
+					<div
+						class="border-border bg-muted/20 text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm"
+					>
+						Keine aktiven Integrationen gefunden.
+					</div>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	</section>
 {/if}

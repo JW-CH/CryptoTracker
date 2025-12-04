@@ -13,11 +13,11 @@
 		<Card.Root class="flex h-full flex-col">
 			<Card.Header>
 				<Card.Title class="text-center">
-					<Skeleton class="h-4 w-[100px] bg-gray-200" /></Card.Title
+					<Skeleton class="w-[100px]200 h-4" /></Card.Title
 				>
 			</Card.Header>
 			<Card.Content class="grow">
-				<Skeleton class="h-32 w-full bg-gray-200" />
+				<Skeleton class="h-32 w-full" />
 			</Card.Content>
 		</Card.Root>
 	{/each}

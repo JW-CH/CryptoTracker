@@ -34,7 +34,7 @@
 </script>
 
 {#if skeleton}
-	<Skeleton class="aspect-video w-full bg-gray-200"></Skeleton>
+	<Skeleton class="aspect-video w-full"></Skeleton>
 {:else}
 	<canvas {id}></canvas>
 {/if}

@@ -13,9 +13,9 @@
 		<Card.Root class="flex h-full flex-col">
 			<Card.Content class="grow">
 				<div class="grid grid-cols-5 items-center gap-4">
-					<Skeleton class="h-10 w-full bg-gray-200" />
-					<Skeleton class="col-span-2 h-4 w-full bg-gray-200" />
-					<Skeleton class="col-span-2 h-4 w-full bg-gray-200" />
+					<Skeleton class="h-10 w-full" />
+					<Skeleton class="col-span-2 h-4 w-full" />
+					<Skeleton class="col-span-2 h-4 w-full" />
 				</div>
 			</Card.Content>
 		</Card.Root>

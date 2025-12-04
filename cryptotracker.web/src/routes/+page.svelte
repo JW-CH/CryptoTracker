@@ -47,7 +47,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#await api.getLatestStanding()}
-					<Skeleton class="h-6 w-1/2 bg-gray-200" />
+					<Skeleton class="h-6 w-1/2" />
 				{:then standing}
 					<div class="text-2xl font-bold">{standing.data.toFixed(2)} CHF</div>
 				{:catch error}

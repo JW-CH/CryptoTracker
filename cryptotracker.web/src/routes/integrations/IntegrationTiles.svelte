@@ -13,7 +13,7 @@
 		<Card.Root class="flex h-full flex-col">
 			<Card.Header>
 				<Card.Title class="self-center">
-					<Skeleton class="h-4 w-[150px] bg-gray-200" />
+					<Skeleton class="h-4 w-[150px]" />
 				</Card.Title>
 			</Card.Header>
 			<Card.Content class="grow"></Card.Content>

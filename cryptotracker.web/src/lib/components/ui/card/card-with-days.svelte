@@ -1,10 +1,13 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import type { HTMLAttributes } from 'svelte/elements';
+	import { Button } from '$lib/components/ui/button';
+	import * as ButtonGroup from '$lib/components/ui/button-group/index.js';
 
 	interface Props {
 		title?: string;
 		class: $$Props['class'];
+		children: $$Props['children'];
 		selectedRange?: number;
 	}
 
@@ -12,7 +15,8 @@
 
 	let {
 		title = 'Card Title',
-		class: className = undefined,
+		class: className,
+		children,
 		selectedRange = $bindable(7)
 	}: Props = $props();
 
@@ -23,18 +27,22 @@
 	<Card.Header class="flex items-center justify-between">
 		<Card.Title>{title} (letzte {selectedRange} Tage)</Card.Title>
 		<div class="flex gap-2">
-			{#each ranges as range}
-				<button
-					onclick={() => (selectedRange = range)}
-					class="rounded-md px-2 py-1 text-sm transition
-						{selectedRange === range ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'}"
-				>
-					{range}
-				</button>
-			{/each}
+			<ButtonGroup.Root>
+				{#each ranges as range}
+					<Button
+						size="sm"
+						variant="outline"
+						class="text-sm transition hover:bg-gray-200
+						{selectedRange === range ? 'bg-gray-200' : ''}"
+						onclick={() => (selectedRange = range)}
+					>
+						{range}</Button
+					>
+				{/each}
+			</ButtonGroup.Root>
 		</div>
 	</Card.Header>
 	<Card.Content>
-		<slot />
+		{@render children?.()}
 	</Card.Content>
 </Card.Root>

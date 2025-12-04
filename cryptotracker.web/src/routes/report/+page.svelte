@@ -26,11 +26,11 @@
 			<Card.Root class="flex h-full flex-col">
 				<Card.Content class="grow p-3">
 					<div class="flex flex-row items-center justify-between">
-						<div class="text-sm font-medium"><Skeleton class="h-4 w-[50px] bg-gray-200" /></div>
-						<div class="text-sm font-medium"><Skeleton class="h-4 w-[80px] bg-gray-200" /></div>
+						<div class="text-sm font-medium"><Skeleton class="h-4 w-[50px]" /></div>
+						<div class="text-sm font-medium"><Skeleton class="h-4 w-[80px]" /></div>
 					</div>
 					<div class="text-xs text-gray-500">
-						<Skeleton class="h-4 w-[100px] bg-gray-200" />
+						<Skeleton class="h-4 w-[100px]" />
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -44,7 +44,7 @@
 			.filter((x) => !x.asset.isHidden)
 			.sort((a, b) => b.totalValue - a.totalValue) as measuring}
 			<a href={`/assets/${measuring.asset.symbol}`}>
-				<Card.Root class="flex h-full flex-col">
+				<Card.Root class="flex h-full flex-col py-0">
 					<Card.Content class="grow p-3">
 						<div class="flex flex-row items-center justify-between">
 							<div class="text-sm font-medium">{measuring.asset.symbol}</div>
