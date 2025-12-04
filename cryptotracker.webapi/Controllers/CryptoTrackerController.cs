@@ -34,7 +34,7 @@ namespace cryptotracker.webapi.Controllers
             var dayList = new List<DateTime>();
             for (int i = 0; i < days; i++)
             {
-                DateTime date = DateTime.Today.AddDays(-i);
+                DateTime date = DateTime.UtcNow.Date.AddDays(-i);
                 dayList.Add(date.Date);
             }
 
@@ -60,7 +60,7 @@ namespace cryptotracker.webapi.Controllers
             var dayList = new List<DateTime>();
             for (int i = 0; i < days; i++)
             {
-                DateTime date = DateTime.Today.AddDays(-i);
+                DateTime date = DateTime.UtcNow.Date.AddDays(-i);
                 dayList.Add(date.Date);
             }
 
@@ -76,7 +76,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring", Name = "GetLatestMeasurings")]
         public List<MessungDto> GetLatestMeasurings()
         {
-            var day = DateTime.Today;
+            var day = DateTime.UtcNow.Date;
 
             return ApiHelper.GetAssetDayMeasuring(_db, day);
         }
@@ -84,7 +84,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("standing", Name = "GetLatestStanding")]
         public decimal GetLatestStanding()
         {
-            var day = DateTime.Today;
+            var day = DateTime.UtcNow.Date;
 
             return ApiHelper.GetAssetDayMeasuring(_db, day).Sum(x => x.TotalValue);
         }

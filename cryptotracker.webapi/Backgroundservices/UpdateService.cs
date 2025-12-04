@@ -56,7 +56,7 @@ public class UpdateService : BackgroundService
             foreach (var integration in _config.Integrations)
             {
                 _logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
-                var entries = db.AssetMeasurings.Where(x => x.Timestamp.Date == DateTime.Today.Date && x.Integration.Name == integration.Name);
+                var entries = db.AssetMeasurings.Where(x => x.Timestamp.Date == DateTime.UtcNow.Date && x.Integration.Name == integration.Name);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
                 _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
@@ -124,7 +124,7 @@ public class UpdateService : BackgroundService
         {
             Symbol = asset.Symbol,
             IntegrationId = ex.Id,
-            Timestamp = DateTime.Now,
+            Timestamp = DateTime.UtcNow,
             Amount = balance
         };
 
