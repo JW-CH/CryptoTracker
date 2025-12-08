@@ -53,10 +53,13 @@ public class UpdateService : BackgroundService
         try
         {
             _logger.LogInformation("Starting Integration-Import");
+
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
             foreach (var integration in _config.Integrations)
             {
                 _logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
-                var entries = db.AssetMeasurings.Where(x => x.Timestamp.Date == DateTime.Today.Date && x.Integration.Name == integration.Name);
+                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.Integration.Name == integration.Name);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
                 _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
@@ -124,7 +127,7 @@ public class UpdateService : BackgroundService
         {
             Symbol = asset.Symbol,
             IntegrationId = ex.Id,
-            Timestamp = DateTime.Now,
+            Timestamp = DateTime.UtcNow,
             Amount = balance
         };
 

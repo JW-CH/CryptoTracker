@@ -77,7 +77,7 @@ var stockLogic = new YahooFinanceStockLogic(logger, fiatLogic);
 var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
 
 var optionsBuilder = new DbContextOptionsBuilder<DatabaseContext>();
-optionsBuilder.UseMySQL(config.ConnectionString);
+optionsBuilder.UseNpgsql(config.ConnectionString);
 
 // Apply migrations
 using (var db = new DatabaseContext(optionsBuilder.Options))
@@ -106,10 +106,13 @@ async Task Import()
     try
     {
         logger.LogInformation("Starting Integration-Import");
+
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
         foreach (var integration in config.Integrations)
         {
             logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
-            var entries = db.AssetMeasurings.Where(x => x.Timestamp.Date == DateTime.Today.Date && x.Integration.Name == integration.Name);
+            var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.Integration.Name == integration.Name);
             var count = entries.Count();
             db.AssetMeasurings.RemoveRange(entries);
             logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
@@ -178,7 +181,7 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
     {
         Symbol = asset.Symbol,
         IntegrationId = ex.Id,
-        Timestamp = DateTime.Now,
+        Timestamp = DateTime.UtcNow,
         Amount = balance
     };
 

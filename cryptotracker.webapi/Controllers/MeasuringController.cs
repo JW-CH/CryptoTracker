@@ -43,7 +43,10 @@ namespace cryptotracker.webapi.Controllers
 
             if (asset == null) throw new Exception("Asset nicht gefunden");
 
-            AssetMeasuring? measuring = _db.AssetMeasurings.Where(x => x.Symbol == dto.Symbol && x.IntegrationId == integration.Id && x.Timestamp.Date == dto.Date.Date).FirstOrDefault();
+            var today = dto.Date.Date;
+            var tomorrow = today.AddDays(1);
+
+            AssetMeasuring? measuring = _db.AssetMeasurings.Where(x => x.Symbol == dto.Symbol && x.IntegrationId == integration.Id && x.Timestamp >= today && x.Timestamp < tomorrow).FirstOrDefault();
 
             if (measuring != null)
             {

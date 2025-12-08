@@ -1,4 +1,3 @@
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -90,7 +89,7 @@ builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
     {
         throw new InvalidOperationException("ConnectionString is missing. Configure CryptoTracker:ConnectionString.");
     }
-    options.UseMySQL(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
+    options.UseNpgsql(connectionString).LogTo(Console.WriteLine, LogLevel.Warning);
     options.EnableSensitiveDataLogging(false);
 });
 
