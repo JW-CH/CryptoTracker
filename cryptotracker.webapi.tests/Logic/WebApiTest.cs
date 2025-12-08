@@ -1,4 +1,5 @@
-﻿using cryptotracker.core.Logic;
+﻿using System.Threading.Tasks;
+using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ public class WebApiTest
     private Mock<ILogger<CryptoTrackerController>> _loggerMock;
 
     [SetUp]
-    public void Setup()
+    public async Task Setup()
     {
         var options = new DbContextOptionsBuilder<DatabaseContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) // Unique DB pro Test
@@ -39,10 +40,10 @@ public class WebApiTest
             stockLogic
         );
 
-        SeedDatabase();
+        await SeedDatabase();
     }
 
-    private void SeedDatabase()
+    private async Task SeedDatabase()
     {
         _dbContext.Assets.Add(new Asset
         {
@@ -59,7 +60,7 @@ public class WebApiTest
             Currency = "CHF",
             Price = 50M
         });
-        _dbContext.SaveChanges();
+        await _dbContext.SaveChangesAsync();
     }
 
     [TearDown]

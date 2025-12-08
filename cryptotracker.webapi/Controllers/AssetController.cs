@@ -112,7 +112,7 @@ namespace cryptotracker.webapi.Controllers
                 _logger.LogError($"Metadata not found for {asset.Symbol}");
             }
 
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
             tx.Commit();
 
             return new AssetData

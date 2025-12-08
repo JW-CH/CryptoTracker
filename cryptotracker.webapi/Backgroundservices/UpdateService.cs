@@ -1,7 +1,9 @@
+using System.Threading.Tasks;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using Microsoft.EntityFrameworkCore;
 
 public class UpdateService : BackgroundService
 {
@@ -64,7 +66,7 @@ public class UpdateService : BackgroundService
                 db.AssetMeasurings.RemoveRange(entries);
                 _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
 
-                db.SaveChanges();
+                await db.SaveChangesAsync();
                 _logger.LogTrace("DB clear");
 
                 var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
@@ -94,9 +96,9 @@ public class UpdateService : BackgroundService
         }
     }
 
-    void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
+    async Task AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
     {
-        var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
+        var ex = await db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Name.ToLower() == integration.Name.ToLower());
 
         if (ex == null)
         {
@@ -106,10 +108,10 @@ public class UpdateService : BackgroundService
                 Description = integration.Description
             };
             _logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
-            db.ExchangeIntegrations.Add(ex);
+            await db.ExchangeIntegrations.AddAsync(ex);
         }
 
-        var asset = db.Assets.Find(symbol);
+        var asset = await db.Assets.FindAsync(symbol);
 
         if (asset == null)
         {
@@ -120,7 +122,7 @@ public class UpdateService : BackgroundService
                 IsHidden = false
             };
             _logger.LogTrace($"Adding new Asset: {asset.Symbol}");
-            db.Assets.Add(asset);
+            await db.Assets.AddAsync(asset);
         }
 
         var measuring = new AssetMeasuring()
@@ -131,8 +133,8 @@ public class UpdateService : BackgroundService
             Amount = balance
         };
 
-        db.AssetMeasurings.Add(measuring);
+        await db.AssetMeasurings.AddAsync(measuring);
         _logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
-        db.SaveChanges();
+        await db.SaveChangesAsync();
     }
 }

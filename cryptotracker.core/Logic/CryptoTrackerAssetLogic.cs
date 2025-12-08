@@ -152,7 +152,7 @@ namespace cryptotracker.core.Logic
                         asset.ExternalId = fiat.Value.Symbol;
                     }
                 }
-                db.SaveChanges();
+                await db.SaveChangesAsync();
             }
 
             var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToList();
@@ -170,7 +170,7 @@ namespace cryptotracker.core.Logic
                 await UpdateMetadataForAsset(db, item);
             }
 
-            db.SaveChanges();
+            await db.SaveChangesAsync();
         }
     }
 }

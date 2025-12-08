@@ -4,6 +4,7 @@ using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 
 var root = Directory.GetCurrentDirectory();
@@ -117,7 +118,7 @@ async Task Import()
             db.AssetMeasurings.RemoveRange(entries);
             logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
 
-            db.SaveChanges();
+            await db.SaveChangesAsync();
             logger.LogTrace("DB clear");
 
             var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
@@ -148,9 +149,9 @@ async Task Import()
 }
 
 
-void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
+async Task AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
 {
-    var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
+    var ex = await db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Name.ToLower() == integration.Name.ToLower());
 
     if (ex == null)
     {
@@ -160,10 +161,10 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
             Description = integration.Description
         };
         logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
-        db.ExchangeIntegrations.Add(ex);
+        await db.ExchangeIntegrations.AddAsync(ex);
     }
 
-    var asset = db.Assets.Find(symbol);
+    var asset = await db.Assets.FindAsync(symbol);
 
     if (asset == null)
     {
@@ -174,7 +175,7 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
             IsHidden = false
         };
         logger.LogTrace($"Adding new Asset: {asset.Symbol}");
-        db.Assets.Add(asset);
+        await db.Assets.AddAsync(asset);
     }
 
     var measuring = new AssetMeasuring()
@@ -185,7 +186,7 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
         Amount = balance
     };
 
-    db.AssetMeasurings.Add(measuring);
+    await db.AssetMeasurings.AddAsync(measuring);
     logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
-    db.SaveChanges();
+    await db.SaveChangesAsync();
 }
