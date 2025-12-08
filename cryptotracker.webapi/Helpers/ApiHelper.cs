@@ -23,7 +23,7 @@ public static class ApiHelper
             integrations = integrations.Where(x => x.Id == integrationId);
         }
 
-        return GetAssetDayMeasuring(db, day.ToUniversalTime(), assets.ToList(), integrations.ToList());
+        return GetAssetDayMeasuring(db, day, assets.ToList(), integrations.ToList());
     }
 
     public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, List<Asset> assets, List<ExchangeIntegration> integrations)
