@@ -50,7 +50,7 @@ public class UpdateService : BackgroundService
     async Task Import(DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
     {
         _logger.LogTrace("Starting DB-Transaction");
-        using var tx = db.Database.BeginTransaction();
+        using var tx = await db.Database.BeginTransactionAsync();
 
         try
         {
@@ -84,7 +84,7 @@ public class UpdateService : BackgroundService
             await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
             _logger.LogInformation("Finished Metadataimport");
 
-            tx.Commit();
+            await tx.CommitAsync();
 
             _logger.LogInformation("Finished Import");
         }
@@ -92,7 +92,7 @@ public class UpdateService : BackgroundService
         {
             _logger.LogError(ex.ToString());
             _logger.LogTrace("Rolling back transaction");
-            tx.Rollback();
+            await tx.RollbackAsync();
         }
     }
 

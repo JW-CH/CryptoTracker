@@ -34,7 +34,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("{id}/detail", Name = "GetIntegrationDetails")]
         public async Task<IntegrationDetails?> GetIntegrationDetails([Required] Guid id)
         {
-            var integration = await _db.ExchangeIntegrations.Include(x => x.AssetMeasurings).ThenInclude(x => x.Asset).FirstOrDefaultAsync(x => x.Id == id);
+            var integration = await _db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Id == id);
 
             if (integration == null) return null;
 

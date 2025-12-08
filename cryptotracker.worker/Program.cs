@@ -102,7 +102,7 @@ async Task Import()
     using var db = new DatabaseContext(optionsBuilder.Options);
 
     logger.LogTrace("Starting DB-Transaction");
-    using var tx = db.Database.BeginTransaction();
+    using var tx = await db.Database.BeginTransactionAsync();
 
     try
     {
@@ -127,7 +127,7 @@ async Task Import()
 
             foreach (var balance in balances)
             {
-                AddMeasuring(db, integration, balance.Symbol, balance.Balance);
+                await AddMeasuring(db, integration, balance.Symbol, balance.Balance);
             }
         }
         logger.LogInformation("Finished Integration-Import");
@@ -136,7 +136,7 @@ async Task Import()
         await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
         logger.LogInformation("Finished Metadataimport");
 
-        tx.Commit();
+        await tx.CommitAsync();
 
         logger.LogInformation("Finished Import");
     }
@@ -144,7 +144,7 @@ async Task Import()
     {
         logger.LogError(ex.ToString());
         logger.LogTrace("Rolling back transaction");
-        tx.Rollback();
+        await tx.RollbackAsync();
     }
 }
 

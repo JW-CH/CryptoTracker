@@ -16,6 +16,9 @@ public class WebApiTest
     private DatabaseContext _dbContext;
     private AssetController _controller;
     private Mock<ILogger<CryptoTrackerController>> _loggerMock;
+    private Mock<IFiatLogic> _fiatLogicMock;
+    private Mock<CryptoTrackerLogic> _cryptoTrackerLogicMock;
+    private Mock<IStockLogic> _stockLogicMock;
 
     [SetUp]
     public async Task Setup()
@@ -28,16 +31,20 @@ public class WebApiTest
         _dbContext = new DatabaseContext(options);
         _loggerMock = new Mock<ILogger<CryptoTrackerController>>();
 
-        var cryptoLogic = new CryptoTrackerLogic(_loggerMock.Object);
-        var fiatLogic = new FiatLogic(_loggerMock.Object);
-        var stockLogic = new EmptyStockLogic(_loggerMock.Object);
+        _fiatLogicMock = new Mock<IFiatLogic>();
+        _cryptoTrackerLogicMock = new Mock<CryptoTrackerLogic>(_loggerMock.Object);
+
+        _stockLogicMock = new Mock<IStockLogic>();
+        _stockLogicMock.Setup(x => x.GetAllStocksAsync()).ReturnsAsync(new List<Stock>() { new Stock { Symbol = "TST", Name = "Test Stock" } });
+        _stockLogicMock.Setup(x => x.GetStocksByIdsAsync(It.IsAny<string>(), It.IsAny<List<string>>())).ReturnsAsync(new List<AssetMetadata>() { new AssetMetadata { Symbol = "TST", Name = "Test Stock" } });
+        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(new AssetMetadata { Symbol = "TST", Name = "Test Stock" });
 
         _controller = new AssetController(
             _loggerMock.Object,
             _dbContext,
-            cryptoLogic,
-            fiatLogic,
-            stockLogic
+            _cryptoTrackerLogicMock.Object,
+            _fiatLogicMock.Object,
+            _stockLogicMock.Object
         );
 
         await SeedDatabase();

@@ -82,7 +82,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
-            using var tx = _db.Database.BeginTransaction();
+            using var tx = await _db.Database.BeginTransactionAsync();
 
             asset.ExternalId = externalId;
             await _db.SaveChangesAsync();
@@ -110,12 +110,12 @@ namespace cryptotracker.webapi.Controllers
             }
 
             await _db.SaveChangesAsync();
-            tx.Commit();
+            await tx.CommitAsync();
 
             return new AssetData
             {
                 Asset = asset,
-                Price = _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault()?.Price ?? 0
+                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
             }; ;
         }
 
@@ -147,7 +147,7 @@ namespace cryptotracker.webapi.Controllers
         {
             if (await _db.Assets.AnyAsync(x => x.Symbol.ToLower() == assetDto.Symbol.ToLower())) return true;
 
-            using var tx = _db.Database.BeginTransaction();
+            using var tx = await _db.Database.BeginTransactionAsync();
 
             var asset = new Asset
             {
@@ -190,7 +190,7 @@ namespace cryptotracker.webapi.Controllers
             }
 
             await _db.SaveChangesAsync();
-            tx.Commit();
+            await tx.CommitAsync();
 
             return true;
         }
@@ -203,7 +203,7 @@ namespace cryptotracker.webapi.Controllers
             if (await _db.AssetMeasurings.AnyAsync(x => x.Asset == asset))
                 throw new Exception("Asset has measurings and cannot be deleted");
 
-            _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
+            await _db.AssetPriceHistory.Where(x => x.Asset == asset).ExecuteDeleteAsync();
             _db.Assets.Remove(asset);
             await _db.SaveChangesAsync();
 
@@ -215,7 +215,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
-            _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
+            await _db.AssetPriceHistory.Where(x => x.Asset == asset).ExecuteDeleteAsync();
 
             asset.ExternalId = "";
             asset.Name = "";

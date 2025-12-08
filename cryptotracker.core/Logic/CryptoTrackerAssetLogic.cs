@@ -155,7 +155,7 @@ namespace cryptotracker.core.Logic
                 await db.SaveChangesAsync();
             }
 
-            var foundExternalIds = db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToList();
+            var foundExternalIds = await db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToListAsync();
 
             if (foundExternalIds.Count == 0) return;
             var currency = "chf";
