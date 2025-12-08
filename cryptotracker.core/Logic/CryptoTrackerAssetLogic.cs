@@ -1,4 +1,5 @@
 using cryptotracker.database.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace cryptotracker.core.Logic
@@ -18,9 +19,9 @@ namespace cryptotracker.core.Logic
             _stockLogic = stockLogic;
         }
 
-        public void UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata)
+        public async Task UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata)
         {
-            var asset = db.Assets.FirstOrDefault(a => a.ExternalId == metadata.AssetId);
+            var asset = await db.Assets.FirstOrDefaultAsync(a => a.ExternalId == metadata.AssetId);
 
             if (asset == null) return;
 
@@ -30,7 +31,7 @@ namespace cryptotracker.core.Logic
             if (string.IsNullOrWhiteSpace(asset.Image))
                 asset.Image = metadata.Image;
 
-            var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
+            var price = await db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
 
             if (price == null)
             {
@@ -44,7 +45,7 @@ namespace cryptotracker.core.Logic
 
                 _logger.LogTrace($"Add AssetPriceHistory for {price.Symbol}, {price.Date} - {price.Price} {price.Currency}");
 
-                db.AssetPriceHistory.Add(price);
+                await db.AssetPriceHistory.AddAsync(price);
             }
             else
             {
@@ -62,7 +63,7 @@ namespace cryptotracker.core.Logic
                         Currency = metadata.Currency,
                         Price = metadata.Price,
                     };
-                    db.AssetPriceHistory.Add(price);
+                    await db.AssetPriceHistory.AddAsync(price);
                 }
                 else
                 {
@@ -73,7 +74,7 @@ namespace cryptotracker.core.Logic
 
         public async Task UpdateAllAssetMetadata(DatabaseContext db)
         {
-            var assets = db.Assets.ToList();
+            var assets = await db.Assets.ToListAsync();
             _logger.LogTrace($"Found {assets.Count} assets");
 
             if (assets.Count == 0) return;
@@ -113,7 +114,7 @@ namespace cryptotracker.core.Logic
                         asset.ExternalId = coin.Value.Id;
                     }
                 }
-                db.SaveChanges();
+                await db.SaveChangesAsync();
             }
 
             var fiatList = _fiatLogic.GetFiatList().Result;
@@ -166,7 +167,7 @@ namespace cryptotracker.core.Logic
 
             foreach (var item in all)
             {
-                UpdateMetadataForAsset(db, item);
+                await UpdateMetadataForAsset(db, item);
             }
 
             db.SaveChanges();

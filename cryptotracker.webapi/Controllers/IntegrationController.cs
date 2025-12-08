@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using cryptotracker.core.Logic;
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
@@ -31,7 +32,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("{id}/detail", Name = "GetIntegrationDetails")]
-        public IntegrationDetails? GetIntegrationDetails([Required] Guid id)
+        public async Task<IntegrationDetails?> GetIntegrationDetails([Required] Guid id)
         {
             var integration = _db.ExchangeIntegrations.Include(x => x.AssetMeasurings).ThenInclude(x => x.Asset).FirstOrDefault(x => x.Id == id);
 
@@ -39,15 +40,15 @@ namespace cryptotracker.webapi.Controllers
 
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var measurings = ApiHelper.GetAssetDayMeasuring(_db, today, integrationId: integration.Id);
+            var measurings = await ApiHelper.GetAssetDayMeasuring(_db, today, integrationId: integration.Id);
 
             return IntegrationDetails.FromIntegration(integration, measurings);
         }
 
         [HttpPost(Name = "AddIntegration")]
-        public bool AddIntegration([FromBody] AddIntegrationDto dto)
+        public async Task<bool> AddIntegration([FromBody] AddIntegrationDto dto)
         {
-            if (_db.ExchangeIntegrations.Any(x => x.Name.ToLower() == dto.Name.ToLower())) throw new Exception("Integration mit diesem Namen existiert bereits.");
+            if (await _db.ExchangeIntegrations.AnyAsync(x => x.Name.ToLower() == dto.Name.ToLower())) throw new Exception("Integration mit diesem Namen existiert bereits.");
 
             var integration = new ExchangeIntegration
             {
@@ -57,8 +58,8 @@ namespace cryptotracker.webapi.Controllers
                 IsManual = true,
             };
 
-            _db.Add(integration);
-            _db.SaveChanges();
+            await _db.AddAsync(integration);
+            await _db.SaveChangesAsync();
 
             return true;
         }

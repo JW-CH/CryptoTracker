@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
 using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace cryptotracker.webapi.Controllers
 {
@@ -29,19 +31,22 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet(Name = "GetAssets")]
-        public List<Asset> GetAssets()
+        public async Task<List<Asset>> GetAssets()
         {
-            return _db.Assets.ToList();
+            return await _db.Assets.ToListAsync();
         }
 
         [HttpGet("{symbol}", Name = "GetAsset")]
-        public AssetData GetAsset([Required] string symbol)
+        public async Task<AssetData> GetAsset([Required] string symbol)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new KeyNotFoundException("Asset not found");
+
+            var list = await _db.AssetPriceHistory.ToListAsync();
+            var x = list.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault();
             return new AssetData
             {
                 Asset = asset,
-                Price = _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault()?.Price ?? 0
+                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
             };
         }
 
@@ -78,12 +83,12 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost("{symbol}/ExternalId", Name = "SetExternalIdForSymbol")]
         public async Task<AssetData> SetExternalIdForSymbol([Required] string symbol, [FromBody] string externalId)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
             using var tx = _db.Database.BeginTransaction();
 
             asset.ExternalId = externalId;
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             var currency = "CHF";
 
@@ -100,7 +105,7 @@ namespace cryptotracker.webapi.Controllers
 
             if (!string.IsNullOrEmpty(metadata.AssetId))
             {
-                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata);
+                await _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata);
             }
             else
             {
@@ -118,24 +123,24 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpPost("{symbol}/Visibility", Name = "SetVisibilityForSymbol")]
-        public bool SetVisibilityForSymbol([Required] string symbol, [FromBody] bool isHidden)
+        public async Task<bool> SetVisibilityForSymbol([Required] string symbol, [FromBody] bool isHidden)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
             asset.IsHidden = isHidden;
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             return true;
         }
 
         [HttpPost("{symbol}/AssetType", Name = "SetAssetTypeForSymbol")]
-        public bool SetAssetTypeForSymbol([Required] string symbol, [FromBody] AssetType assetType)
+        public async Task<bool> SetAssetTypeForSymbol([Required] string symbol, [FromBody] AssetType assetType)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
             if (!string.IsNullOrEmpty(asset.ExternalId)) throw new Exception("Asset already has an external id and cannot be set as fiat");
 
             asset.AssetType = assetType;
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             return true;
         }
@@ -155,8 +160,8 @@ namespace cryptotracker.webapi.Controllers
                 IsHidden = false
             };
 
-            _db.Assets.Add(asset);
-            _db.SaveChanges();
+            await _db.Assets.AddAsync(asset);
+            await _db.SaveChangesAsync();
 
             var currency = "CHF";
 
@@ -180,45 +185,45 @@ namespace cryptotracker.webapi.Controllers
 
             if (metadata.HasValue)
             {
-                _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata.Value);
+                await _cryptoTrackerAssetLogic.UpdateMetadataForAsset(_db, metadata.Value);
             }
             else
             {
                 throw new Exception($"Metadata not found for {asset.Symbol}");
             }
 
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
             tx.Commit();
 
             return true;
         }
 
         [HttpDelete("{symbol}", Name = "DeleteAsset")]
-        public bool DeleteAsset([Required] string symbol)
+        public async Task<bool> DeleteAsset([Required] string symbol)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
-            if (_db.AssetMeasurings.Any(x => x.Asset == asset))
+            if (await _db.AssetMeasurings.AnyAsync(x => x.Asset == asset))
                 throw new Exception("Asset has measurings and cannot be deleted");
 
             _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
             _db.Assets.Remove(asset);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             return true;
         }
 
         [HttpPost("Reset", Name = "ResetAsset")]
-        public bool ResetAsset([FromBody] string symbol)
+        public async Task<bool> ResetAsset([FromBody] string symbol)
         {
-            var asset = _db.Assets.FirstOrDefault(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
+            var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
             _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
 
             asset.ExternalId = "";
             asset.Name = "";
             asset.Image = "";
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
 
             return true;
         }
