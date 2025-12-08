@@ -79,7 +79,7 @@ namespace cryptotracker.core.Logic
 
             if (assets.Count == 0) return;
 
-            var coinList = _cryptoTrackerLogic.GetCoinList().Result;
+            var coinList = await _cryptoTrackerLogic.GetCoinList();
             _logger.LogTrace($"Fetched {coinList.Count()} coins");
 
             if (coinList != null)
@@ -117,7 +117,7 @@ namespace cryptotracker.core.Logic
                 await db.SaveChangesAsync();
             }
 
-            var fiatList = _fiatLogic.GetFiatList().Result;
+            var fiatList = await _fiatLogic.GetFiatList();
             _logger.LogTrace($"Fetched {fiatList.Count()} fiats");
 
             if (fiatList != null)

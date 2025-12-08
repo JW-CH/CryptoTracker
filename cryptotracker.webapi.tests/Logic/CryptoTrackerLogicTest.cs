@@ -20,7 +20,7 @@ public class CryptoTrackerLogicTest
     }
 
     [Test]
-    public async Task GetAvailableIntegrationBalances_WithInvalidType_ThrowsNotImplementedException()
+    public void GetAvailableIntegrationBalances_WithInvalidType_ThrowsNotImplementedException()
     {
         // Arrange
         var integration = new CryptoTrackerIntegration

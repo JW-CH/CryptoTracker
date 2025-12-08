@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
 using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -41,8 +40,6 @@ namespace cryptotracker.webapi.Controllers
         {
             var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new KeyNotFoundException("Asset not found");
 
-            var list = await _db.AssetPriceHistory.ToListAsync();
-            var x = list.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefault();
             return new AssetData
             {
                 Asset = asset,
@@ -148,7 +145,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost(Name = "AddAsset")]
         public async Task<bool> AddAsset([FromBody] AddAssetDto assetDto)
         {
-            if (_db.Assets.Any(x => x.Symbol.ToLower() == assetDto.Symbol)) return true;
+            if (await _db.Assets.AnyAsync(x => x.Symbol.ToLower() == assetDto.Symbol.ToLower())) return true;
 
             using var tx = _db.Database.BeginTransaction();
 

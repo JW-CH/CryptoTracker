@@ -97,7 +97,7 @@ public class WebApiTest
     }
 
     [Test]
-    public async Task GetAssets_WithHiddenAssets_ReturnsOnlyVisibleAssets()
+    public async Task GetAssets_WithHiddenAssets_ReturnsAllAssetsIncludingHidden()
     {
         // Arrange
         _dbContext.Assets.Add(new Asset
@@ -140,7 +140,7 @@ public class WebApiTest
     }
 
     [Test]
-    public async Task AddAsset_WithDuplicateSymbol_ReturnsBadRequest()
+    public async Task AddAsset_WithDuplicateSymbol_ThrowsInvalidOperationException()
     {
         // Arrange
         var dto = new AddAssetDto
@@ -169,7 +169,7 @@ public class WebApiTest
         Assert.That(result.Price, Is.EqualTo(50M));
     }
     [Test]
-    public async Task GetAsset_WithNullSymbol_ThrowsArgumentException()
+    public async Task GetAsset_WithNullSymbol_ThrowsKeyNotFoundException()
     {
         // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(
@@ -178,7 +178,7 @@ public class WebApiTest
     }
 
     [Test]
-    public async Task GetAsset_WithEmptySymbol_ThrowsArgumentException()
+    public async Task GetAsset_WithEmptySymbol_ThrowsKeyNotFoundException()
     {
         // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(

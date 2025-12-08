@@ -75,7 +75,7 @@ public class UpdateService : BackgroundService
 
                 foreach (var balance in balances)
                 {
-                    AddMeasuring(db, integration, balance.Symbol, balance.Balance);
+                    await AddMeasuring(db, integration, balance.Symbol, balance.Balance);
                 }
             }
             _logger.LogInformation("Finished Integration-Import");
