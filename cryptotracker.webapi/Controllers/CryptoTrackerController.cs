@@ -25,20 +25,21 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
         public List<MessungDto> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
-            return ApiHelper.GetAssetDayMeasuring(_db, date.ToUniversalTime(), symbol);
+            return ApiHelper.GetAssetDayMeasuring(_db, DateOnly.FromDateTime(date.ToLocalTime()), symbol);
         }
 
         [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
-        public Dictionary<DateTime, List<MessungDto>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
+        public Dictionary<DateOnly, List<MessungDto>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {
-            var dayList = new List<DateTime>();
+            var dayList = new List<DateOnly>();
+            var today = DateOnly.FromDateTime(DateTime.Now);
             for (int i = 0; i < days; i++)
             {
-                DateTime date = DateTime.UtcNow.Date.AddDays(-i);
-                dayList.Add(date.Date);
+                DateOnly date = today.AddDays(-i);
+                dayList.Add(date);
             }
 
-            var result = new Dictionary<DateTime, List<MessungDto>>();
+            var result = new Dictionary<DateOnly, List<MessungDto>>();
             foreach (var day in dayList.ToList())
             {
                 if (symbol != null)
@@ -55,16 +56,17 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("standing/days/{days}", Name = "GetStandingsByDay")]
-        public Dictionary<DateTime, decimal> GetStandingByDay([Required] int days = 7)
+        public Dictionary<DateOnly, decimal> GetStandingByDay([Required] int days = 7)
         {
-            var dayList = new List<DateTime>();
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var dayList = new List<DateOnly>();
             for (int i = 0; i < days; i++)
             {
-                DateTime date = DateTime.UtcNow.Date.AddDays(-i);
-                dayList.Add(date.Date);
+                DateOnly date = today.AddDays(-i);
+                dayList.Add(date);
             }
 
-            var result = new Dictionary<DateTime, decimal>();
+            var result = new Dictionary<DateOnly, decimal>();
             foreach (var day in dayList.ToList())
             {
                 result[day] = ApiHelper.GetAssetDayMeasuring(_db, day).Sum(x => x.TotalValue);
@@ -76,17 +78,17 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring", Name = "GetLatestMeasurings")]
         public List<MessungDto> GetLatestMeasurings()
         {
-            var day = DateTime.UtcNow.Date;
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
-            return ApiHelper.GetAssetDayMeasuring(_db, day);
+            return ApiHelper.GetAssetDayMeasuring(_db, today);
         }
 
         [HttpGet("standing", Name = "GetLatestStanding")]
         public decimal GetLatestStanding()
         {
-            var day = DateTime.UtcNow.Date;
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
-            return ApiHelper.GetAssetDayMeasuring(_db, day).Sum(x => x.TotalValue);
+            return ApiHelper.GetAssetDayMeasuring(_db, today).Sum(x => x.TotalValue);
         }
     }
 }

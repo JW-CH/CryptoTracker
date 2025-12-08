@@ -1577,5 +1577,22 @@
         "additionalProperties": false
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Asset"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "CryptoTracker"
+    },
+    {
+      "name": "Integration"
+    },
+    {
+      "name": "Measuring"
+    }
+  ]
 }

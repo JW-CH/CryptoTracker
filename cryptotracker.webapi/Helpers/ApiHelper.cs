@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 public static class ApiHelper
 {
-    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, string? symbol = null, Guid? integrationId = null)
+    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateOnly day, string? symbol = null, Guid? integrationId = null)
     {
         var assets = db.Assets.AsQueryable();
 
@@ -26,7 +26,7 @@ public static class ApiHelper
         return GetAssetDayMeasuring(db, day, assets.ToList(), integrations.ToList());
     }
 
-    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateTime day, List<Asset> assets, List<ExchangeIntegration> integrations)
+    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateOnly day, List<Asset> assets, List<ExchangeIntegration> integrations)
     {
         var result = new List<MessungDto>();
 
@@ -35,14 +35,14 @@ public static class ApiHelper
 
         var currency = "chf";
         var priceHistories = db.AssetPriceHistory
-            .Where(x => x.Date <= DateOnly.FromDateTime(day.Date) && x.Currency == currency)
+            .Where(x => x.Date <= day && x.Currency == currency)
             .Where(x => allSymbols.Contains(x.Symbol))
             .OrderByDescending(x => x.Date)
             .ToList();
 
         var assetMeasurings = db.AssetMeasurings
             .Include(x => x.Integration)
-            .Where(x => x.Timestamp.Date <= day.Date)
+            .Where(x => x.Timestamp.Date <= day.ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc))
             .Where(x => allSymbols.Contains(x.Symbol))
             .Where(x => allIntegrations.Contains(x.IntegrationId))
             .OrderByDescending(x => x.Timestamp)
@@ -56,14 +56,15 @@ public static class ApiHelper
             var allMeasurings = new List<AssetMeasuring>();
             foreach (var integration in integrations)
             {
-                var datt = assetMeasurings
+                var today = assetMeasurings
                     .Where(x => x.IntegrationId == integration.Id && x.Symbol == asset.Symbol)
-                    .FirstOrDefault()?.Timestamp.Date;
+                    .FirstOrDefault()?.Timestamp.ToUniversalTime().Date;
 
-                if (!datt.HasValue) continue;
+                if (!today.HasValue) continue;
+                var tomorrow = today.Value.AddDays(1);
 
                 var measurings = assetMeasurings
-                    .Where(x => x.Timestamp.Date == datt && x.IntegrationId == integration.Id && x.Symbol == asset.Symbol)
+                    .Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.IntegrationId == integration.Id && x.Symbol == asset.Symbol)
                     .ToList();
 
                 allMeasurings.AddRange(measurings);
