@@ -30,14 +30,14 @@ namespace cryptotracker.core.Logic
             if (string.IsNullOrWhiteSpace(asset.Image))
                 asset.Image = metadata.Image;
 
-            var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateTime.UtcNow.Date);
+            var price = db.AssetPriceHistory.FirstOrDefault(p => p.Symbol == asset.Symbol && p.Date == DateOnly.FromDateTime(DateTime.UtcNow.Date));
 
             if (price == null)
             {
                 price = new AssetPriceHistory()
                 {
                     Symbol = asset.Symbol,
-                    Date = DateTime.UtcNow.Date,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow.Date),
                     Currency = metadata.Currency,
                     Price = metadata.Price,
                 };
@@ -58,7 +58,7 @@ namespace cryptotracker.core.Logic
                     price = new AssetPriceHistory()
                     {
                         Symbol = asset.Symbol,
-                        Date = DateTime.UtcNow.Date,
+                        Date = DateOnly.FromDateTime(DateTime.UtcNow.Date),
                         Currency = metadata.Currency,
                         Price = metadata.Price,
                     };

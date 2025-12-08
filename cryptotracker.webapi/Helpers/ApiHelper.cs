@@ -35,7 +35,7 @@ public static class ApiHelper
 
         var currency = "chf";
         var priceHistories = db.AssetPriceHistory
-            .Where(x => x.Date <= day.Date && x.Currency == currency)
+            .Where(x => x.Date <= DateOnly.FromDateTime(day.Date) && x.Currency == currency)
             .Where(x => allSymbols.Contains(x.Symbol))
             .OrderByDescending(x => x.Date)
             .ToList();

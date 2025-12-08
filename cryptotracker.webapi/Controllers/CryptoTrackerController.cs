@@ -25,7 +25,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
         public List<MessungDto> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
-            return ApiHelper.GetAssetDayMeasuring(_db, date.ToLocalTime(), symbol);
+            return ApiHelper.GetAssetDayMeasuring(_db, date.ToUniversalTime(), symbol);
         }
 
         [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
