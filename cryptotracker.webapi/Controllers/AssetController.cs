@@ -14,12 +14,12 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
-        private readonly CryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly IFiatLogic _fiatLogic;
         private readonly IStockLogic _stockLogic;
         private readonly CryptoTrackerAssetLogic _cryptoTrackerAssetLogic;
 
-        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
+        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
         {
             _logger = logger;
             _db = db;
@@ -203,7 +203,7 @@ namespace cryptotracker.webapi.Controllers
             if (await _db.AssetMeasurings.AnyAsync(x => x.Asset == asset))
                 throw new Exception("Asset has measurings and cannot be deleted");
 
-            await _db.AssetPriceHistory.Where(x => x.Asset == asset).ExecuteDeleteAsync();
+            _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
             _db.Assets.Remove(asset);
             await _db.SaveChangesAsync();
 
@@ -215,7 +215,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var asset = await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new Exception("Asset not found");
 
-            await _db.AssetPriceHistory.Where(x => x.Asset == asset).ExecuteDeleteAsync();
+            _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));
 
             asset.ExternalId = "";
             asset.Name = "";

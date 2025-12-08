@@ -17,7 +17,7 @@ public class WebApiTest
     private AssetController _controller;
     private Mock<ILogger<CryptoTrackerController>> _loggerMock;
     private Mock<IFiatLogic> _fiatLogicMock;
-    private Mock<CryptoTrackerLogic> _cryptoTrackerLogicMock;
+    private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
     private Mock<IStockLogic> _stockLogicMock;
 
     [SetUp]
@@ -32,7 +32,7 @@ public class WebApiTest
         _loggerMock = new Mock<ILogger<CryptoTrackerController>>();
 
         _fiatLogicMock = new Mock<IFiatLogic>();
-        _cryptoTrackerLogicMock = new Mock<CryptoTrackerLogic>(_loggerMock.Object);
+        _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
 
         _stockLogicMock = new Mock<IStockLogic>();
         _stockLogicMock.Setup(x => x.GetAllStocksAsync()).ReturnsAsync(new List<Stock>() { new Stock { Symbol = "TST", Name = "Test Stock" } });
@@ -136,14 +136,32 @@ public class WebApiTest
             ExternalId = "ethereum"
         };
 
+        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData("CHF", It.Is<List<string>>(l => l.Contains("ethereum"))))
+            .ReturnsAsync(new List<AssetMetadata>
+            {
+                new AssetMetadata
+                {
+                    AssetId = "ethereum",
+                    Symbol = "ETH",
+                    Name = "Ethereum",
+                    Price= 111M,
+                    Currency= "CHF",
+                }
+            });
+
         // Act
         var addResult = await _controller.AddAsset(dto);
+        var ethAssetData = await _controller.GetAsset("ETH");
         var allAssets = await _controller.GetAssets();
 
         // Assert
         Assert.That(addResult, Is.True);
         Assert.That(allAssets.Count, Is.EqualTo(2));
         Assert.That(allAssets.Any(x => x.Symbol == "ETH"), Is.True);
+        Assert.That(ethAssetData.Asset.Symbol, Is.EqualTo("ETH"));
+        Assert.That(ethAssetData.Asset.ExternalId, Is.EqualTo("ethereum"));
+        Assert.That(ethAssetData.Asset.AssetType, Is.EqualTo(AssetType.Crypto));
+        Assert.That(ethAssetData.Price, Is.EqualTo(111M));
     }
 
     [Test]

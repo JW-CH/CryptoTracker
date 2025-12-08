@@ -7,11 +7,11 @@ namespace cryptotracker.core.Logic
     public class CryptoTrackerAssetLogic
     {
         private ILogger _logger;
-        private readonly CryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly IFiatLogic _fiatLogic;
         private readonly IStockLogic _stockLogic;
 
-        public CryptoTrackerAssetLogic(ILogger logger, CryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
+        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
         {
             _logger = logger;
             _cryptoTrackerLogic = cryptoTrackerLogic;

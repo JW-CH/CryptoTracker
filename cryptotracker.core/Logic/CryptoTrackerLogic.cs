@@ -28,7 +28,14 @@ using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Logic
 {
-    public class CryptoTrackerLogic
+    public interface ICryptoTrackerLogic
+    {
+        Task<IEnumerable<BalanceResult>> GetAvailableIntegrationBalances(CryptoTrackerIntegration integration);
+        Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds);
+        Task<List<Coin>> GetCoinList();
+    }
+
+    public class CryptoTrackerLogic : ICryptoTrackerLogic
     {
         private ILogger _logger;
         public CryptoTrackerLogic(ILogger logger)
