@@ -145,7 +145,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost(Name = "AddAsset")]
         public async Task<bool> AddAsset([FromBody] AddAssetDto assetDto)
         {
-            if (await _db.Assets.AnyAsync(x => x.Symbol.ToLower() == assetDto.Symbol.ToLower())) return true;
+            if (await _db.Assets.AnyAsync(x => x.Symbol.ToLower() == assetDto.Symbol.ToLower())) throw new InvalidOperationException("Asset with this symbol already exists");
 
             using var tx = await _db.Database.BeginTransactionAsync();
 
