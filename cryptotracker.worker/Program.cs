@@ -1,11 +1,10 @@
 ﻿using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.worker.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
@@ -73,7 +72,8 @@ if (loglevelNotLoaded)
 logger.LogInformation($"Integrations: {config.Integrations.Count}");
 
 var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
-var fiatLogic = new FiatLogic(logger);
+var clientFactory = new SimpleHttpClientFactory();
+var fiatLogic = new FiatLogic(logger, clientFactory);
 var stockLogic = new YahooFinanceStockLogic(logger, fiatLogic);
 var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
 

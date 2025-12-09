@@ -44,7 +44,7 @@ builder.Services.AddLogging(builder =>
             // Disable AspNetCore info logs
             builder.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         });
-
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
 {
     return config;
@@ -59,7 +59,8 @@ builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
 builder.Services.AddSingleton<IFiatLogic>(srv =>
 {
     var logger = srv.GetRequiredService<ILogger<FiatLogic>>();
-    return new FiatLogic(logger);
+    var clientFactory = srv.GetRequiredService<IHttpClientFactory>();
+    return new FiatLogic(logger, clientFactory);
 });
 
 builder.Services.AddSingleton<IStockLogic>(srv =>
