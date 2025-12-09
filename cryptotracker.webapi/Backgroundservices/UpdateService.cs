@@ -77,6 +77,7 @@ public class UpdateService : BackgroundService
                 {
                     await AddMeasuring(db, integration, balance.Symbol, balance.Balance);
                 }
+                await db.SaveChangesAsync();
             }
             _logger.LogInformation("Finished Integration-Import");
 
@@ -136,6 +137,5 @@ public class UpdateService : BackgroundService
 
         await db.AssetMeasurings.AddAsync(measuring);
         _logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
-        await db.SaveChangesAsync();
     }
 }
