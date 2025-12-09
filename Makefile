@@ -3,6 +3,12 @@ old_worker:
 
 web:
 	dotnet run --project ./cryptotracker.webapi
+
+test-webapi:
+	dotnet test ./cryptotracker.webapi.tests/cryptotracker.webapi.tests.csproj
+
+test-core:
+	dotnet test ./cryptotracker.core.tests/cryptotracker.core.tests.csproj
 	
 api:
 	curl http://localhost:5106/swagger/v1/swagger.json -o ./openApi/swagger.json

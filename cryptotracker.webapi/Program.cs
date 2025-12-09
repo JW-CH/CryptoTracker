@@ -165,7 +165,7 @@ builder.Services.AddAuthentication(options =>
         OnTokenValidated = async ctx =>
         {
             var userManager = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-            var email = ctx.Principal.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal.FindFirst("email")?.Value;
+            var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal?.FindFirst("email")?.Value ?? "";
 
             if (!string.IsNullOrEmpty(email))
             {
