@@ -5,9 +5,11 @@ using Microsoft.Extensions.Logging;
 public class FiatLogic : IFiatLogic
 {
     private ILogger _logger;
-    public FiatLogic(ILogger logger)
+    private readonly IHttpClientFactory _httpClientFactory;
+    public FiatLogic(ILogger logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<AssetMetadata> GetFiatByIdAsync(string baseCurrency, string currency)
@@ -48,7 +50,7 @@ public class FiatLogic : IFiatLogic
             return result;
         }
 
-        var client = new HttpClient();
+        using var client = _httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
         string apiUrl = $"https://api.frankfurter.app/latest?base={baseCurrency}&symbols={fiatSymbols}";
         var response = await client.GetAsync(apiUrl);
@@ -101,7 +103,7 @@ public class FiatLogic : IFiatLogic
     {
         if (_fiatList != null) return _fiatList;
 
-        var client = new HttpClient();
+        using var client = _httpClientFactory.CreateClient();
         var url = "https://api.frankfurter.app/currencies";
         var response = await client.GetAsync(url);
 

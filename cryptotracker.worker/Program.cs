@@ -1,10 +1,10 @@
 ﻿using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.worker.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
-
 
 var root = Directory.GetCurrentDirectory();
 string ymlConfigPath;
@@ -72,7 +72,8 @@ if (loglevelNotLoaded)
 logger.LogInformation($"Integrations: {config.Integrations.Count}");
 
 var cryptoTrackerLogic = new CryptoTrackerLogic(logger);
-var fiatLogic = new FiatLogic(logger);
+var clientFactory = new SimpleHttpClientFactory();
+var fiatLogic = new FiatLogic(logger, clientFactory);
 var stockLogic = new YahooFinanceStockLogic(logger, fiatLogic);
 var cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, fiatLogic, stockLogic);
 
@@ -101,7 +102,7 @@ async Task Import()
     using var db = new DatabaseContext(optionsBuilder.Options);
 
     logger.LogTrace("Starting DB-Transaction");
-    using var tx = db.Database.BeginTransaction();
+    using var tx = await db.Database.BeginTransactionAsync();
 
     try
     {
@@ -117,7 +118,7 @@ async Task Import()
             db.AssetMeasurings.RemoveRange(entries);
             logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
 
-            db.SaveChanges();
+            await db.SaveChangesAsync();
             logger.LogTrace("DB clear");
 
             var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
@@ -126,7 +127,7 @@ async Task Import()
 
             foreach (var balance in balances)
             {
-                AddMeasuring(db, integration, balance.Symbol, balance.Balance);
+                await AddMeasuring(db, integration, balance.Symbol, balance.Balance);
             }
         }
         logger.LogInformation("Finished Integration-Import");
@@ -135,7 +136,7 @@ async Task Import()
         await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
         logger.LogInformation("Finished Metadataimport");
 
-        tx.Commit();
+        await tx.CommitAsync();
 
         logger.LogInformation("Finished Import");
     }
@@ -143,14 +144,14 @@ async Task Import()
     {
         logger.LogError(ex.ToString());
         logger.LogTrace("Rolling back transaction");
-        tx.Rollback();
+        await tx.RollbackAsync();
     }
 }
 
 
-void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
+async Task AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
 {
-    var ex = db.ExchangeIntegrations.FirstOrDefault(x => x.Name.ToLower() == integration.Name.ToLower());
+    var ex = await db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Name.ToLower() == integration.Name.ToLower());
 
     if (ex == null)
     {
@@ -160,10 +161,11 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
             Description = integration.Description
         };
         logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
-        db.ExchangeIntegrations.Add(ex);
+        await db.ExchangeIntegrations.AddAsync(ex);
+        await db.SaveChangesAsync();
     }
 
-    var asset = db.Assets.Find(symbol);
+    var asset = await db.Assets.FindAsync(symbol);
 
     if (asset == null)
     {
@@ -174,7 +176,7 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
             IsHidden = false
         };
         logger.LogTrace($"Adding new Asset: {asset.Symbol}");
-        db.Assets.Add(asset);
+        await db.Assets.AddAsync(asset);
     }
 
     var measuring = new AssetMeasuring()
@@ -185,7 +187,7 @@ void AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, stri
         Amount = balance
     };
 
-    db.AssetMeasurings.Add(measuring);
+    await db.AssetMeasurings.AddAsync(measuring);
     logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
-    db.SaveChanges();
+    await db.SaveChangesAsync();
 }

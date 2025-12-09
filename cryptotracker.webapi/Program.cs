@@ -44,13 +44,13 @@ builder.Services.AddLogging(builder =>
             // Disable AspNetCore info logs
             builder.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         });
-
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
 {
     return config;
 });
 
-builder.Services.AddSingleton(srv =>
+builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
 {
     var logger = srv.GetRequiredService<ILogger<CryptoTrackerLogic>>();
     return new CryptoTrackerLogic(logger);
@@ -59,7 +59,8 @@ builder.Services.AddSingleton(srv =>
 builder.Services.AddSingleton<IFiatLogic>(srv =>
 {
     var logger = srv.GetRequiredService<ILogger<FiatLogic>>();
-    return new FiatLogic(logger);
+    var clientFactory = srv.GetRequiredService<IHttpClientFactory>();
+    return new FiatLogic(logger, clientFactory);
 });
 
 builder.Services.AddSingleton<IStockLogic>(srv =>
@@ -165,7 +166,7 @@ builder.Services.AddAuthentication(options =>
         OnTokenValidated = async ctx =>
         {
             var userManager = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-            var email = ctx.Principal.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal.FindFirst("email")?.Value;
+            var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal?.FindFirst("email")?.Value ?? "";
 
             if (!string.IsNullOrEmpty(email))
             {

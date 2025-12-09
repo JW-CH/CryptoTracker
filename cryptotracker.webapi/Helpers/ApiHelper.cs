@@ -1,10 +1,11 @@
+using System.Threading.Tasks;
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 
 public static class ApiHelper
 {
-    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateOnly day, string? symbol = null, Guid? integrationId = null)
+    public static async Task<List<MessungDto>> GetAssetDayMeasuring(DatabaseContext db, DateOnly day, string? symbol = null, Guid? integrationId = null)
     {
         var assets = db.Assets.AsQueryable();
 
@@ -23,10 +24,10 @@ public static class ApiHelper
             integrations = integrations.Where(x => x.Id == integrationId);
         }
 
-        return GetAssetDayMeasuring(db, day, assets.ToList(), integrations.ToList());
+        return await GetAssetDayMeasuringAsync(db, day, await assets.ToListAsync(), await integrations.ToListAsync());
     }
 
-    public static List<MessungDto> GetAssetDayMeasuring(DatabaseContext db, DateOnly day, List<Asset> assets, List<ExchangeIntegration> integrations)
+    public static async Task<List<MessungDto>> GetAssetDayMeasuringAsync(DatabaseContext db, DateOnly day, List<Asset> assets, List<ExchangeIntegration> integrations)
     {
         var result = new List<MessungDto>();
 
@@ -34,19 +35,19 @@ public static class ApiHelper
         var allIntegrations = integrations.Select(x => x.Id).ToList();
 
         var currency = "chf";
-        var priceHistories = db.AssetPriceHistory
+        var priceHistories = await db.AssetPriceHistory
             .Where(x => x.Date <= day && x.Currency == currency)
             .Where(x => allSymbols.Contains(x.Symbol))
             .OrderByDescending(x => x.Date)
-            .ToList();
+            .ToListAsync();
 
-        var assetMeasurings = db.AssetMeasurings
+        var assetMeasurings = await db.AssetMeasurings
             .Include(x => x.Integration)
             .Where(x => x.Timestamp.Date <= day.ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc))
             .Where(x => allSymbols.Contains(x.Symbol))
             .Where(x => allIntegrations.Contains(x.IntegrationId))
             .OrderByDescending(x => x.Timestamp)
-            .ToList();
+            .ToListAsync();
 
         foreach (var asset in assets.Where(x => assetMeasurings.Select(x => x.Symbol).Contains(x.Symbol)))
         {

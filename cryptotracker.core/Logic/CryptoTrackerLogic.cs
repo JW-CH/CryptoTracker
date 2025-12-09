@@ -28,7 +28,7 @@ using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Logic
 {
-    public class CryptoTrackerLogic
+    public class CryptoTrackerLogic : ICryptoTrackerLogic
     {
         private ILogger _logger;
         public CryptoTrackerLogic(ILogger logger)
@@ -143,6 +143,8 @@ namespace cryptotracker.core.Logic
         {
             async Task<(decimal balance, int transactions)> GetCardanoAmountFromAddress(HttpClient client, string address)
             {
+                throw new NotImplementedException();
+
                 var apiUrl = $"https://api.cardanoscan.io/api/v1/address/balance?address={address}";
                 HttpResponseMessage response = await client.GetAsync(apiUrl);
 
@@ -431,7 +433,7 @@ namespace cryptotracker.core.Logic
         {
             var result = new List<AssetMetadata>();
 
-            var client = new HttpClient();
+            using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={currency}&ids={string.Join(",", coinIds)}";
 
@@ -479,7 +481,7 @@ namespace cryptotracker.core.Logic
         {
             if (_coinList != null) return _coinList;
 
-            var client = new HttpClient();
+            using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
             var url = "https://api.coingecko.com/api/v3/coins/list";
             var response = await client.GetAsync(url);
