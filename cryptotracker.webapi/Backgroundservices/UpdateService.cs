@@ -109,6 +109,7 @@ public class UpdateService : BackgroundService
             };
             _logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
             await db.ExchangeIntegrations.AddAsync(ex);
+            await db.SaveChangesAsync();
         }
 
         var asset = await db.Assets.FindAsync(symbol);

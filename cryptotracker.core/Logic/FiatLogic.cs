@@ -48,7 +48,7 @@ public class FiatLogic : IFiatLogic
             return result;
         }
 
-        var client = new HttpClient();
+        using var client = new HttpClient();
         client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
         string apiUrl = $"https://api.frankfurter.app/latest?base={baseCurrency}&symbols={fiatSymbols}";
         var response = await client.GetAsync(apiUrl);
@@ -101,7 +101,7 @@ public class FiatLogic : IFiatLogic
     {
         if (_fiatList != null) return _fiatList;
 
-        var client = new HttpClient();
+        using var client = new HttpClient();
         var url = "https://api.frankfurter.app/currencies";
         var response = await client.GetAsync(url);
 
