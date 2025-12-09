@@ -50,7 +50,7 @@ builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
     return config;
 });
 
-builder.Services.AddSingleton(srv =>
+builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
 {
     var logger = srv.GetRequiredService<ILogger<CryptoTrackerLogic>>();
     return new CryptoTrackerLogic(logger);

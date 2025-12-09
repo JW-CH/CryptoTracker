@@ -31,7 +31,7 @@ public class UpdateService : BackgroundService
                     _logger.LogInformation("Starting import");
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-                    var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<CryptoTrackerLogic>();
+                    var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
                     var fiatLogic = scope.ServiceProvider.GetRequiredService<IFiatLogic>();
                     var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
                     var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, fiatLogic, stockLogic);
@@ -47,7 +47,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    async Task Import(DatabaseContext db, CryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
+    async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
     {
         _logger.LogTrace("Starting DB-Transaction");
         using var tx = await db.Database.BeginTransactionAsync();
