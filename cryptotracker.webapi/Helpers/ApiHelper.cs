@@ -38,7 +38,8 @@ public static class ApiHelper
         var priceHistories = await db.AssetPriceHistory
             .Where(x => x.Date <= day && x.Currency == currency)
             .Where(x => allSymbols.Contains(x.Symbol))
-            .OrderByDescending(x => x.Date)
+            .GroupBy(x => x.Symbol)
+            .Select(g => g.OrderByDescending(x => x.Date).First())
             .ToListAsync();
 
         var assetMeasurings = await db.AssetMeasurings
