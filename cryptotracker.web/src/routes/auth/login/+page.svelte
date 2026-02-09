@@ -5,6 +5,20 @@
 	let email: string = '';
 	let password: string = '';
 	let error: string | null = null;
+	let oidcEnabled: boolean = false;
+
+	async function checkOidc() {
+		try {
+			const response = await api.oidcEnabled();
+			if (response.status === 200) {
+				oidcEnabled = response.data === true;
+			}
+		} catch {
+			// OIDC not available
+		}
+	}
+
+	checkOidc();
 
 	async function handleLogin() {
 		error = null;
@@ -61,16 +75,18 @@
 		>
 			Login
 		</button>
-		<hr />
-		<button
-			type="button"
-			class="w-full rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
-			onclick={() => {
-				window.location.href = '/api/auth/oidc-login';
-			}}
-		>
-			Login with OIDC
-		</button>
+		{#if oidcEnabled}
+			<hr />
+			<button
+				type="button"
+				class="w-full rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
+				onclick={() => {
+					window.location.href = '/api/auth/oidc-login';
+				}}
+			>
+				Login with OIDC
+			</button>
+		{/if}
 		<hr />
 		<p class="text-center text-sm text-gray-600">
 			Don't have an account?

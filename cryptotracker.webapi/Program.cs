@@ -107,25 +107,23 @@ if (secretKey.Length < 32)
 }
 
 // Authentication
-builder.Services.AddAuthentication(options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-// Required for OIDC sign-in (OpenIdConnect needs a sign-in handler)
-.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
 // JWT-Validation
 .AddJwtBearer(jwtOptions =>
 {
     jwtOptions.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+        ValidateIssuer = !string.IsNullOrWhiteSpace(config.Auth.Issuer),
         ValidIssuer = config.Auth.Issuer,
+        ValidateAudience = !string.IsNullOrWhiteSpace(config.Auth.Audience),
         ValidAudience = config.Auth.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(secretKey)
     };
 
     jwtOptions.Events = new JwtBearerEvents
@@ -144,55 +142,61 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
-})
-// OpenID Connect (OIDC Provider, z. B. PocketID)
-.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, oidcOptions =>
+});
+
+// OpenID Connect – only when configured
+if (config.Oidc.IsEnabled)
 {
-    oidcOptions.Authority = config.Oidc.Authority;
-    oidcOptions.ClientId = config.Oidc.ClientId;
-    oidcOptions.ClientSecret = config.Oidc.ClientSecret;
-    oidcOptions.ResponseType = OpenIdConnectResponseType.Code;
-    oidcOptions.CallbackPath = "/api/signin-oidc";
-
-    oidcOptions.Scope.Clear();
-    oidcOptions.Scope.Add("openid");
-    oidcOptions.Scope.Add("profile");
-    oidcOptions.Scope.Add("email");
-
-    oidcOptions.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-    oidcOptions.Events = new OpenIdConnectEvents
-    {
-        OnTokenValidated = async ctx =>
+    authBuilder
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, oidcOptions =>
         {
-            var userManager = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-            var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal?.FindFirst("email")?.Value ?? "";
+            oidcOptions.Authority = config.Oidc.Authority;
+            oidcOptions.ClientId = config.Oidc.ClientId;
+            oidcOptions.ClientSecret = config.Oidc.ClientSecret;
+            oidcOptions.ResponseType = OpenIdConnectResponseType.Code;
+            oidcOptions.CallbackPath = "/api/signin-oidc";
 
-            if (!string.IsNullOrEmpty(email))
+            oidcOptions.Scope.Clear();
+            oidcOptions.Scope.Add("openid");
+            oidcOptions.Scope.Add("profile");
+            oidcOptions.Scope.Add("email");
+
+            oidcOptions.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+
+            oidcOptions.Events = new OpenIdConnectEvents
             {
-                var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
-                var user = await userManager.FindByEmailAsync(email);
-                if (user == null)
+                OnTokenValidated = async ctx =>
                 {
-                    user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
-                    var createResult = await userManager.CreateAsync(user);
-                    if (!createResult.Succeeded)
+                    var userManager = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+                    var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal?.FindFirst("email")?.Value ?? "";
+
+                    if (!string.IsNullOrEmpty(email))
                     {
-                        ctx.Fail("User creation failed");
+                        var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
+                        var user = await userManager.FindByEmailAsync(email);
+                        if (user == null)
+                        {
+                            user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
+                            var createResult = await userManager.CreateAsync(user);
+                            if (!createResult.Succeeded)
+                            {
+                                ctx.Fail("User creation failed");
+                                return;
+                            }
+                        }
+                        var jwt = jwtService.GenerateJwtToken(user, ctx.Request);
+                        jwtService.SetJwtCookie(ctx.Response, jwt);
+                    }
+                    else
+                    {
+                        ctx.Fail("Email claim not found");
                         return;
                     }
                 }
-                var jwt = jwtService.GenerateJwtToken(user);
-                jwtService.SetJwtCookie(ctx.Response, jwt);
-            }
-            else
-            {
-                ctx.Fail("Email claim not found");
-                return;
-            }
-        }
-    };
-});
+            };
+        });
+}
 
 builder.Services
     .AddControllers()

@@ -17,11 +17,13 @@ namespace cryptotracker.webapi.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICryptoTrackerConfig _config;
         private readonly JwtService _jwtService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(UserManager<ApplicationUser> userManager, ICryptoTrackerConfig config, JwtService jwtService)
+        public AuthController(UserManager<ApplicationUser> userManager, ICryptoTrackerConfig config, JwtService jwtService, ILogger<AuthController> logger)
         {
             _userManager = userManager;
             _config = config;
+            _logger = logger;
             _jwtService = jwtService;
         }
 
@@ -42,9 +44,18 @@ namespace cryptotracker.webapi.Controllers
 
         public record MeResponse(string? UserName, string? Email, string? DisplayName);
 
+        [HttpGet("oidc-enabled", Name = "OidcEnabled")]
+        public ActionResult<bool> OidcEnabled()
+        {
+            return Ok(_config.Oidc.IsEnabled);
+        }
+
         [HttpGet("oidc-login", Name = "OidcLogin")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
+            if (!_config.Oidc.IsEnabled)
+                return NotFound();
+
             var targetUrl = string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl)
                 ? "/"
                 : returnUrl;
@@ -57,12 +68,15 @@ namespace cryptotracker.webapi.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _userManager.FindByNameAsync(request.Username);
+            _logger.LogTrace("Login attempt for username: {Username}", request.Username);
             if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
             {
-                var jwt = _jwtService.GenerateJwtToken(user);
+                var jwt = _jwtService.GenerateJwtToken(user, Request);
                 _jwtService.SetJwtCookie(Response, jwt);
+                _logger.LogTrace("User logged in successfully: {Username}", request.Username);
                 return Ok();
             }
+            _logger.LogWarning("Invalid login attempt for username: {Username}", request.Username);
             return Unauthorized();
         }
 
@@ -71,7 +85,10 @@ namespace cryptotracker.webapi.Controllers
         {
             var existingUser = await _userManager.FindByNameAsync(request.Username);
             if (existingUser != null)
+            {
+                _logger.LogWarning("Registration attempt with existing username: {Username}", request.Username);
                 return BadRequest("Username already exists.");
+            }
 
             var user = new ApplicationUser
             {
@@ -82,10 +99,15 @@ namespace cryptotracker.webapi.Controllers
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
+            {
+                _logger.LogWarning("User registration failed for {Username}: {Errors}", request.Username, string.Join(", ", result.Errors.Select(e => e.Description)));
                 return BadRequest(result.Errors);
+            }
 
-            var jwt = _jwtService.GenerateJwtToken(user);
+            var jwt = _jwtService.GenerateJwtToken(user, Request);
             _jwtService.SetJwtCookie(Response, jwt);
+
+            _logger.LogTrace("User registered successfully: {Username}", request.Username);
 
             return Ok();
         }

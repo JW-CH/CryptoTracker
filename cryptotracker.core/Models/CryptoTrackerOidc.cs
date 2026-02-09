@@ -6,6 +6,8 @@ namespace cryptotracker.core.Models
         public string ClientSecret { get; set; }
         public string Authority { get; set; }
 
+        public bool IsEnabled => !string.IsNullOrWhiteSpace(Authority) && !string.IsNullOrWhiteSpace(ClientId);
+
         public CryptoTrackerOidc()
         {
             ClientId = string.Empty;

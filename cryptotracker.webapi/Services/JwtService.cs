@@ -16,11 +16,12 @@ namespace cryptotracker.webapi.Services
             _config = config;
         }
 
-        public string GenerateJwtToken(ApplicationUser user)
+        public string GenerateJwtToken(ApplicationUser user, HttpRequest request)
         {
             if (string.IsNullOrEmpty(user.Email))
                 throw new ArgumentException("User email is required for JWT generation", nameof(user));
 
+            var issuer = GetIssuer(request);
             var secretKey = Encoding.UTF8.GetBytes(_config.Auth.Secret!);
 
             var claims = new[]
@@ -34,8 +35,8 @@ namespace cryptotracker.webapi.Services
             var key = new SymmetricSecurityKey(secretKey);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(
-                issuer: _config.Auth.Issuer ?? throw new Exception("JWT Issuer not configured"),
-                audience: _config.Auth.Audience ?? throw new Exception("JWT Audience not configured"),
+                issuer: issuer,
+                audience: issuer,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(_config.Auth.ExpiryMinutes),
                 signingCredentials: creds
@@ -44,12 +45,21 @@ namespace cryptotracker.webapi.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public string GetIssuer(HttpRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(_config.Auth.Issuer))
+                return _config.Auth.Issuer;
+
+            return $"{request.Scheme}://{request.Host}";
+        }
+
         public void SetJwtCookie(HttpResponse response, string jwt)
         {
+            var isHttps = response.HttpContext.Request.Scheme == "https";
             response.Cookies.Append("jwt", jwt, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
+                Secure = isHttps,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(_config.Auth.ExpiryMinutes)
             });
