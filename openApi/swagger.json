@@ -601,6 +601,36 @@
         }
       }
     },
+    "/api/Auth/oidc-enabled": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "OidcEnabled",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Auth/oidc-login": {
       "get": {
         "tags": [

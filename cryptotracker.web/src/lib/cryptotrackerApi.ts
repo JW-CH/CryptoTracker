@@ -212,6 +212,14 @@ export function getMe(opts?: Oazapfts.RequestOpts) {
         ...opts
     });
 }
+export function oidcEnabled(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Auth/oidc-enabled", {
+        ...opts
+    });
+}
 export function oidcLogin({ returnUrl }: {
     returnUrl?: string;
 } = {}, opts?: Oazapfts.RequestOpts) {
