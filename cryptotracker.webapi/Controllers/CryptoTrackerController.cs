@@ -26,7 +26,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
         public async Task<List<MessungDto>> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
-            return await ApiHelper.GetAssetDayMeasuring(_db, DateOnly.FromDateTime(date.ToLocalTime()), symbol);
+            return await ApiHelper.GetAssetDayMeasuringAsync(_db, DateOnly.FromDateTime(date.ToLocalTime()), symbol);
         }
 
         [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
@@ -36,22 +36,10 @@ namespace cryptotracker.webapi.Controllers
             var today = DateOnly.FromDateTime(DateTime.Now);
             for (int i = 0; i < days; i++)
             {
-                DateOnly date = today.AddDays(-i);
-                dayList.Add(date);
+                dayList.Add(today.AddDays(-i));
             }
 
-            var result = new Dictionary<DateOnly, List<MessungDto>>();
-            foreach (var day in dayList.ToList())
-            {
-                if (symbol != null)
-                {
-                    result[day] = (await ApiHelper.GetAssetDayMeasuring(_db, day, symbol)).ToList();
-                }
-                else
-                {
-                    result[day] = await ApiHelper.GetAssetDayMeasuring(_db, day);
-                }
-            }
+            var result = await ApiHelper.GetAssetDayMeasuringBatchAsync(_db, dayList, symbol);
 
             return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
         }
@@ -63,17 +51,14 @@ namespace cryptotracker.webapi.Controllers
             var dayList = new List<DateOnly>();
             for (int i = 0; i < days; i++)
             {
-                DateOnly date = today.AddDays(-i);
-                dayList.Add(date);
+                dayList.Add(today.AddDays(-i));
             }
 
-            var result = new Dictionary<DateOnly, decimal>();
-            foreach (var day in dayList.ToList())
-            {
-                result[day] = (await ApiHelper.GetAssetDayMeasuring(_db, day)).Sum(x => x.TotalValue);
-            }
+            var batchResult = await ApiHelper.GetAssetDayMeasuringBatchAsync(_db, dayList);
 
-            return result.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            return batchResult
+                .OrderBy(x => x.Key)
+                .ToDictionary(x => x.Key, x => x.Value.Sum(m => m.TotalValue));
         }
 
         [HttpGet("measuring", Name = "GetLatestMeasurings")]
@@ -81,7 +66,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            return await ApiHelper.GetAssetDayMeasuring(_db, today);
+            return await ApiHelper.GetAssetDayMeasuringAsync(_db, today);
         }
 
         [HttpGet("standing", Name = "GetLatestStanding")]
@@ -89,7 +74,7 @@ namespace cryptotracker.webapi.Controllers
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            return (await ApiHelper.GetAssetDayMeasuring(_db, today)).Sum(x => x.TotalValue);
+            return (await ApiHelper.GetAssetDayMeasuringAsync(_db, today)).Sum(x => x.TotalValue);
         }
     }
 }

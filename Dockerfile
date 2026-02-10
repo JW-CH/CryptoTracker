@@ -28,7 +28,7 @@ COPY --chown=node:node ./cryptotracker.web/package*.json ./
 # Cache npm dependencies
 RUN npm ci
 COPY --chown=node:node ./cryptotracker.web ./
-RUN npm run build && npm prune --omit=dev
+RUN npm run build
 
 # Stage 4: Final production stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final

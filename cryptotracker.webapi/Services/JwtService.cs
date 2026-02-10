@@ -36,7 +36,7 @@ namespace cryptotracker.webapi.Services
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(
                 issuer: issuer,
-                audience: issuer,
+                audience: string.IsNullOrWhiteSpace(_config.Auth.Audience) ? null : _config.Auth.Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(_config.Auth.ExpiryMinutes),
                 signingCredentials: creds

@@ -40,7 +40,7 @@ namespace cryptotracker.webapi.Controllers
 
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var measurings = await ApiHelper.GetAssetDayMeasuring(_db, today, integrationId: integration.Id);
+            var measurings = await ApiHelper.GetAssetDayMeasuringAsync(_db, today, integrationId: integration.Id);
 
             return IntegrationDetails.FromIntegration(integration, measurings);
         }
