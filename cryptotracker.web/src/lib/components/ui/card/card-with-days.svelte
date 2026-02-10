@@ -4,7 +4,7 @@
 
 	interface Props {
 		title?: string;
-		class: $$Props['class'];
+		class?: $$Props['class'];
 		selectedRange?: number;
 	}
 
@@ -22,14 +22,16 @@
 <Card.Root class={className}>
 	<Card.Header class="flex items-center justify-between">
 		<Card.Title>{title} (letzte {selectedRange} Tage)</Card.Title>
-		<div class="flex gap-2">
+		<div class="flex gap-1">
 			{#each ranges as range}
 				<button
 					onclick={() => (selectedRange = range)}
-					class="rounded-md px-2 py-1 text-sm transition
-						{selectedRange === range ? 'bg-gray-300' : 'bg-gray-100 hover:bg-gray-200'}"
+					class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors
+						{selectedRange === range
+						? 'bg-primary text-primary-foreground'
+						: 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}"
 				>
-					{range}
+					{range}d
 				</button>
 			{/each}
 		</div>

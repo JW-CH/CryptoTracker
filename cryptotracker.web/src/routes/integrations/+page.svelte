@@ -15,17 +15,13 @@
 	});
 </script>
 
-<Button href="/integrations/add">Manuelle Integration hinzufügen</Button>
-<div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-	<IntegrationTiles
-		skeleton={integrations == null}
-		integrations={integrations ?? []}
-		hidden={false}
-	/>
-</div>
-{#if integrations != null && integrations.filter((x) => x.isHidden).length > 0}
-	<p class="mb-2 mt-10 border-b-2 text-center">Versteckte</p>
-	<div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-		<IntegrationTiles {integrations} hidden={true} />
+<div class="space-y-6">
+	<div class="flex items-center justify-between">
+		<h1 class="text-2xl font-bold tracking-tight">Integrationen</h1>
+		<Button variant="outline" size="sm" href="/integrations/add">+ Hinzufügen</Button>
 	</div>
-{/if}
+
+	<div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+		<IntegrationTiles skeleton={integrations == null} integrations={integrations ?? []} />
+	</div>
+</div>
