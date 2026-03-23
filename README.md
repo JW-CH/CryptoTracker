@@ -13,7 +13,7 @@ A self-hosted cryptocurrency portfolio tracker that aggregates holdings from mul
 
 ## Quick Start
 
-### Docker (Recommended)
+### Docker
 
 ```bash
 docker run -d \
@@ -22,7 +22,7 @@ docker run -d \
   janmer/cryptotracker_web:latest
 ```
 
-### Docker Compose
+### Docker Compose (Recommended)
 
 ```yaml
 version: '3.8'
