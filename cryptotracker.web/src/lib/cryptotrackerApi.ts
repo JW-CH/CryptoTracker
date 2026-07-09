@@ -35,7 +35,7 @@ export type Coin = {
     "symbol"?: string | null;
     name?: string | null;
 };
-export type Fiat = {
+export type Currency = {
     "symbol"?: string | null;
     name?: string | null;
 };
@@ -52,6 +52,9 @@ export type RegisterRequest = {
     username?: string | null;
     email?: string | null;
     password?: string | null;
+};
+export type ConfigResponse = {
+    baseCurrency?: string | null;
 };
 export type AssetDto = {
     "symbol": string | null;
@@ -151,7 +154,7 @@ export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) 
 export function getFiats(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Fiat[];
+        data: Currency[];
     }>("/api/Asset/fiat", {
         ...opts
     });
@@ -159,7 +162,7 @@ export function getFiats(opts?: Oazapfts.RequestOpts) {
 export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Fiat[];
+        data: Currency[];
     }>(`/api/Asset/${encodeURIComponent($symbol)}/fiat`, {
         ...opts
     });
@@ -247,6 +250,14 @@ export function logout(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchText("/api/Auth/logout", {
         ...opts,
         method: "POST"
+    });
+}
+export function getConfig(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: ConfigResponse;
+    }>("/api/Config", {
+        ...opts
     });
 }
 export function getMeasuringsByDate(date: string, { $symbol }: {
