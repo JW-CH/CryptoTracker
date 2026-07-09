@@ -16,7 +16,7 @@ public class WebApiTest
     private DatabaseContext _dbContext;
     private AssetController _controller;
     private Mock<ILogger<CryptoTrackerController>> _loggerMock;
-    private Mock<IFiatLogic> _fiatLogicMock;
+    private Mock<ICurrencyProvider> _currencyProviderMock;
     private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
     private Mock<IStockLogic> _stockLogicMock;
 
@@ -31,7 +31,7 @@ public class WebApiTest
         _dbContext = new DatabaseContext(options);
         _loggerMock = new Mock<ILogger<CryptoTrackerController>>();
 
-        _fiatLogicMock = new Mock<IFiatLogic>();
+        _currencyProviderMock = new Mock<ICurrencyProvider>();
         _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
 
         _stockLogicMock = new Mock<IStockLogic>();
@@ -43,7 +43,7 @@ public class WebApiTest
             _loggerMock.Object,
             _dbContext,
             _cryptoTrackerLogicMock.Object,
-            _fiatLogicMock.Object,
+            _currencyProviderMock.Object,
             _stockLogicMock.Object
         );
 

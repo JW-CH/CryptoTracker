@@ -56,17 +56,17 @@ builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
     return new CryptoTrackerLogic(logger);
 });
 
-builder.Services.AddSingleton<IFiatLogic>(srv =>
+builder.Services.AddSingleton<ICurrencyProvider>(srv =>
 {
-    var logger = srv.GetRequiredService<ILogger<FiatLogic>>();
+    var logger = srv.GetRequiredService<ILogger<FrankfurterCurrencyProvider>>();
     var clientFactory = srv.GetRequiredService<IHttpClientFactory>();
-    return new FiatLogic(logger, clientFactory);
+    return new FrankfurterCurrencyProvider(logger, clientFactory);
 });
 
 builder.Services.AddSingleton<IStockLogic>(srv =>
 {
     ILogger logger;
-    var fiatLogic = srv.GetRequiredService<IFiatLogic>();
+    var currencyProvider = srv.GetRequiredService<ICurrencyProvider>();
     var config = srv.GetRequiredService<ICryptoTrackerConfig>();
 
     if (string.IsNullOrWhiteSpace(config?.StockApi))
@@ -76,7 +76,7 @@ builder.Services.AddSingleton<IStockLogic>(srv =>
     }
 
     logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
-    return new YahooFinanceStockLogic(logger, fiatLogic);
+    return new YahooFinanceStockLogic(logger, currencyProvider);
 });
 
 builder.Services.AddSingleton<JwtService>();

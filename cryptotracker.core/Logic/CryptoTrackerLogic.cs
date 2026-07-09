@@ -525,6 +525,10 @@ namespace cryptotracker.core.Logic
         public string Symbol { get; set; }
         public string Image { get; set; }
         public string Currency { get; set; }
+        /// <summary>
+        /// Value of 1 unit of the asset, expressed in <see cref="Currency"/>.
+        /// All providers (crypto, fiat, stock) must follow this semantic.
+        /// </summary>
         public decimal Price { get; set; }
     }
     public struct BalanceResult

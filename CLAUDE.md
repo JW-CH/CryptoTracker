@@ -69,7 +69,6 @@ CryptoTracker is a cryptocurrency portfolio tracker with exchange integrations. 
 ### Project Dependencies
 - `cryptotracker.webapi` → depends on `core` and `database`
 - `cryptotracker.core` → depends on `database` (domain models)
-- `cryptotracker.worker` → legacy, not actively used (UpdateService is in webapi)
 
 ### Key Domain Concepts
 - **Asset**: Tracked asset (crypto, fiat, stock) identified by symbol

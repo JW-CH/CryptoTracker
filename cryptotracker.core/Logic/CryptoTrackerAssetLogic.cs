@@ -8,14 +8,14 @@ namespace cryptotracker.core.Logic
     {
         private ILogger _logger;
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
-        private readonly IFiatLogic _fiatLogic;
+        private readonly ICurrencyProvider _currencyProvider;
         private readonly IStockLogic _stockLogic;
 
-        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, IFiatLogic fiatLogic, IStockLogic stockLogic)
+        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic)
         {
             _logger = logger;
             _cryptoTrackerLogic = cryptoTrackerLogic;
-            _fiatLogic = fiatLogic;
+            _currencyProvider = currencyProvider;
             _stockLogic = stockLogic;
         }
 
@@ -117,39 +117,39 @@ namespace cryptotracker.core.Logic
                 await db.SaveChangesAsync();
             }
 
-            var fiatList = await _fiatLogic.GetFiatList();
-            _logger.LogTrace($"Fetched {fiatList.Count()} fiats");
+            var currencyList = await _currencyProvider.GetCurrenciesAsync();
+            _logger.LogTrace($"Fetched {currencyList.Count()} currencies");
 
-            if (fiatList != null)
+            if (currencyList != null)
             {
                 foreach (var asset in assets.Where(x => x.AssetType == AssetType.Fiat))
                 {
-                    Fiat? fiat = null;
+                    Currency? matchedCurrency = null;
                     if (string.IsNullOrWhiteSpace(asset.ExternalId))
                     {
-                        var fiats = fiatList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
+                        var matches = currencyList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
 
-                        if (fiats.Count() != 1) continue;
+                        if (matches.Count() != 1) continue;
 
-                        fiat = fiats.First();
+                        matchedCurrency = matches.First();
                     }
                     else
                     {
-                        fiat = fiatList.FirstOrDefault(x => x.Symbol.ToLower() == asset.ExternalId.ToLower());
+                        matchedCurrency = currencyList.FirstOrDefault(x => x.Symbol.ToLower() == asset.ExternalId.ToLower());
                     }
 
-                    if (fiat == null) continue;
+                    if (matchedCurrency == null) continue;
 
                     if (string.IsNullOrWhiteSpace(asset.Name))
                     {
-                        _logger.LogTrace($"Update name for '{asset.Symbol}' to '{fiat.Value.Name}'");
-                        asset.Name = fiat.Value.Name;
+                        _logger.LogTrace($"Update name for '{asset.Symbol}' to '{matchedCurrency.Value.Name}'");
+                        asset.Name = matchedCurrency.Value.Name;
                     }
                     if (string.IsNullOrWhiteSpace(asset.ExternalId))
                     {
 
-                        _logger.LogTrace($"Update externalId for '{asset.Symbol}' to '{fiat.Value.Symbol}'");
-                        asset.ExternalId = fiat.Value.Symbol;
+                        _logger.LogTrace($"Update externalId for '{asset.Symbol}' to '{matchedCurrency.Value.Symbol}'");
+                        asset.ExternalId = matchedCurrency.Value.Symbol;
                     }
                 }
                 await db.SaveChangesAsync();
@@ -160,10 +160,10 @@ namespace cryptotracker.core.Logic
             if (foundExternalIds.Count == 0) return;
             var currency = "chf";
             var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList());
-            var fiatDataList = await _fiatLogic.GetFiatsByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
+            var currencyDataList = await _currencyProvider.GetLatestRatesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
             var stockDataList = await _stockLogic.GetStocksByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Stock).Select(x => x.ExternalId!).ToList());
 
-            var all = coinDataList.Union(fiatDataList).Union(stockDataList).ToList();
+            var all = coinDataList.Union(currencyDataList).Union(stockDataList).ToList();
 
             foreach (var item in all)
             {

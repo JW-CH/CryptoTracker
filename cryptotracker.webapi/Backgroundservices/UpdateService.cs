@@ -32,9 +32,9 @@ public class UpdateService : BackgroundService
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
-                    var fiatLogic = scope.ServiceProvider.GetRequiredService<IFiatLogic>();
+                    var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
                     var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
-                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, fiatLogic, stockLogic);
+                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic);
 
                     await Import(db, cryptoTrackerLogic, ctal);
                     _logger.LogInformation("Import finished");
