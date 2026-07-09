@@ -12,5 +12,6 @@ namespace cryptotracker.core.Interfaces
         public int Interval { get; set; }
         public string? StockApi { get; set; }
         public int MaxFillDays { get; set; }
+        public string BaseCurrency { get; set; }
     }
 }

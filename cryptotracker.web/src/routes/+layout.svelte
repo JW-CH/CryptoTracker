@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { user } from '$lib/stores/user';
+	import { loadConfig } from '$lib/stores/config';
 	import * as api from '$lib/cryptotrackerApi';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -22,6 +23,7 @@
 			if (res.status === 200) {
 				const data = await res.data;
 				user.set(data);
+				loadConfig();
 				return;
 			}
 		} catch (err) {

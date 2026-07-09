@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { generateGUID } from '$lib/helpers';
+	import { baseCurrency } from '$lib/stores/config';
 	import { goto } from '$app/navigation';
 	import { Chart } from 'chart.js/auto';
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 
 	export let values: number[] = [];
 	export let labels: string[] = [];
@@ -35,7 +37,7 @@
 		labels: labels,
 		datasets: [
 			{
-				label: 'CHF',
+				label: get(baseCurrency),
 				data: values,
 				hoverOffset: 8
 			}

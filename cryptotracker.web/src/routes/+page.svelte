@@ -2,6 +2,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
+	import { baseCurrency } from '$lib/stores/config';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
 	import PieChart from '$lib/components/charts/PieChart.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
@@ -49,7 +50,7 @@
 				{#await api.getLatestStanding()}
 					<Skeleton class="h-6 w-1/2 bg-gray-200" />
 				{:then standing}
-					<div class="text-2xl font-bold">{standing.data.toFixed(2)} CHF</div>
+					<div class="text-2xl font-bold">{standing.data.toFixed(2)} {$baseCurrency}</div>
 				{:catch error}
 					<p>{error.message}</p>
 				{/await}
@@ -82,7 +83,7 @@
 				<LineChart
 					fill={true}
 					labels={StringKeysToDates(Object.keys(standings.data))}
-					datasets={[{ name: 'CHF', data: Object.values(standings.data) }]}
+					datasets={[{ name: $baseCurrency, data: Object.values(standings.data) }]}
 				/>
 			{:catch error}
 				<p>{error.message}</p>

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,16 +18,18 @@ namespace cryptotracker.webapi.Controllers
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly ICurrencyProvider _currencyProvider;
         private readonly IStockLogic _stockLogic;
+        private readonly ICryptoTrackerConfig _config;
         private readonly CryptoTrackerAssetLogic _cryptoTrackerAssetLogic;
 
-        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic)
+        public AssetController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic, ICryptoTrackerConfig config)
         {
             _logger = logger;
             _db = db;
             _cryptoTrackerLogic = cryptoTrackerLogic;
             _currencyProvider = currencyProvider;
             _stockLogic = stockLogic;
-            _cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, currencyProvider, stockLogic);
+            _config = config;
+            _cryptoTrackerAssetLogic = new CryptoTrackerAssetLogic(logger, cryptoTrackerLogic, currencyProvider, stockLogic, config);
         }
 
         [HttpGet(Name = "GetAssets")]
@@ -43,7 +46,7 @@ namespace cryptotracker.webapi.Controllers
             return new AssetData
             {
                 Asset = asset,
-                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
+                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol && x.Currency == _config.BaseCurrency).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
             };
         }
 
@@ -87,7 +90,7 @@ namespace cryptotracker.webapi.Controllers
             asset.ExternalId = externalId;
             await _db.SaveChangesAsync();
 
-            var currency = "CHF";
+            var currency = _config.BaseCurrency;
 
             AssetMetadata metadata;
             if (asset.AssetType == AssetType.Fiat)
@@ -115,7 +118,7 @@ namespace cryptotracker.webapi.Controllers
             return new AssetData
             {
                 Asset = asset,
-                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
+                Price = (await _db.AssetPriceHistory.Where(x => x.Symbol == symbol && x.Currency == _config.BaseCurrency).OrderByDescending(x => x.Date).FirstOrDefaultAsync())?.Price ?? 0
             }; ;
         }
 
@@ -160,7 +163,7 @@ namespace cryptotracker.webapi.Controllers
             await _db.Assets.AddAsync(asset);
             await _db.SaveChangesAsync();
 
-            var currency = "CHF";
+            var currency = _config.BaseCurrency;
 
             AssetMetadata? metadata = null; ;
 

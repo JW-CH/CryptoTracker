@@ -33,7 +33,7 @@ public class UpdateService : BackgroundService
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
                     var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
                     var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
-                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic);
+                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic, _config);
 
                     try
                     {

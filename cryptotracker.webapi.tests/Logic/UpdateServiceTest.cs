@@ -37,13 +37,14 @@ public class UpdateServiceTest
 
         var stockLogicMock = new Mock<IStockLogic>();
 
+        _config = new CryptoTrackerConfig { Interval = 60 };
+
         _assetLogic = new CryptoTrackerAssetLogic(
             Mock.Of<ILogger>(),
             _cryptoTrackerLogicMock.Object,
             currencyProviderMock.Object,
-            stockLogicMock.Object);
-
-        _config = new CryptoTrackerConfig { Interval = 60 };
+            stockLogicMock.Object,
+            _config);
         _service = new UpdateService(Mock.Of<IServiceScopeFactory>(), Mock.Of<ILogger<UpdateService>>(), _config);
 
         await _db.SaveChangesAsync();
