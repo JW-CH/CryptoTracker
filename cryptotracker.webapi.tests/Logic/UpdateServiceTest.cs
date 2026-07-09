@@ -1,6 +1,7 @@
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Backgroundservices;
 using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

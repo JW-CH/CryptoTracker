@@ -5,6 +5,8 @@ using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
 
+namespace cryptotracker.webapi.Backgroundservices;
+
 public class UpdateService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -44,7 +46,7 @@ public class UpdateService : BackgroundService
                     }
                     _logger.LogInformation("Import finished");
 
-                    _logger.LogInformation($"Waiting {_config.Interval} minutes");
+                    _logger.LogInformation("Waiting {Interval} minutes", _config.Interval);
 
                 }
                 await timer.WaitForNextTickAsync(stoppingToken);
@@ -66,7 +68,7 @@ public class UpdateService : BackgroundService
             try
             {
                 var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
-                _logger.LogTrace($"Fetched {balances.Count()} balances for {integration.Name}");
+                _logger.LogTrace("Fetched {Count} balances for {Name}", balances.Count(), integration.Name);
 
                 var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);
 
@@ -74,11 +76,11 @@ public class UpdateService : BackgroundService
                 // their balance dropped to 0 (exchanges omit empty positions)
                 var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
 
-                _logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
+                _logger.LogTrace("Clearing today's AssetMeasurings entries for integration {Name}", integration.Name);
                 var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.IntegrationId == exchangeIntegration.Id);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
-                _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
+                _logger.LogTrace("Removed {Count} AssetMeasurings for integration {Name}", count, integration.Name);
 
                 foreach (var balance in balances)
                 {
@@ -130,7 +132,7 @@ public class UpdateService : BackgroundService
                 Name = integration.Name,
                 Description = integration.Description
             };
-            _logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
+            _logger.LogTrace("Adding new ExchangeIntegration: {Name}", ex.Name);
             await db.ExchangeIntegrations.AddAsync(ex);
             await db.SaveChangesAsync();
         }
@@ -181,7 +183,7 @@ public class UpdateService : BackgroundService
                 AssetType = AssetType.Crypto,
                 IsHidden = false
             };
-            _logger.LogTrace($"Adding new Asset: {asset.Symbol}");
+            _logger.LogTrace("Adding new Asset: {Symbol}", asset.Symbol);
             await db.Assets.AddAsync(asset);
         }
 
@@ -194,6 +196,6 @@ public class UpdateService : BackgroundService
         };
 
         await db.AssetMeasurings.AddAsync(measuring);
-        _logger.LogTrace($"Adding new AssetMeasuring to {exchangeIntegration.Name} for {measuring.Symbol} - {measuring.Amount}");
+        _logger.LogTrace("Adding new AssetMeasuring to {Name} for {Symbol} - {Amount}", exchangeIntegration.Name, measuring.Symbol, measuring.Amount);
     }
 }

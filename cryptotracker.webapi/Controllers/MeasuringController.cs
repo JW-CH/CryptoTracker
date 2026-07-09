@@ -14,11 +14,11 @@ namespace cryptotracker.webapi.Controllers
     [Route("api/[controller]")]
     public class MeasuringController : ControllerBase
     {
-        private readonly ILogger<CryptoTrackerController> _logger;
+        private readonly ILogger<MeasuringController> _logger;
         private readonly DatabaseContext _db;
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
 
-        public MeasuringController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic)
+        public MeasuringController(ILogger<MeasuringController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic)
         {
             _logger = logger;
             _db = db;
