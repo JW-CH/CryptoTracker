@@ -25,7 +25,7 @@ public class CryptoTrackerLogicTest
         // Arrange
         var integration = new CryptoTrackerIntegration
         {
-            Type = "invalid",
+            Type = CryptoTrackerIntegrationType.Unknown,
             Name = "Test"
         };
 

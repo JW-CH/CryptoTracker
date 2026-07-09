@@ -55,6 +55,14 @@ liefert historische Kurse: `/v1/{date}`).
 <a id="bug-2"></a>
 ## Bug 2 — Verkaufte/entfernte Assets zählen für immer weiter 🔴
 
+> **Status 2026-07-09: behoben.** Import schreibt 0-Messungen für verschwundene
+> Assets (Variante A, selbst-terminierend via `Amount != 0`-Filter); Forward-Fill
+> ist auf `maxfilldays` (Config, Default 10) begrenzt (Variante B); 0-Positionen
+> werden aus den Abfrage-Ergebnissen gefiltert. `ApiHelper` wurde dabei zum
+> injizierbaren `PortfolioQueryService` (webapi/Services), inkl. Datums-Untergrenze
+> in der Mess-Query (Teilfix des Skalierungsproblems aus 03/D3).
+> Abgedeckt durch `PortfolioQueryServiceTest` (Fill-Grenze, 0-Filter, Batch).
+
 **Betroffen:** `cryptotracker.webapi/Helpers/ApiHelper.cs:98` (`BuildDayResult`),
 Zusammenspiel mit `UpdateService.Import`.
 
@@ -136,6 +144,13 @@ UI es zur Bestätigung anzeigen kann.
 
 <a id="bug-5"></a>
 ## Bug 5 — Fehlgeschlagener Exchange-Abruf hinterlässt gelöschten Tag 🟠
+
+> **Status 2026-07-09: behoben.** Exchange-Abrufe werfen bei API-Fehlern statt
+> leere Listen zu liefern; Import holt erst und löscht/schreibt danach; Transaktion
+> + try/catch pro Integration (inkl. `ChangeTracker.Clear()`); Metadaten-Import und
+> `ExecuteAsync` sind separat abgesichert (StopHost-Gefahr). Integrationstyp ist
+> jetzt ein Enum (`CryptoTrackerIntegrationType`, `Unknown` = Default).
+> Abgedeckt durch `UpdateServiceTest` (0-Diff, Fehler-Isolation, Idempotenz).
 
 **Betroffen:** `UpdateService.cs:61–81` (Import-Schleife) und die `Get*Accounts`-
 Methoden in `CryptoTrackerLogic.cs`.

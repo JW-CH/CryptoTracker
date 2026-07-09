@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
@@ -36,7 +35,14 @@ public class UpdateService : BackgroundService
                     var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
                     var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic);
 
-                    await Import(db, cryptoTrackerLogic, ctal);
+                    try
+                    {
+                        await Import(db, cryptoTrackerLogic, ctal);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Import run failed");
+                    }
                     _logger.LogInformation("Import finished");
 
                     _logger.LogInformation($"Waiting {_config.Interval} minutes");
@@ -47,57 +53,74 @@ public class UpdateService : BackgroundService
         }
     }
 
-    async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
     {
-        _logger.LogTrace("Starting DB-Transaction");
-        using var tx = await db.Database.BeginTransactionAsync();
+        _logger.LogInformation("Starting Integration-Import");
 
-        try
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
+        foreach (var integration in _config.Integrations)
         {
-            _logger.LogInformation("Starting Integration-Import");
+            _logger.LogTrace("Starting DB-Transaction");
+            using var tx = await db.Database.BeginTransactionAsync();
 
-            var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
-            foreach (var integration in _config.Integrations)
+            try
             {
+                var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
+                _logger.LogTrace($"Fetched {balances.Count()} balances for {integration.Name}");
+
+                var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);
+
+                // symbols the last snapshot still had but the exchange no longer reports:
+                // their balance dropped to 0 (exchanges omit empty positions)
+                var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
+
                 _logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
-                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.Integration.Name == integration.Name);
+                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.IntegrationId == exchangeIntegration.Id);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
                 _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
 
-                await db.SaveChangesAsync();
-                _logger.LogTrace("DB clear");
-
-                var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
-
-                _logger.LogTrace($"Fetched {balances.Count()} balances for {integration.Name}");
-
                 foreach (var balance in balances)
                 {
-                    await AddMeasuring(db, integration, balance.Symbol, balance.Balance);
+                    await AddMeasuring(db, exchangeIntegration, balance.Symbol, balance.Balance);
+                }
+                foreach (var symbol in zeroSymbols)
+                {
+                    _logger.LogInformation("Asset {Symbol} no longer reported by {Name}, recording balance 0", symbol, integration.Name);
+                    await AddMeasuring(db, exchangeIntegration, symbol, 0m);
                 }
                 await db.SaveChangesAsync();
+                await tx.CommitAsync();
             }
-            _logger.LogInformation("Finished Integration-Import");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while processing integration {Name}, skipping", integration.Name);
+                _logger.LogTrace("Rolling back transaction");
+                await tx.RollbackAsync();
+                db.ChangeTracker.Clear();
+            }
+        }
+        _logger.LogInformation("Finished Integration-Import");
 
-            _logger.LogInformation("Starting Metadataimport");
+        _logger.LogInformation("Starting Metadataimport");
+        try
+        {
             await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
             _logger.LogInformation("Finished Metadataimport");
-
-            await tx.CommitAsync();
-
-            _logger.LogInformation("Finished Import");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex.ToString());
-            _logger.LogTrace("Rolling back transaction");
-            await tx.RollbackAsync();
+            // an unhandled exception here would stop the whole host (BackgroundService
+            // default is StopHost); balances are already committed at this point
+            _logger.LogError(ex, "Metadata import failed, keeping already imported balances");
+            db.ChangeTracker.Clear();
         }
+
+        _logger.LogInformation("Finished Import");
     }
 
-    async Task AddMeasuring(DatabaseContext db, CryptoTrackerIntegration integration, string symbol, decimal balance)
+    async Task<ExchangeIntegration> GetOrCreateExchangeIntegration(DatabaseContext db, CryptoTrackerIntegration integration)
     {
         var ex = await db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Name.ToLower() == integration.Name.ToLower());
 
@@ -113,6 +136,42 @@ public class UpdateService : BackgroundService
             await db.SaveChangesAsync();
         }
 
+        return ex;
+    }
+
+    /// <summary>
+    /// Returns the symbols that had a non-zero balance in the integration's most recent
+    /// snapshot before <paramref name="today"/> but are missing from the freshly fetched
+    /// balances — i.e. positions that were emptied since the last import.
+    /// </summary>
+    async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateTime today)
+    {
+        var lastTimestamp = await db.AssetMeasurings
+            .Where(m => m.IntegrationId == integrationId && m.Timestamp < today)
+            .MaxAsync(m => (DateTime?)m.Timestamp);
+
+        if (lastTimestamp == null) return new();
+
+        var lastDay = lastTimestamp.Value.Date;
+        var lastDayEnd = lastDay.AddDays(1);
+
+        // Amount != 0 keeps the zero-markers self-terminating: an asset recorded as 0
+        // is no longer part of the previous snapshot and won't get another 0 tomorrow
+        var previousSymbols = await db.AssetMeasurings
+            .Where(m => m.IntegrationId == integrationId
+                     && m.Timestamp >= lastDay && m.Timestamp < lastDayEnd
+                     && m.Amount != 0)
+            .Select(m => m.Symbol)
+            .Distinct()
+            .ToListAsync();
+
+        var currentSymbols = balances.Select(b => b.Symbol).ToHashSet();
+
+        return previousSymbols.Where(s => !currentSymbols.Contains(s)).ToList();
+    }
+
+    async Task AddMeasuring(DatabaseContext db, ExchangeIntegration exchangeIntegration, string symbol, decimal balance)
+    {
         var asset = await db.Assets.FindAsync(symbol);
 
         if (asset == null)
@@ -130,12 +189,12 @@ public class UpdateService : BackgroundService
         var measuring = new AssetMeasuring()
         {
             Symbol = asset.Symbol,
-            IntegrationId = ex.Id,
+            IntegrationId = exchangeIntegration.Id,
             Timestamp = DateTime.UtcNow,
             Amount = balance
         };
 
         await db.AssetMeasurings.AddAsync(measuring);
-        _logger.LogTrace($"Adding new AssetMeasuring to {ex.Name} for {measuring.Symbol} - {measuring.Amount}");
+        _logger.LogTrace($"Adding new AssetMeasuring to {exchangeIntegration.Name} for {measuring.Symbol} - {measuring.Amount}");
     }
 }

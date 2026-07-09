@@ -80,6 +80,7 @@ builder.Services.AddSingleton<IStockLogic>(srv =>
 });
 
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddScoped<PortfolioQueryService>();
 
 // DbContext
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
