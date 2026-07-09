@@ -1,30 +1,66 @@
 using cryptotracker.core.Interfaces;
+using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace cryptotracker.core.Logic
+namespace cryptotracker.webapi.Services
 {
-    public class CryptoTrackerAssetLogic
+    public class AssetMetadataService
     {
-        private ILogger _logger;
+        private readonly ILogger<AssetMetadataService> _logger;
+        private readonly DatabaseContext _db;
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly ICurrencyProvider _currencyProvider;
         private readonly IStockLogic _stockLogic;
         private readonly ICryptoTrackerConfig _config;
 
-        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic, ICryptoTrackerConfig config)
+        public AssetMetadataService(ILogger<AssetMetadataService> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic, ICryptoTrackerConfig config)
         {
             _logger = logger;
+            _db = db;
             _cryptoTrackerLogic = cryptoTrackerLogic;
             _currencyProvider = currencyProvider;
             _stockLogic = stockLogic;
             _config = config;
         }
 
-        public async Task UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata)
+        /// <summary>
+        /// Liefert null, wenn der Provider nichts Brauchbares (keine AssetId) zurückgibt.
+        /// </summary>
+        public async Task<AssetMetadata?> FetchMetadataAsync(AssetType assetType, string externalId)
         {
-            var asset = await db.Assets.FirstOrDefaultAsync(a => a.ExternalId == metadata.AssetId);
+            var currency = _config.BaseCurrency;
+
+            AssetMetadata metadata;
+            switch (assetType)
+            {
+                case AssetType.Crypto:
+                    var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [externalId]);
+                    if (coinDataList.Count == 0) return null;
+                    metadata = coinDataList.First();
+                    break;
+                case AssetType.Fiat:
+                    metadata = await _currencyProvider.GetLatestRateAsync(currency, externalId);
+                    break;
+                case AssetType.Stock:
+                    metadata = await _stockLogic.GetStockByIdAsync(currency, externalId);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Asset type {assetType} not supported");
+            }
+
+            return string.IsNullOrEmpty(metadata.AssetId) ? null : metadata;
+        }
+
+        public async Task UpdateMetadataForAssetAsync(AssetMetadata metadata)
+        {
+            await ApplyMetadataAsync(metadata);
+            await _db.SaveChangesAsync();
+        }
+
+        private async Task ApplyMetadataAsync(AssetMetadata metadata)
+        {
+            var asset = await _db.Assets.FirstOrDefaultAsync(a => a.ExternalId == metadata.AssetId);
 
             if (asset == null) return;
 
@@ -35,7 +71,7 @@ namespace cryptotracker.core.Logic
                 asset.Image = metadata.Image;
 
             var currency = _config.BaseCurrency;
-            var price = await db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Currency == currency && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
+            var price = await _db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Currency == currency && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
 
             if (price == null)
             {
@@ -49,7 +85,7 @@ namespace cryptotracker.core.Logic
 
                 _logger.LogTrace($"Add AssetPriceHistory for {price.Symbol}, {price.Date} - {price.Price} {price.Currency}");
 
-                await db.AssetPriceHistory.AddAsync(price);
+                await _db.AssetPriceHistory.AddAsync(price);
             }
             else
             {
@@ -58,9 +94,9 @@ namespace cryptotracker.core.Logic
             }
         }
 
-        public async Task UpdateAllAssetMetadata(DatabaseContext db)
+        public async Task UpdateAllAssetMetadataAsync()
         {
-            var assets = await db.Assets.ToListAsync();
+            var assets = await _db.Assets.ToListAsync();
             _logger.LogTrace($"Found {assets.Count} assets");
 
             if (assets.Count == 0) return;
@@ -100,7 +136,7 @@ namespace cryptotracker.core.Logic
                         asset.ExternalId = coin.Value.Id;
                     }
                 }
-                await db.SaveChangesAsync();
+                await _db.SaveChangesAsync();
             }
 
             var currencyList = await _currencyProvider.GetCurrenciesAsync();
@@ -138,10 +174,10 @@ namespace cryptotracker.core.Logic
                         asset.ExternalId = matchedCurrency.Value.Symbol;
                     }
                 }
-                await db.SaveChangesAsync();
+                await _db.SaveChangesAsync();
             }
 
-            var foundExternalIds = await db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToListAsync();
+            var foundExternalIds = await _db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToListAsync();
 
             if (foundExternalIds.Count == 0) return;
             var currency = _config.BaseCurrency;
@@ -153,10 +189,10 @@ namespace cryptotracker.core.Logic
 
             foreach (var item in all)
             {
-                await UpdateMetadataForAsset(db, item);
+                await ApplyMetadataAsync(item);
             }
 
-            await db.SaveChangesAsync();
+            await _db.SaveChangesAsync();
         }
     }
 }

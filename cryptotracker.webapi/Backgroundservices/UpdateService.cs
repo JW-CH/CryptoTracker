@@ -2,6 +2,7 @@ using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
 
 public class UpdateService : BackgroundService
@@ -31,13 +32,11 @@ public class UpdateService : BackgroundService
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
-                    var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
-                    var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
-                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic, _config);
+                    var assetMetadataService = scope.ServiceProvider.GetRequiredService<AssetMetadataService>();
 
                     try
                     {
-                        await Import(db, cryptoTrackerLogic, ctal);
+                        await Import(db, cryptoTrackerLogic, assetMetadataService);
                     }
                     catch (Exception ex)
                     {
@@ -53,7 +52,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, AssetMetadataService assetMetadataService)
     {
         _logger.LogInformation("Starting Integration-Import");
 
@@ -106,7 +105,7 @@ public class UpdateService : BackgroundService
         _logger.LogInformation("Starting Metadataimport");
         try
         {
-            await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
+            await assetMetadataService.UpdateAllAssetMetadataAsync();
             _logger.LogInformation("Finished Metadataimport");
         }
         catch (Exception ex)

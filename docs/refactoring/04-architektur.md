@@ -11,6 +11,16 @@ cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
 
 ## A1 — Schichtenschnitt: DTOs im database-Projekt, Logik in Controllern 🟠
 
+> **Status 2026-07-09: teilweise umgesetzt.** `ApiHelper` → `PortfolioQueryService`
+> und `AssetController` → `AssetService` (Controller ist jetzt dünn; Asset-Lookup,
+> Preis-Lookup und Metadaten-Switch dedupliziert). Dabei Bug gefixt:
+> `SetExternalIdForSymbol` behandelte Stocks wie Crypto (falscher Metadaten-Pfad).
+> `CryptoTrackerAssetLogic` (core) → `AssetMetadataService` (webapi, scoped, DI):
+> DbContext injiziert statt als Methodenparameter, keine Hand-Instanziierung mehr;
+> Einzel- (`FetchMetadataAsync`) und Batch-Dispatch liegen jetzt in einer Klasse.
+> Offen: DTOs liegen weiter im database-Projekt, Entities werden weiter roh
+> serialisiert.
+
 **Befund:**
 
 - `MessungDto`, `AssetDto`, `IntegrationDto` liegen in `cryptotracker.database/DTOs/`.

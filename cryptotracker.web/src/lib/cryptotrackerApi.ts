@@ -26,7 +26,7 @@ export type AddAssetDto = {
     assetType?: AssetType;
     externalId?: string | null;
 };
-export type AssetData = {
+export type AssetWithPriceDto = {
     asset: Asset;
     price: number;
 };
@@ -121,7 +121,7 @@ export function addAsset(addAssetDto?: AddAssetDto, opts?: Oazapfts.RequestOpts)
 export function getAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: AssetData;
+        data: AssetWithPriceDto;
     }>(`/api/Asset/${encodeURIComponent($symbol)}`, {
         ...opts
     });
@@ -170,7 +170,7 @@ export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
 export function setExternalIdForSymbol($symbol: string, body?: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: AssetData;
+        data: AssetWithPriceDto;
     }>(`/api/Asset/${encodeURIComponent($symbol)}/ExternalId`, oazapfts.json({
         ...opts,
         method: "POST",
@@ -220,6 +220,14 @@ export function oidcEnabled(opts?: Oazapfts.RequestOpts) {
         status: 200;
         data: boolean;
     }>("/api/Auth/oidc-enabled", {
+        ...opts
+    });
+}
+export function registrationEnabled(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>("/api/Auth/registration-enabled", {
         ...opts
     });
 }
