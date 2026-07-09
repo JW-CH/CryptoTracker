@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
 	import * as api from '$lib/cryptotrackerApi';
+	import { baseCurrency } from '$lib/stores/config';
 	import { onMount } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -172,7 +173,7 @@
 						<span
 							class="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
 						>
-							{assetData?.price} CHF
+							{assetData?.price} {$baseCurrency}
 						</span>
 					</div>
 					{#if assetData?.asset.name}
@@ -268,7 +269,7 @@
 							labels={dailyMeasurings.map((x) => x.date)}
 							datasets={[
 								{
-									name: 'CHF',
+									name: $baseCurrency,
 									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
 								}
 							]}

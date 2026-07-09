@@ -15,6 +15,14 @@ namespace cryptotracker.core.Models
         public string LogLevel { get; set; } = "Information";
         public string? StockApi { get; set; } = null;
         public int MaxFillDays { get; set; } = 10;
+
+        private string _baseCurrency = "chf";
+        public string BaseCurrency
+        {
+            get => _baseCurrency;
+            set => _baseCurrency = string.IsNullOrWhiteSpace(value) ? "chf" : value.ToLowerInvariant();
+        }
+
         public List<CryptoTrackerIntegration> Integrations { get; set; } = new();
 
         public static CryptoTrackerConfig LoadFromJson(string input)

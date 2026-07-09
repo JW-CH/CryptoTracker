@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Card from '$lib/components/ui/card';
+	import { baseCurrency } from '$lib/stores/config';
 
 	let data: api.MessungDto[] | null;
 	let date: Date = new Date();
@@ -48,7 +49,7 @@
 					<Card.Content class="grow p-3">
 						<div class="flex flex-row items-center justify-between">
 							<div class="text-sm font-medium">{measuring.asset.symbol}</div>
-							<div class="text-sm font-medium">{measuring.totalValue.toFixed(2)} CHF</div>
+							<div class="text-sm font-medium">{measuring.totalValue.toFixed(2)} {$baseCurrency}</div>
 						</div>
 						<div class="text-xs text-gray-500">
 							{measuring.totalAmount.toFixed(8)}

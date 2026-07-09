@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using cryptotracker.core.Logic;
+using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Controllers;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,8 @@ public class WebApiTest
             _dbContext,
             _cryptoTrackerLogicMock.Object,
             _currencyProviderMock.Object,
-            _stockLogicMock.Object
+            _stockLogicMock.Object,
+            new CryptoTrackerConfig()
         );
 
         await SeedDatabase();
@@ -64,7 +66,7 @@ public class WebApiTest
         {
             Symbol = "BTC",
             Date = DateOnly.FromDateTime(DateTime.Today),
-            Currency = "CHF",
+            Currency = "chf",
             Price = 50M
         });
         await _dbContext.SaveChangesAsync();
@@ -136,7 +138,7 @@ public class WebApiTest
             ExternalId = "ethereum"
         };
 
-        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData("CHF", It.Is<List<string>>(l => l.Contains("ethereum"))))
+        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData("chf", It.Is<List<string>>(l => l.Contains("ethereum"))))
             .ReturnsAsync(new List<AssetMetadata>
             {
                 new AssetMetadata
@@ -145,7 +147,7 @@ public class WebApiTest
                     Symbol = "ETH",
                     Name = "Ethereum",
                     Price= 111M,
-                    Currency= "CHF",
+                    Currency= "chf",
                 }
             });
 

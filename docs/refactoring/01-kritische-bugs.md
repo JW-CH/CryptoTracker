@@ -11,8 +11,10 @@ strukturellen Refactoring behoben werden. Sortiert nach Schweregrad.
 > **Status 2026-07-09: Code-Fix umgesetzt** (Inversion in `FiatLogic`, Argument-Tausch in
 > `YahooFinanceStockLogic`/`AlphaVantageStockLogic`, Kontrakt-Doku auf `AssetMetadata.Price`,
 > Regressionstests in `cryptotracker.core.tests/Logic/FiatLogicTest.cs`).
-> **Offen: Bereinigung der Altdaten** — bestehende Fiat-Zeilen in `AssetPriceHistory`
-> sind weiterhin invertiert gespeichert; SQL siehe „Achtung Altdaten" unten.
+> **Altdaten: bewusst nicht bereinigt** (Entscheidung 2026-07-09) — bestehende
+> Fiat-Zeilen in `AssetPriceHistory` bleiben invertiert; historische Fiat-Werte
+> in Charts sind daher vor dem Fix-Datum falsch. Akzeptiert (Single-User).
+> Falls doch mal gewünscht: SQL siehe „Achtung Altdaten" unten.
 
 **Betroffen:** `cryptotracker.core/Logic/CryptoTrackerAssetLogic.cs:163` → `FiatLogic.GetFiatsByIdsAsync`
 (`cryptotracker.core/Logic/FiatLogic.cs:55`), Bewertung in `MessungDto.SumFromModels`
@@ -96,6 +98,14 @@ und „Bestand ist 0" unterscheiden, weil der Import niemals Nullen schreibt.
 
 <a id="bug-3"></a>
 ## Bug 3 — Währungs-Casing „chf" vs. „CHF" 🟠
+
+> **Status 2026-07-09: behoben (code-seitig).** Basiswährung ist jetzt konfigurierbar
+> (`basecurrency`, Default `chf`, Setter normalisiert lowercase) und wird überall aus
+> der Config gelesen; der Currency-Mismatch-Zweig in `UpdateMetadataForAsset` ist
+> entfernt, der Preis-Lookup filtert auf Currency. Frontend liest die Währung über
+> `GET /api/config` (Store `$lib/stores/config`). Alte `CHF`-Zeilen werden bewusst
+> nicht migriert (Entscheidung wie bei Bug 1). Achtung: Währungswechsel auf
+> bestehender Installation invalidiert die Preishistorie (keine Umrechnung).
 
 **Betroffen:**
 
@@ -224,6 +234,9 @@ Roundtrip und bricht, falls der Redirect wegfällt. URL aktualisieren
 (`https://api.frankfurter.dev/v1/...`).~~
 
 ## Bug 8 — `GetAsset` ignoriert die Währung des Preises 🟡
+
+> **Status 2026-07-09: behoben.** Beide Preis-Lookups im `AssetController` filtern
+> jetzt auf `Currency == config.BaseCurrency` (mit Bug 3 erledigt).
 
 `AssetController.cs:46` nimmt die neueste `AssetPriceHistory`-Zeile **ohne
 Currency-Filter**. Solange nur eine Währung geschrieben wird, geht das gut — mit

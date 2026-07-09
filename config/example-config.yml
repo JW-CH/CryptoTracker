@@ -1,4 +1,5 @@
 maxfilldays: 10
+basecurrency: chf
 integrations:
   - name: Coinbase
     type: coinbase

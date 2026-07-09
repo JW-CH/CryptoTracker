@@ -1,3 +1,4 @@
+using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -10,13 +11,15 @@ namespace cryptotracker.core.Logic
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly ICurrencyProvider _currencyProvider;
         private readonly IStockLogic _stockLogic;
+        private readonly ICryptoTrackerConfig _config;
 
-        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic)
+        public CryptoTrackerAssetLogic(ILogger logger, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic, ICryptoTrackerConfig config)
         {
             _logger = logger;
             _cryptoTrackerLogic = cryptoTrackerLogic;
             _currencyProvider = currencyProvider;
             _stockLogic = stockLogic;
+            _config = config;
         }
 
         public async Task UpdateMetadataForAsset(DatabaseContext db, AssetMetadata metadata)
@@ -31,7 +34,8 @@ namespace cryptotracker.core.Logic
             if (string.IsNullOrWhiteSpace(asset.Image))
                 asset.Image = metadata.Image;
 
-            var price = await db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
+            var currency = _config.BaseCurrency;
+            var price = await db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Currency == currency && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
 
             if (price == null)
             {
@@ -39,7 +43,7 @@ namespace cryptotracker.core.Logic
                 {
                     Symbol = asset.Symbol,
                     Date = DateOnly.FromDateTime(DateTime.Now),
-                    Currency = metadata.Currency,
+                    Currency = currency,
                     Price = metadata.Price,
                 };
 
@@ -50,25 +54,7 @@ namespace cryptotracker.core.Logic
             else
             {
                 _logger.LogTrace($"Update AssetPriceHistory for {price.Symbol}, {price.Date} from {price.Price} {price.Currency} to {metadata.Price} {price.Currency}");
-                if (price.Currency != metadata.Currency)
-                {
-                    _logger.LogTrace($"Update AssetPriceHistory currency for {price.Symbol}, {price.Date} from {price.Currency} to {metadata.Currency}");
-
-                    db.AssetPriceHistory.Remove(price);
-
-                    price = new AssetPriceHistory()
-                    {
-                        Symbol = asset.Symbol,
-                        Date = DateOnly.FromDateTime(DateTime.Now),
-                        Currency = metadata.Currency,
-                        Price = metadata.Price,
-                    };
-                    await db.AssetPriceHistory.AddAsync(price);
-                }
-                else
-                {
-                    price.Price = metadata.Price;
-                }
+                price.Price = metadata.Price;
             }
         }
 
@@ -158,7 +144,7 @@ namespace cryptotracker.core.Logic
             var foundExternalIds = await db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToListAsync();
 
             if (foundExternalIds.Count == 0) return;
-            var currency = "chf";
+            var currency = _config.BaseCurrency;
             var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList());
             var currencyDataList = await _currencyProvider.GetLatestRatesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
             var stockDataList = await _stockLogic.GetStocksByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Stock).Select(x => x.ExternalId!).ToList());

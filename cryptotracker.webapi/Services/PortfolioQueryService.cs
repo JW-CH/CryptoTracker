@@ -50,7 +50,7 @@ namespace cryptotracker.webapi.Services
                 return days.ToDictionary(d => d, _ => new List<MessungDto>());
 
             var maxDay = days.Max();
-            var currency = "chf";
+            var currency = _config.BaseCurrency;
 
             var allPriceHistories = await _db.AssetPriceHistory
                 .Where(x => x.Date <= maxDay && x.Currency == currency)
