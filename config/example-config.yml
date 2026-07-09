@@ -1,7 +1,7 @@
 maxfilldays: 10
 basecurrency: chf
 auth:
-  secret: <mindestens 32 zeichen>
+  secret: <min 32 characters>
   allowregistration: false
 oidc:
   autoprovision: true
