@@ -24,4 +24,8 @@
     <ProjectReference Include="..\cryptotracker.database\cryptotracker.database.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="cryptotracker.webapi.tests" />
+  </ItemGroup>
+
 </Project>

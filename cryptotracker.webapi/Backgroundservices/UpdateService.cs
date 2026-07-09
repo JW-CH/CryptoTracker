@@ -53,7 +53,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
     {
         _logger.LogInformation("Starting Integration-Import");
 

@@ -61,7 +61,7 @@ liefert historische Kurse: `/v1/{date}`).
 > werden aus den Abfrage-Ergebnissen gefiltert. `ApiHelper` wurde dabei zum
 > injizierbaren `PortfolioQueryService` (webapi/Services), inkl. Datums-Untergrenze
 > in der Mess-Query (Teilfix des Skalierungsproblems aus 03/D3).
-> Offen: Tests (Paket D).
+> Abgedeckt durch `PortfolioQueryServiceTest` (Fill-Grenze, 0-Filter, Batch).
 
 **Betroffen:** `cryptotracker.webapi/Helpers/ApiHelper.cs:98` (`BuildDayResult`),
 Zusammenspiel mit `UpdateService.Import`.
@@ -150,7 +150,7 @@ UI es zur Bestätigung anzeigen kann.
 > + try/catch pro Integration (inkl. `ChangeTracker.Clear()`); Metadaten-Import und
 > `ExecuteAsync` sind separat abgesichert (StopHost-Gefahr). Integrationstyp ist
 > jetzt ein Enum (`CryptoTrackerIntegrationType`, `Unknown` = Default).
-> Offen: Tests (Paket D).
+> Abgedeckt durch `UpdateServiceTest` (0-Diff, Fehler-Isolation, Idempotenz).
 
 **Betroffen:** `UpdateService.cs:61–81` (Import-Schleife) und die `Get*Accounts`-
 Methoden in `CryptoTrackerLogic.cs`.
