@@ -2,6 +2,14 @@
 
 ## S1 — Offene Registrierung auf einem gemeinsamen Portfolio 🔴
 
+> **Status 2026-07-09: entschärft.** First-User-Setup umgesetzt: Registrierung ist
+> offen, solange kein User existiert, danach zu (Override: `auth.allowregistration`).
+> OIDC-Auto-Provisioning bleibt bewusst an (Jans Entscheidung — eigener IdP,
+> bestehende Accounts sollen sich anmelden können), ist aber per
+> `oidc.autoprovision: false` abschaltbar. Status-Endpoint
+> `GET /api/auth/registration-enabled` vorhanden (aktuell ohne UI-Nutzung).
+> Die Grundsatzfrage Single- vs. Multi-Tenant bleibt offen (Phase 3+).
+
 **Befund:** `AuthController.Register` (`AuthController.cs:84`) ist anonym erreichbar.
 Gleichzeitig gibt es **keine Datenhoheit**: `Asset`, `ExchangeIntegration` und
 `AssetMeasuring` haben keinen Bezug zu einem Benutzer. Jeder, der den Server
@@ -27,6 +35,10 @@ bewirbt öffentliches Docker-Deployment. Das ist die größte einzelne Schwachst
    zusammen mit dem Datenmodell-Umbau ([03](03-datenmodell-und-aggregation.md)).
 
 ## S2 — Kein Lockout / Rate-Limit beim Login 🟠
+
+> **Status 2026-07-09: Lockout umgesetzt** via `CheckPasswordSignInAsync(...,
+> lockoutOnFailure: true)` (Identity-Defaults: 5 Versuche, 5 Minuten Sperre).
+> Offen: Rate-Limiting-Middleware auf `/api/auth/*`.
 
 `AuthController.Login` benutzt `CheckPasswordAsync` direkt — das umgeht die
 Lockout-Zählung von ASP.NET Identity komplett. Brute-Force ist unbegrenzt möglich.

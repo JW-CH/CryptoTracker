@@ -6,10 +6,12 @@ namespace cryptotracker.core.Models
         public string? Issuer { get; set; }
         public string? Audience { get; set; }
         public int ExpiryMinutes { get; set; }
+        public bool AllowRegistration { get; set; }
 
         public CryptoTrackerAuth()
         {
             ExpiryMinutes = 60;
+            AllowRegistration = false;
         }
     }
 }
