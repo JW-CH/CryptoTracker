@@ -1,3 +1,4 @@
+maxfilldays: 10
 integrations:
   - name: Coinbase
     type: coinbase

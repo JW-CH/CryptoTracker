@@ -1,4 +1,4 @@
-﻿
+
 using System.Text.Json;
 using cryptotracker.core.Interfaces;
 using YamlDotNet.Serialization;
@@ -14,6 +14,7 @@ namespace cryptotracker.core.Models
         public CryptoTrackerOidc Oidc { get; set; } = new();
         public string LogLevel { get; set; } = "Information";
         public string? StockApi { get; set; } = null;
+        public int MaxFillDays { get; set; } = 10;
         public List<CryptoTrackerIntegration> Integrations { get; set; } = new();
 
         public static CryptoTrackerConfig LoadFromJson(string input)

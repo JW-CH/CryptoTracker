@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using cryptotracker.core.Logic;
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,12 +18,14 @@ namespace cryptotracker.webapi.Controllers
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly DatabaseContext _db;
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
+        private readonly PortfolioQueryService _portfolioQueryService;
 
-        public IntegrationController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic)
+        public IntegrationController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, PortfolioQueryService portfolioQueryService)
         {
             _logger = logger;
             _db = db;
             _cryptoTrackerLogic = cryptoTrackerLogic;
+            _portfolioQueryService = portfolioQueryService;
         }
 
         [HttpGet(Name = "GetIntegrations")]
@@ -40,7 +43,7 @@ namespace cryptotracker.webapi.Controllers
 
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var measurings = await ApiHelper.GetAssetDayMeasuringAsync(_db, today, integrationId: integration.Id);
+            var measurings = await _portfolioQueryService.GetAssetDayMeasuringAsync(today, integrationId: integration.Id);
 
             return IntegrationDetails.FromIntegration(integration, measurings);
         }
