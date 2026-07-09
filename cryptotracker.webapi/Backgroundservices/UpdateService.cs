@@ -2,7 +2,10 @@ using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
+
+namespace cryptotracker.webapi.Backgroundservices;
 
 public class UpdateService : BackgroundService
 {
@@ -31,13 +34,11 @@ public class UpdateService : BackgroundService
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
-                    var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
-                    var stockLogic = scope.ServiceProvider.GetRequiredService<IStockLogic>();
-                    var ctal = new CryptoTrackerAssetLogic(_logger, cryptoTrackerLogic, currencyProvider, stockLogic, _config);
+                    var assetMetadataService = scope.ServiceProvider.GetRequiredService<AssetMetadataService>();
 
                     try
                     {
-                        await Import(db, cryptoTrackerLogic, ctal);
+                        await Import(db, cryptoTrackerLogic, assetMetadataService);
                     }
                     catch (Exception ex)
                     {
@@ -45,7 +46,7 @@ public class UpdateService : BackgroundService
                     }
                     _logger.LogInformation("Import finished");
 
-                    _logger.LogInformation($"Waiting {_config.Interval} minutes");
+                    _logger.LogInformation("Waiting {Interval} minutes", _config.Interval);
 
                 }
                 await timer.WaitForNextTickAsync(stoppingToken);
@@ -53,7 +54,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, CryptoTrackerAssetLogic cryptoTrackerAssetLogic)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, AssetMetadataService assetMetadataService)
     {
         _logger.LogInformation("Starting Integration-Import");
 
@@ -67,7 +68,7 @@ public class UpdateService : BackgroundService
             try
             {
                 var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
-                _logger.LogTrace($"Fetched {balances.Count()} balances for {integration.Name}");
+                _logger.LogTrace("Fetched {Count} balances for {Name}", balances.Count(), integration.Name);
 
                 var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);
 
@@ -75,11 +76,11 @@ public class UpdateService : BackgroundService
                 // their balance dropped to 0 (exchanges omit empty positions)
                 var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
 
-                _logger.LogTrace($"Clearing today's AssetMeasurings entries for integration {integration.Name}");
+                _logger.LogTrace("Clearing today's AssetMeasurings entries for integration {Name}", integration.Name);
                 var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.IntegrationId == exchangeIntegration.Id);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
-                _logger.LogTrace($"Removed {count} AssetMeasurings for integration {integration.Name}");
+                _logger.LogTrace("Removed {Count} AssetMeasurings for integration {Name}", count, integration.Name);
 
                 foreach (var balance in balances)
                 {
@@ -106,7 +107,7 @@ public class UpdateService : BackgroundService
         _logger.LogInformation("Starting Metadataimport");
         try
         {
-            await cryptoTrackerAssetLogic.UpdateAllAssetMetadata(db);
+            await assetMetadataService.UpdateAllAssetMetadataAsync();
             _logger.LogInformation("Finished Metadataimport");
         }
         catch (Exception ex)
@@ -131,7 +132,7 @@ public class UpdateService : BackgroundService
                 Name = integration.Name,
                 Description = integration.Description
             };
-            _logger.LogTrace($"Adding new ExchangeIntegration: {ex.Name}");
+            _logger.LogTrace("Adding new ExchangeIntegration: {Name}", ex.Name);
             await db.ExchangeIntegrations.AddAsync(ex);
             await db.SaveChangesAsync();
         }
@@ -182,7 +183,7 @@ public class UpdateService : BackgroundService
                 AssetType = AssetType.Crypto,
                 IsHidden = false
             };
-            _logger.LogTrace($"Adding new Asset: {asset.Symbol}");
+            _logger.LogTrace("Adding new Asset: {Symbol}", asset.Symbol);
             await db.Assets.AddAsync(asset);
         }
 
@@ -195,6 +196,6 @@ public class UpdateService : BackgroundService
         };
 
         await db.AssetMeasurings.AddAsync(measuring);
-        _logger.LogTrace($"Adding new AssetMeasuring to {exchangeIntegration.Name} for {measuring.Symbol} - {measuring.Amount}");
+        _logger.LogTrace("Adding new AssetMeasuring to {Name} for {Symbol} - {Amount}", exchangeIntegration.Name, measuring.Symbol, measuring.Amount);
     }
 }

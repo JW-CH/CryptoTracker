@@ -1,6 +1,8 @@
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Backgroundservices;
+using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +16,7 @@ public class UpdateServiceTest
 {
     private DatabaseContext _db;
     private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
-    private CryptoTrackerAssetLogic _assetLogic;
+    private AssetMetadataService _metadataService;
     private CryptoTrackerConfig _config;
     private UpdateService _service;
 
@@ -39,8 +41,9 @@ public class UpdateServiceTest
 
         _config = new CryptoTrackerConfig { Interval = 60 };
 
-        _assetLogic = new CryptoTrackerAssetLogic(
-            Mock.Of<ILogger>(),
+        _metadataService = new AssetMetadataService(
+            Mock.Of<ILogger<AssetMetadataService>>(),
+            _db,
             _cryptoTrackerLogicMock.Object,
             currencyProviderMock.Object,
             stockLogicMock.Object,
@@ -99,7 +102,7 @@ public class UpdateServiceTest
         return integration;
     }
 
-    private Task Import() => _service.Import(_db, _cryptoTrackerLogicMock.Object, _assetLogic);
+    private Task Import() => _service.Import(_db, _cryptoTrackerLogicMock.Object, _metadataService);
 
     private Task<List<AssetMeasuring>> TodaysMeasurings() =>
         _db.AssetMeasurings.Where(m => m.Timestamp >= DateTime.UtcNow.Date).ToListAsync();

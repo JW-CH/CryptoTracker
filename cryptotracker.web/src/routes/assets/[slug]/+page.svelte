@@ -15,7 +15,7 @@
 	}
 
 	let assetInitialized = $state<boolean>(false);
-	let assetData = $state<api.AssetData>();
+	let assetData = $state<api.AssetWithPriceDto>();
 
 	let range = $state<number>(7);
 

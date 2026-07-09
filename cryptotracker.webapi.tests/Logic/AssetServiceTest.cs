@@ -1,22 +1,21 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
-using cryptotracker.webapi.Controllers;
+using cryptotracker.webapi.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Moq;
-using static cryptotracker.webapi.Controllers.AssetController;
+using static cryptotracker.webapi.Services.AssetService;
 
 namespace cryptotracker.webapi.tests.Logic;
 
 [TestFixture]
-public class WebApiTest
+public class AssetServiceTest
 {
     private DatabaseContext _dbContext;
-    private AssetController _controller;
-    private Mock<ILogger<CryptoTrackerController>> _loggerMock;
+    private AssetService _service;
     private Mock<ICurrencyProvider> _currencyProviderMock;
     private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
     private Mock<IStockLogic> _stockLogicMock;
@@ -30,7 +29,6 @@ public class WebApiTest
             .Options;
 
         _dbContext = new DatabaseContext(options);
-        _loggerMock = new Mock<ILogger<CryptoTrackerController>>();
 
         _currencyProviderMock = new Mock<ICurrencyProvider>();
         _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
@@ -38,15 +36,24 @@ public class WebApiTest
         _stockLogicMock = new Mock<IStockLogic>();
         _stockLogicMock.Setup(x => x.GetAllStocksAsync()).ReturnsAsync(new List<Stock>() { new Stock { Symbol = "TST", Name = "Test Stock" } });
         _stockLogicMock.Setup(x => x.GetStocksByIdsAsync(It.IsAny<string>(), It.IsAny<List<string>>())).ReturnsAsync(new List<AssetMetadata>() { new AssetMetadata { Symbol = "TST", Name = "Test Stock" } });
-        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(new AssetMetadata { Symbol = "TST", Name = "Test Stock" });
+        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync((string currency, string id) => new AssetMetadata { AssetId = id, Symbol = "TST", Name = "Test Stock" });
 
-        _controller = new AssetController(
-            _loggerMock.Object,
+        var config = new CryptoTrackerConfig();
+        var metadataService = new AssetMetadataService(
+            Mock.Of<ILogger<AssetMetadataService>>(),
             _dbContext,
             _cryptoTrackerLogicMock.Object,
             _currencyProviderMock.Object,
             _stockLogicMock.Object,
-            new CryptoTrackerConfig()
+            config
+        );
+
+        _service = new AssetService(
+            _dbContext,
+            _cryptoTrackerLogicMock.Object,
+            _currencyProviderMock.Object,
+            config,
+            metadataService
         );
 
         await SeedDatabase();
@@ -83,7 +90,7 @@ public class WebApiTest
     public async Task GetAssets_WithOneAssetInDatabase_ReturnsOneAsset()
     {
         // Act
-        var result = await _controller.GetAssets();
+        var result = await _service.GetAssetsAsync();
 
         // Assert
         Assert.That(result, Is.Not.Null);
@@ -99,7 +106,7 @@ public class WebApiTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _controller.GetAssets();
+        var result = await _service.GetAssetsAsync();
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -120,7 +127,7 @@ public class WebApiTest
         await _dbContext.SaveChangesAsync();
 
         // Act
-        var result = await _controller.GetAssets();
+        var result = await _service.GetAssetsAsync();
 
         // Assert
         Assert.That(result.Count, Is.EqualTo(2));
@@ -152,12 +159,11 @@ public class WebApiTest
             });
 
         // Act
-        var addResult = await _controller.AddAsset(dto);
-        var ethAssetData = await _controller.GetAsset("ETH");
-        var allAssets = await _controller.GetAssets();
+        await _service.AddAssetAsync(dto);
+        var ethAssetData = await _service.GetAssetWithPriceAsync("ETH");
+        var allAssets = await _service.GetAssetsAsync();
 
         // Assert
-        Assert.That(addResult, Is.True);
         Assert.That(allAssets.Count, Is.EqualTo(2));
         Assert.That(allAssets.Any(x => x.Symbol == "ETH"), Is.True);
         Assert.That(ethAssetData.Asset.Symbol, Is.EqualTo("ETH"));
@@ -179,15 +185,37 @@ public class WebApiTest
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _controller.AddAsset(dto)
+            async () => await _service.AddAssetAsync(dto)
         );
+    }
+
+    [Test]
+    public async Task AddAsset_WithUnknownCryptoExternalId_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var dto = new AddAssetDto
+        {
+            Symbol = "XXX",
+            AssetType = AssetType.Crypto,
+            ExternalId = "does-not-exist"
+        };
+
+        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()))
+            .ReturnsAsync(new List<AssetMetadata>());
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _service.AddAssetAsync(dto)
+        );
+
+        Assert.That(ex.Message, Does.Contain("Metadata not found"));
     }
 
     [Test]
     public async Task GetAsset_WithExistingSymbol_ReturnsAssetWithPrice()
     {
         // Act
-        var result = await _controller.GetAsset("BTC");
+        var result = await _service.GetAssetWithPriceAsync("BTC");
 
         // Assert
         Assert.That(result.Asset.Symbol, Is.EqualTo("BTC"));
@@ -195,12 +223,13 @@ public class WebApiTest
         Assert.That(result.Asset.ExternalId, Is.EqualTo("bitcoin"));
         Assert.That(result.Price, Is.EqualTo(50M));
     }
+
     [Test]
     public async Task GetAsset_WithNullSymbol_ThrowsKeyNotFoundException()
     {
         // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(
-            async () => await _controller.GetAsset(null)
+            async () => await _service.GetAssetWithPriceAsync(null)
         );
     }
 
@@ -209,7 +238,7 @@ public class WebApiTest
     {
         // Act & Assert
         Assert.ThrowsAsync<KeyNotFoundException>(
-            async () => await _controller.GetAsset(string.Empty)
+            async () => await _service.GetAssetWithPriceAsync(string.Empty)
         );
     }
 
@@ -218,7 +247,7 @@ public class WebApiTest
     {
         // Act & Assert
         var ex = Assert.ThrowsAsync<KeyNotFoundException>(
-            async () => await _controller.GetAsset("NONEXISTENT")
+            async () => await _service.GetAssetWithPriceAsync("NONEXISTENT")
         );
 
         Assert.That(ex.Message, Is.EqualTo("Asset not found"));
@@ -236,11 +265,98 @@ public class WebApiTest
         };
 
         // Act
-        await _controller.AddAsset(dto);
+        await _service.AddAssetAsync(dto);
         var asset = await _dbContext.Assets.FirstOrDefaultAsync(x => x.Symbol == "AAPL");
 
         // Assert
         Assert.That(asset, Is.Not.Null);
         Assert.That(asset.AssetType, Is.EqualTo(AssetType.Stock));
+    }
+
+    [Test]
+    public async Task SetExternalId_WithStockAsset_UsesStockLogicAndWritesPrice()
+    {
+        // Arrange
+        _dbContext.Assets.Add(new Asset
+        {
+            Symbol = "AAPL",
+            Name = "",
+            AssetType = AssetType.Stock,
+            ExternalId = "",
+            IsHidden = false
+        });
+        await _dbContext.SaveChangesAsync();
+
+        _stockLogicMock.Setup(x => x.GetStockByIdAsync("chf", "apple"))
+            .ReturnsAsync(new AssetMetadata
+            {
+                AssetId = "apple",
+                Symbol = "AAPL",
+                Name = "Apple Inc.",
+                Price = 42M,
+                Currency = "chf"
+            });
+
+        // Act
+        var result = await _service.SetExternalIdAsync("AAPL", "apple");
+
+        // Assert
+        Assert.That(result.Asset.ExternalId, Is.EqualTo("apple"));
+        Assert.That(result.Price, Is.EqualTo(42M));
+
+        var priceEntry = await _dbContext.AssetPriceHistory.FirstOrDefaultAsync(x => x.Symbol == "AAPL");
+        Assert.That(priceEntry, Is.Not.Null);
+        Assert.That(priceEntry.Price, Is.EqualTo(42M));
+
+        // Stocks dürfen nicht über den Crypto-Pfad aufgelöst werden
+        _stockLogicMock.Verify(x => x.GetStockByIdAsync("chf", "apple"), Times.Once);
+        _cryptoTrackerLogicMock.Verify(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()), Times.Never);
+    }
+
+    [Test]
+    public async Task SetExternalId_WithUnknownCryptoExternalId_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()))
+            .ReturnsAsync(new List<AssetMetadata>());
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _service.SetExternalIdAsync("BTC", "does-not-exist")
+        );
+
+        Assert.That(ex.Message, Does.Contain("Metadata not found"));
+    }
+
+    [Test]
+    public async Task SetExternalId_WithMetadataWithoutAssetId_ThrowsInvalidOperationException()
+    {
+        // Arrange (Provider liefert einen Default-Struct ohne AssetId)
+        _dbContext.Assets.Add(new Asset
+        {
+            Symbol = "AAPL",
+            Name = "",
+            AssetType = AssetType.Stock,
+            ExternalId = "",
+            IsHidden = false
+        });
+        await _dbContext.SaveChangesAsync();
+
+        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new AssetMetadata { Symbol = "AAPL", Name = "Apple Inc." });
+
+        // Act & Assert
+        Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _service.SetExternalIdAsync("AAPL", "apple")
+        );
+    }
+
+    [Test]
+    public async Task SetAssetType_WithExistingExternalId_ThrowsInvalidOperationException()
+    {
+        // Act & Assert (BTC hat ExternalId "bitcoin")
+        Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _service.SetAssetTypeAsync("BTC", AssetType.Fiat)
+        );
     }
 }

@@ -15,12 +15,12 @@ namespace cryptotracker.webapi.Controllers
     [Route("api/[controller]")]
     public class IntegrationController : ControllerBase
     {
-        private readonly ILogger<CryptoTrackerController> _logger;
+        private readonly ILogger<IntegrationController> _logger;
         private readonly DatabaseContext _db;
         private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly PortfolioQueryService _portfolioQueryService;
 
-        public IntegrationController(ILogger<CryptoTrackerController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, PortfolioQueryService portfolioQueryService)
+        public IntegrationController(ILogger<IntegrationController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, PortfolioQueryService portfolioQueryService)
         {
             _logger = logger;
             _db = db;

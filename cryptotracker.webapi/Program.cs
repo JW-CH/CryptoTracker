@@ -6,6 +6,7 @@ using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Backgroundservices;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -81,6 +82,8 @@ builder.Services.AddSingleton<IStockLogic>(srv =>
 
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddScoped<PortfolioQueryService>();
+builder.Services.AddScoped<AssetMetadataService>();
+builder.Services.AddScoped<AssetService>();
 
 // DbContext
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>
