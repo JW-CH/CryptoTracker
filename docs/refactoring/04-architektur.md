@@ -7,7 +7,6 @@ cryptotracker.web      SvelteKit-SPA (adapter-static), generierter API-Client
 cryptotracker.webapi   Controller + ApiHelper + UpdateService (BackgroundService) + JwtService
 cryptotracker.core     "Logic"-Klassen (Exchange-Abrufe, Preis-Provider), Config-Modelle
 cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
-cryptotracker.worker   Legacy-Konsolen-App, nicht mehr in der .sln referenziert? (doch, 6 Projekte)
 ```
 
 ## A1 — Schichtenschnitt: DTOs im database-Projekt, Logik in Controllern 🟠
@@ -119,9 +118,9 @@ Konfiguration ersetzen: `stocks.provider: yahoo|alphavantage|none` +
   (`Program.cs:225`) racet ebenfalls. Mindestens dokumentieren („nur 1 Replica"),
   besser: Migration hinter Startup-Flag/Job, Import mit DB-Lock (z. B.
   `pg_advisory_lock`).
-- `cryptotracker.worker` ist als legacy markiert (CLAUDE.md), enthält eine
+- ~~`cryptotracker.worker` ist als legacy markiert (CLAUDE.md), enthält eine
   Kopie der Import-Logik und veraltet parallel. **Löschen** (Git-Historie
-  bewahrt ihn), ebenso `SimpleHttpClientFactory`.
+  bewahrt ihn), ebenso `SimpleHttpClientFactory`.~~ ✅ erledigt 2026-07-09.
 
 ## A5 — Konfiguration 🟡
 

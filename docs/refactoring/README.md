@@ -79,7 +79,7 @@ Falsche Zahlen sind für einen Portfolio-Tracker das schlimmste Problem.
 - Integration-Provider-Pattern statt `switch` (eine Klasse pro Exchange)
 - Service-Schicht zwischen Controller und EF; DTOs raus aus dem database-Projekt
 - Preis-Provider vereinheitlichen (`IPriceProvider` pro AssetType)
-- `cryptotracker.worker` löschen, tote Codepfade entfernen
+- ~~`cryptotracker.worker` löschen~~ (✅ erledigt 2026-07-09), tote Codepfade entfernen
 
 ### Phase 5 — Robustheit & Code-Qualität (≈ 3–5 PT)
 - `IHttpClientFactory` überall, Retry/Rate-Limit (CoinGecko!), TTL-Caches

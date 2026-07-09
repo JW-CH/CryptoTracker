@@ -93,7 +93,7 @@ Exchange-SDK-Pakete.
 - `CLAUDE.md` beschreibt `make test-webapi`/`test-core` — beide laufen, aber
   `make api` setzt eine laufende API voraus (nicht CI-fähig, siehe
   [05/Q6](05-backend-codequalitaet.md)).
-- `cryptotracker.worker` aus der Solution und dem Repo entfernen (Details
+- ~~`cryptotracker.worker` aus der Solution und dem Repo entfernen~~ ✅ erledigt 2026-07-09 (Details
   [04/A4](04-architektur.md)).
 - `Directory.Build.props` prüfen: `Nullable`/`ImplicitUsings` scheinen aktiv,
   aber es existieren unterdrückte Warnungen (non-nullable Navigation

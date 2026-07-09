@@ -72,7 +72,7 @@ und Swagger dokumentiert nur 200.
 | `CryptoTrackerLogic.cs:52–53` | Auskommentierter Code (Bitpanda-Portfolio) |
 | `CryptoTrackerLogic.cs:142–201` | Cardano: `throw NotImplementedException` mit unerreichbarem Code dahinter |
 | `AlphaVantageStockLogic.cs` | Toter Code (nie registriert); `TwelveDataSharp`-Package ungenutzt |
-| `cryptotracker.worker/` | Legacy-Duplikat der Import-Logik → löschen |
+| `cryptotracker.worker/` | ~~Legacy-Duplikat der Import-Logik → löschen~~ ✅ erledigt 2026-07-09 |
 | `AssetController.cs:119` | `}; ;` Doppel-Semikolon; `AssetController.cs:165` `= null; ;` |
 | `AssetController.cs:15` | `ILogger<CryptoTrackerController>` in fremden Controllern (Copy-Paste; auch Integration/Measuring) |
 | `MeasuringController.cs:19` | `_cryptoTrackerLogic` injiziert und nie benutzt (auch IntegrationController) |
