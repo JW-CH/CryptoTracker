@@ -5,11 +5,11 @@ using YahooFinanceApi;
 public class YahooFinanceStockLogic : IStockLogic
 {
     private ILogger _logger;
-    private IFiatLogic _fiatLogic;
-    public YahooFinanceStockLogic(ILogger logger, IFiatLogic fiatLogic)
+    private ICurrencyProvider _currencyProvider;
+    public YahooFinanceStockLogic(ILogger logger, ICurrencyProvider currencyProvider)
     {
         _logger = logger;
-        _fiatLogic = fiatLogic;
+        _currencyProvider = currencyProvider;
     }
 
     public Task<IEnumerable<Stock>> GetAllStocksAsync()
@@ -38,7 +38,7 @@ public class YahooFinanceStockLogic : IStockLogic
         .Fields(Field.Symbol, Field.ShortName, Field.RegularMarketPrice, Field.Currency)
         .QueryAsync();
 
-        Dictionary<string, decimal> fiatPrices = new Dictionary<string, decimal>();
+        Dictionary<string, decimal> currencyRates = new Dictionary<string, decimal>();
 
         foreach (var security in securities)
         {
@@ -48,12 +48,13 @@ public class YahooFinanceStockLogic : IStockLogic
 
             if (security.Value.Currency.ToLower() != currency.ToLower())
             {
-                if (!fiatPrices.ContainsKey(security.Value.Currency))
+                if (!currencyRates.ContainsKey(security.Value.Currency))
                 {
-                    var fiatMetaData = await _fiatLogic.GetFiatByIdAsync(security.Value.Currency, currency);
-                    fiatPrices.Add(security.Value.Currency, fiatMetaData.Price);
+                    // value of 1 <stock currency> in <currency>
+                    var rateMetadata = await _currencyProvider.GetLatestRateAsync(currency, security.Value.Currency);
+                    currencyRates.Add(security.Value.Currency, rateMetadata.Price);
                 }
-                price = price * fiatPrices[security.Value.Currency];
+                price = price * currencyRates[security.Value.Currency];
             }
 
             var assetMetaData = new AssetMetadata

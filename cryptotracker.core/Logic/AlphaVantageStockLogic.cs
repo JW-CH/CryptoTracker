@@ -6,13 +6,13 @@ using ThreeFourteen.AlphaVantage;
 public class AlphaVantageStockLogic : IStockLogic
 {
     private readonly ILogger _logger;
-    private readonly IFiatLogic _fiatLogic;
+    private readonly ICurrencyProvider _currencyProvider;
     private readonly AlphaVantage _client;
 
-    public AlphaVantageStockLogic(ILogger logger, IFiatLogic fiatLogic, ICryptoTrackerConfig config)
+    public AlphaVantageStockLogic(ILogger logger, ICurrencyProvider currencyProvider, ICryptoTrackerConfig config)
     {
         _logger = logger;
-        _fiatLogic = fiatLogic;
+        _currencyProvider = currencyProvider;
         _client = new AlphaVantage(config.StockApi);
     }
 
@@ -30,7 +30,7 @@ public class AlphaVantageStockLogic : IStockLogic
     public async Task<List<AssetMetadata>> GetStocksByIdsAsync(string currency, List<string> ids)
     {
         var result = new List<AssetMetadata>();
-        var fiatRates = new Dictionary<string, decimal>();
+        var currencyRates = new Dictionary<string, decimal>();
 
         foreach (var symbol in ids)
         {
@@ -53,13 +53,14 @@ public class AlphaVantageStockLogic : IStockLogic
 
                 if (!string.Equals(currency, "USD", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!fiatRates.ContainsKey("USD"))
+                    if (!currencyRates.ContainsKey("USD"))
                     {
-                        var rate = await _fiatLogic.GetFiatByIdAsync("USD", currency);
-                        fiatRates["USD"] = rate.Price;
+                        // value of 1 USD in <currency>
+                        var rate = await _currencyProvider.GetLatestRateAsync(currency, "USD");
+                        currencyRates["USD"] = rate.Price;
                     }
 
-                    price *= fiatRates["USD"];
+                    price *= currencyRates["USD"];
                 }
 
                 result.Add(new AssetMetadata

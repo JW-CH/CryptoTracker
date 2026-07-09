@@ -8,6 +8,12 @@ strukturellen Refactoring behoben werden. Sortiert nach Schweregrad.
 <a id="bug-1"></a>
 ## Bug 1 — Fiat-Bewertung ist invertiert (falscher Wechselkurs) 🔴
 
+> **Status 2026-07-09: Code-Fix umgesetzt** (Inversion in `FiatLogic`, Argument-Tausch in
+> `YahooFinanceStockLogic`/`AlphaVantageStockLogic`, Kontrakt-Doku auf `AssetMetadata.Price`,
+> Regressionstests in `cryptotracker.core.tests/Logic/FiatLogicTest.cs`).
+> **Offen: Bereinigung der Altdaten** — bestehende Fiat-Zeilen in `AssetPriceHistory`
+> sind weiterhin invertiert gespeichert; SQL siehe „Achtung Altdaten" unten.
+
 **Betroffen:** `cryptotracker.core/Logic/CryptoTrackerAssetLogic.cs:163` → `FiatLogic.GetFiatsByIdsAsync`
 (`cryptotracker.core/Logic/FiatLogic.cs:55`), Bewertung in `MessungDto.SumFromModels`
 (`cryptotracker.database/DTOs/AssetMeasuringDto.cs:51`).
@@ -192,11 +198,15 @@ statischer `DateTime.Now`-Aufrufe — macht das auch endlich testbar.
 
 ## Bug 7 — Frankfurter-API-Host ist umgezogen 🟡
 
-`FiatLogic.cs:55,107` ruft `api.frankfurter.app` auf — das antwortet inzwischen
+> **Status 2026-07-09: erledigt.** `FrankfurterCurrencyProvider` nutzt jetzt
+> `https://api.frankfurter.dev/v1` als Default-BaseUrl (per Konstruktor-Parameter
+> überschreibbar); Antwortformat der v1-Endpoints wurde live verifiziert.
+
+~~`FiatLogic.cs:55,107` ruft `api.frankfurter.app` auf — das antwortet inzwischen
 mit `301 Moved Permanently` auf `api.frankfurter.dev`. `HttpClient` folgt GET-
 Redirects standardmäßig, es funktioniert also noch, kostet aber pro Aufruf einen
 Roundtrip und bricht, falls der Redirect wegfällt. URL aktualisieren
-(`https://api.frankfurter.dev/v1/...`).
+(`https://api.frankfurter.dev/v1/...`).~~
 
 ## Bug 8 — `GetAsset` ignoriert die Währung des Preises 🟡
 
