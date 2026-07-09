@@ -1,9 +1,26 @@
-﻿namespace cryptotracker.core.Models
+﻿using System.Text.Json.Serialization;
+
+namespace cryptotracker.core.Models
 {
+    public enum CryptoTrackerIntegrationType
+    {
+        Unknown,
+        Bitpanda,
+        Cryptocom,
+        Kucoin,
+        Coinbase,
+        Binance,
+        Bitcoin,
+        Ethereum,
+        Ripple,
+        Cardano,
+    }
+
     public class CryptoTrackerIntegration
     {
         public string Name { get; set; }
-        public string Type { get; set; }
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public CryptoTrackerIntegrationType Type { get; set; }
         public string Key { get; set; }
         public string Secret { get; set; }
         public string Passphrase { get; set; }
@@ -12,21 +29,11 @@
         public CryptoTrackerIntegration()
         {
             Name = string.Empty;
-            Type = string.Empty;
+            Type = CryptoTrackerIntegrationType.Unknown;
             Key = string.Empty;
             Secret = string.Empty;
             Passphrase = string.Empty;
             Description = string.Empty;
-        }
-
-        public CryptoTrackerIntegration(string name, string type, string key, string secret, string passphrase, string description)
-        {
-            Name = name;
-            Type = type;
-            Key = key;
-            Secret = secret;
-            Passphrase = passphrase;
-            Description = description;
         }
     }
 }

@@ -40,9 +40,9 @@ namespace cryptotracker.core.Logic
         {
             _logger.LogTrace($"Fetching balances for integration {integration.Name}");
 
-            switch (integration.Type.ToLower())
+            switch (integration.Type)
             {
-                case "bitpanda":
+                case CryptoTrackerIntegrationType.Bitpanda:
                     using (var bitpandaClient = new HttpClient())
                     {
                         var result = new List<BalanceResult>();
@@ -60,7 +60,7 @@ namespace cryptotracker.core.Logic
 
                         return result;
                     }
-                case "cryptocom":
+                case CryptoTrackerIntegrationType.Cryptocom:
                     using (var cryptocomClient = new CryptoComRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
@@ -70,7 +70,7 @@ namespace cryptotracker.core.Logic
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Quantity }).ToList();
                     }
-                case "kucoin":
+                case CryptoTrackerIntegrationType.Kucoin:
                     using (var kucoinClient = new KucoinRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret, integration.Passphrase);
@@ -80,7 +80,7 @@ namespace cryptotracker.core.Logic
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Total }).ToList();
                     }
-                case "coinbase":
+                case CryptoTrackerIntegrationType.Coinbase:
                     using (var coinbaseClient = new CoinbaseRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
@@ -90,7 +90,7 @@ namespace cryptotracker.core.Logic
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.AvailableBalance.Value + account.HoldBalance.Value }).ToList();
                     }
-                case "binance":
+                case CryptoTrackerIntegrationType.Binance:
                     using (var binanceClient = new BinanceRestClient(xy =>
                     {
                         xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
@@ -100,8 +100,7 @@ namespace cryptotracker.core.Logic
 
                         return accounts.Select(account => new BalanceResult { Symbol = account.Asset, Balance = account.Total }).ToList();
                     }
-                case "bitcoin":
-                case "btc":
+                case CryptoTrackerIntegrationType.Bitcoin:
                     using (HttpClient client = new HttpClient())
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
@@ -109,7 +108,7 @@ namespace cryptotracker.core.Logic
                             Balance = await GetBitcoinAvailableBalances(client, integration.Key)
                         }};
                     }
-                case "ethereum":
+                case CryptoTrackerIntegrationType.Ethereum:
                     using (HttpClient client = new HttpClient())
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
@@ -117,8 +116,7 @@ namespace cryptotracker.core.Logic
                             Balance = await GetEthereumAvailableBalances(client, integration.Key)
                         }};
                     }
-                case "ripple":
-                case "xrp":
+                case CryptoTrackerIntegrationType.Ripple:
                     using (HttpClient client = new HttpClient())
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
@@ -126,8 +124,7 @@ namespace cryptotracker.core.Logic
                             Balance = await GetRippleAvailableBalances(client, integration.Key)
                         }};
                     }
-                case "cardano":
-                case "ada":
+                case CryptoTrackerIntegrationType.Cardano:
                     using (HttpClient client = new HttpClient())
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
@@ -217,8 +214,7 @@ namespace cryptotracker.core.Logic
             }
             else
             {
-                _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
-                return 0;
+                throw new InvalidOperationException($"Failed to fetch balance for address {address}: {response.StatusCode}");
             }
         }
         private async Task<decimal> GetEthereumAvailableBalances(HttpClient client, string address)
@@ -239,8 +235,7 @@ namespace cryptotracker.core.Logic
             }
             else
             {
-                _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
-                return 0;
+                throw new InvalidOperationException($"Failed to fetch balance for address {address}: {response.StatusCode}");
             }
         }
 
@@ -270,8 +265,7 @@ namespace cryptotracker.core.Logic
                 }
                 else
                 {
-                    _logger.LogError($"Failed to fetch balance for address {address}: {response.StatusCode}");
-                    return (0, 0);
+                    throw new InvalidOperationException($"Failed to fetch balance for address {address}: {response.StatusCode}");
                 }
             }
 
@@ -288,7 +282,7 @@ namespace cryptotracker.core.Logic
 
                 decimal totalBalance = 0;
                 int i = 0;
-                int transactions = 0;
+                int transactions;
                 do
                 {
                     KeyPath keyPath = new KeyPath($"0/{i}"); // Change path for receiving or change addresses
@@ -312,15 +306,14 @@ namespace cryptotracker.core.Logic
         }
         private async Task<List<KucoinAccount>> GetKucoinAvailableAccounts(IKucoinRestClient client)
         {
-            WebCallResult<KucoinAccount[]>? result = null;
+            WebCallResult<KucoinAccount[]>? result;
             List<KucoinAccount> accounts = new();
 
             result = await client.SpotApi.Account.GetAccountsAsync();
 
             if (!result.Success)
             {
-                _logger.LogError($"Could not get balances for Kucoin integration");
-                return accounts;
+                throw new InvalidOperationException($"Could not get balances for Kucoin integration: {result.Error?.Message}");
             }
 
             accounts.AddRange(result.Data.ToList() ?? new());
@@ -336,8 +329,7 @@ namespace cryptotracker.core.Logic
 
             if (!result.Success)
             {
-                _logger.LogError($"Could not get balances for CryptoCom integration");
-                return accounts;
+                throw new InvalidOperationException($"Could not get balances for CryptoCom integration: {result.Error?.Message}");
             }
 
             accounts.AddRange(result.Data.FirstOrDefault()?.PositionBalances.ToList() ?? new());
@@ -355,8 +347,7 @@ namespace cryptotracker.core.Logic
 
                 if (!result.Success)
                 {
-                    _logger.LogError($"Could not get balances for Coinbase integration");
-                    return new List<CoinbaseAccount>();
+                    throw new InvalidOperationException($"Could not get balances for Coinbase integration: {result.Error?.Message}");
                 }
 
                 accounts.AddRange(result.Data.Accounts.Where(x => x.AvailableBalance.Value > 0).ToList());
@@ -375,8 +366,7 @@ namespace cryptotracker.core.Logic
 
             if (!result.Success)
             {
-                _logger.LogError($"Could not get balances for Binance integration");
-                return accounts;
+                throw new InvalidOperationException($"Could not get balances for Binance integration: {result.Error?.Message}");
             }
 
             accounts.AddRange(result.Data.Balances.Where(x => x.Total > 0).ToList() ?? new());
@@ -389,9 +379,7 @@ namespace cryptotracker.core.Logic
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to fetch fiat balances for Bitpanda: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return new();
+                throw new InvalidOperationException($"Failed to fetch fiat balances for Bitpanda: {response.StatusCode}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}");
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -404,9 +392,7 @@ namespace cryptotracker.core.Logic
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return new();
+                throw new InvalidOperationException($"Failed to fetch balances for Bitpanda: {response.StatusCode}");
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -419,9 +405,7 @@ namespace cryptotracker.core.Logic
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to fetch account balances for Bitpanda: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return new();
+                throw new InvalidOperationException($"Failed to fetch account balances for Bitpanda: {response.StatusCode}");
             }
 
             var json = await response.Content.ReadAsStringAsync();
