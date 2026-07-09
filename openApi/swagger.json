@@ -271,7 +271,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               },
@@ -279,7 +279,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               },
@@ -287,7 +287,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               }
@@ -320,7 +320,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               },
@@ -328,7 +328,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               },
@@ -336,7 +336,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Fiat"
+                    "$ref": "#/components/schemas/Currency"
                   }
                 }
               }
@@ -727,6 +727,36 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Config": {
+      "get": {
+        "tags": [
+          "Config"
+        ],
+        "operationId": "GetConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1442,7 +1472,17 @@
         },
         "additionalProperties": false
       },
-      "Fiat": {
+      "ConfigResponse": {
+        "type": "object",
+        "properties": {
+          "baseCurrency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Currency": {
         "type": "object",
         "properties": {
           "symbol": {
@@ -1614,6 +1654,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "Config"
     },
     {
       "name": "CryptoTracker"

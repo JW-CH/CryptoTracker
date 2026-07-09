@@ -7,7 +7,7 @@
 	let externalId: string = $state('');
 	let assetType: api.AssetType = $state('Fiat');
 
-	let values: api.Coin[] | api.Fiat[] | null = $state(null);
+	let values: api.Coin[] | api.Currency[] | null = $state(null);
 
 	import { onMount } from 'svelte';
 
@@ -46,7 +46,7 @@
 	async function AddIntegration() {
 		if (!symbol) return;
 		if (assetType == 'Fiat') {
-			externalId = (values as api.Fiat[]).find((x) => x.symbol === symbol)?.symbol || '';
+			externalId = (values as api.Currency[]).find((x) => x.symbol === symbol)?.symbol || '';
 		} else if (assetType == 'Crypto') {
 			externalId = (values as api.Coin[]).find((x) => x.symbol === symbol)?.id ?? '';
 		} else if (assetType == 'Stock') {
