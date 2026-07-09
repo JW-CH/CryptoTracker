@@ -15,16 +15,27 @@ namespace cryptotracker.webapi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ICryptoTrackerConfig _config;
         private readonly JwtService _jwtService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(UserManager<ApplicationUser> userManager, ICryptoTrackerConfig config, JwtService jwtService, ILogger<AuthController> logger)
+        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ICryptoTrackerConfig config, JwtService jwtService, ILogger<AuthController> logger)
         {
             _userManager = userManager;
+            _signInManager = signInManager;
             _config = config;
             _logger = logger;
             _jwtService = jwtService;
+        }
+
+        /// <summary>
+        /// Registration is open while no user exists (first-user setup) and closed
+        /// afterwards, unless explicitly re-enabled via auth.allowRegistration.
+        /// </summary>
+        private bool IsRegistrationOpen()
+        {
+            return _config.Auth.AllowRegistration || !_userManager.Users.Any();
         }
 
         [Authorize]
@@ -50,6 +61,12 @@ namespace cryptotracker.webapi.Controllers
             return Ok(_config.Oidc.IsEnabled);
         }
 
+        [HttpGet("registration-enabled", Name = "RegistrationEnabled")]
+        public ActionResult<bool> RegistrationEnabled()
+        {
+            return Ok(IsRegistrationOpen());
+        }
+
         [HttpGet("oidc-login", Name = "OidcLogin")]
         public IActionResult OidcLogin([FromQuery] string? returnUrl = "/")
         {
@@ -69,12 +86,22 @@ namespace cryptotracker.webapi.Controllers
         {
             var user = await _userManager.FindByNameAsync(request.Username);
             _logger.LogTrace("Login attempt for username: {Username}", request.Username);
-            if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
+            if (user != null)
             {
-                var jwt = _jwtService.GenerateJwtToken(user, Request);
-                _jwtService.SetJwtCookie(Response, jwt);
-                _logger.LogTrace("User logged in successfully: {Username}", request.Username);
-                return Ok();
+                // lockoutOnFailure counts failed attempts and temporarily locks the
+                // account (Identity defaults: 5 attempts, 5 minutes)
+                var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+                if (result.Succeeded)
+                {
+                    var jwt = _jwtService.GenerateJwtToken(user, Request);
+                    _jwtService.SetJwtCookie(Response, jwt);
+                    _logger.LogTrace("User logged in successfully: {Username}", request.Username);
+                    return Ok();
+                }
+                if (result.IsLockedOut)
+                {
+                    _logger.LogWarning("Login attempt for locked out user: {Username}", request.Username);
+                }
             }
             _logger.LogWarning("Invalid login attempt for username: {Username}", request.Username);
             return Unauthorized();
@@ -83,6 +110,12 @@ namespace cryptotracker.webapi.Controllers
         [HttpPost("register", Name = "Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            if (!IsRegistrationOpen())
+            {
+                _logger.LogWarning("Registration attempt while registration is closed: {Username}", request.Username);
+                return StatusCode(StatusCodes.Status403Forbidden, "Registration is disabled.");
+            }
+
             var existingUser = await _userManager.FindByNameAsync(request.Username);
             if (existingUser != null)
             {

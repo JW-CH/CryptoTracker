@@ -1,5 +1,10 @@
 maxfilldays: 10
 basecurrency: chf
+auth:
+  secret: <min 32 characters>
+  allowregistration: false
+oidc:
+  autoprovision: true
 integrations:
   - name: Coinbase
     type: coinbase

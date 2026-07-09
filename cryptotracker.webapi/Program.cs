@@ -178,6 +178,12 @@ if (config.Oidc.IsEnabled)
                         var user = await userManager.FindByEmailAsync(email);
                         if (user == null)
                         {
+                            if (!config.Oidc.AutoProvision)
+                            {
+                                ctx.Fail($"User {email} is not provisioned and oidc auto provisioning is disabled");
+                                return;
+                            }
+
                             user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
                             var createResult = await userManager.CreateAsync(user);
                             if (!createResult.Succeeded)
