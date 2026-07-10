@@ -1,8 +1,5 @@
 
-using System.Text.Json;
 using cryptotracker.core.Interfaces;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace cryptotracker.core.Models
 {
@@ -24,25 +21,5 @@ namespace cryptotracker.core.Models
         }
 
         public List<CryptoTrackerIntegration> Integrations { get; set; } = new();
-
-        public static CryptoTrackerConfig LoadFromJson(string input)
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            return JsonSerializer.Deserialize<CryptoTrackerConfig>(input, options)
-                   ?? throw new InvalidOperationException("Unable to deserialize CryptoTracker config from JSON.");
-        }
-
-        public static CryptoTrackerConfig LoadFromYml(string input)
-        {
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(LowerCaseNamingConvention.Instance)
-                .Build();
-            return deserializer.Deserialize<CryptoTrackerConfig>(input)
-                   ?? throw new InvalidOperationException("Unable to deserialize CryptoTracker config from YAML.");
-        }
     }
 }

@@ -11,6 +11,7 @@ using cryptotracker.core.Logic.CurrencyPriceProviders;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Backgroundservices;
+using cryptotracker.webapi.Configuration;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,7 +25,27 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var config = GetConfig(builder);
+// config sources (later sources override earlier ones):
+// config.yml (or config.json) from CONFIG_PATH, then CRYPTOTRACKER_* env vars
+// (nested keys via double underscore, e.g. CRYPTOTRACKER_AUTH__SECRET)
+var configDir = Environment.GetEnvironmentVariable("CONFIG_PATH")
+    ?? Path.Combine(Directory.GetCurrentDirectory(), builder.Environment.IsProduction() ? "config" : Path.Combine("..", "config"));
+
+var ymlConfigPath = Path.Combine(configDir, "config.yml");
+var jsonConfigPath = Path.Combine(configDir, "config.json");
+
+if (File.Exists(ymlConfigPath))
+{
+    builder.Configuration.AddYamlFile(ymlConfigPath);
+}
+else if (File.Exists(jsonConfigPath))
+{
+    builder.Configuration.AddJsonFile(jsonConfigPath);
+}
+
+builder.Configuration.AddEnvironmentVariables("CRYPTOTRACKER_");
+
+var config = builder.Configuration.Get<CryptoTrackerConfig>() ?? new CryptoTrackerConfig();
 
 LogLevel level = LogLevel.Information;
 if (!string.IsNullOrWhiteSpace(config.LogLevel))
@@ -298,37 +319,3 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
-
-static CryptoTrackerConfig GetConfig(WebApplicationBuilder builder)
-{
-    var root = Directory.GetCurrentDirectory();
-
-    var ymlConfigPath = Path.Combine(root, "..", "config", "config.yml");
-    var jsonConfigPath = Path.Combine(root, "..", "config", "config.json");
-
-    if (builder.Environment.IsProduction())
-    {
-        ymlConfigPath = Path.Combine(root, "config", "config.yml");
-        jsonConfigPath = Path.Combine(root, "config", "config.json");
-    }
-
-    if (File.Exists(ymlConfigPath))
-    {
-        var yml = File.ReadAllText(ymlConfigPath);
-
-        var config = CryptoTrackerConfig.LoadFromYml(yml);
-
-        return config;
-    }
-
-    if (File.Exists(jsonConfigPath))
-    {
-        var json = File.ReadAllText(jsonConfigPath);
-
-        var config = CryptoTrackerConfig.LoadFromJson(json);
-
-        return config;
-    }
-
-    throw new Exception("Config file not found");
-}

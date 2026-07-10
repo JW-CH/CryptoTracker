@@ -5,7 +5,6 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
     <PackageReference Include="NBitcoin" />
     <PackageReference Include="YahooFinanceApi" />
-    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>

@@ -97,6 +97,20 @@ integrations:
 > and the automatic database migrations on startup are not coordinated across
 > replicas — multiple instances would import duplicate data.
 
+### Environment Variables
+
+Every config value can be set (or overridden) via environment variables with the
+`CRYPTOTRACKER_` prefix. Nested keys use a double underscore:
+
+```bash
+CRYPTOTRACKER_CONNECTIONSTRING="Host=postgres;..."   # overrides connectionstring
+CRYPTOTRACKER_AUTH__SECRET="your-jwt-secret"          # overrides auth.secret
+CONFIG_PATH=/etc/cryptotracker                        # config directory (default: ./config)
+```
+
+Environment variables take precedence over the config file; the file is optional
+if everything is provided via environment.
+
 ### Supported Integration Types
 
 | Type | Description | Key | Secret |

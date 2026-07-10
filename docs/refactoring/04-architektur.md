@@ -172,6 +172,24 @@ Konfiguration ersetzen: `stocks.provider: yahoo|alphavantage|none` +
 
 ## A5 — Konfiguration 🟡
 
+> **Status 2026-07-10: umgesetzt.** Eigener schlanker YAML-`ConfigurationProvider`
+> (`webapi/Configuration/YamlConfiguration.cs`, flacht die YAML-Knoten zu
+> `IConfiguration`-Keys ab) statt Selbst-Deserialisierung; `config.yml` bzw.
+> `config.json` hängen in `builder.Configuration`, danach
+> `AddEnvironmentVariables("CRYPTOTRACKER_")` — Env-Overrides funktionieren
+> jetzt (`CRYPTOTRACKER_AUTH__SECRET`, `CRYPTOTRACKER_CONNECTIONSTRING`, …).
+> Key-Casing ist egal (IConfiguration bindet case-insensitiv, die
+> `LowerCaseNamingConvention`-Falle ist weg). Config-Verzeichnis via
+> `CONFIG_PATH`-Env-Var überschreibbar (Default wie bisher `./config` in
+> Production, `../config` in Development); Datei ist optional, reine
+> Env-Konfiguration möglich. `LoadFromYml`/`LoadFromJson` gelöscht, YamlDotNet
+> von core nach webapi verschoben. `ICryptoTrackerConfig` + Singleton bleiben —
+> kein Konsument musste angefasst werden. Abgedeckt durch
+> `YamlConfigurationTest` (Binding, Enums, Casing, Override-Reihenfolge).
+> Bewusst nicht gemacht: `IOptions<T>`-Umbau (brächte Reload-Support, den
+> nichts braucht) und `ValidateOnStart` (die bestehenden Startup-Checks in
+> Program.cs decken JWT-Secret/ConnectionString ab).
+
 - Eigenes Config-System (YAML/JSON-Datei, selbst geladen in `Program.cs:250`)
   statt `IConfiguration`. Damit funktionieren weder Env-Var-Overrides noch
   User-Secrets noch `appsettings.{Environment}.json` — im Docker-Umfeld
