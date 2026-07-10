@@ -16,6 +16,7 @@ public class UpdateServiceTest
 {
     private DatabaseContext _db;
     private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
+    private Mock<ICurrencyProvider> _currencyProviderMock;
     private AssetMetadataService _metadataService;
     private CryptoTrackerConfig _config;
     private UpdateService _service;
@@ -34,8 +35,8 @@ public class UpdateServiceTest
         // metadata import should be a no-op in these tests
         _cryptoTrackerLogicMock.Setup(x => x.GetCoinList()).ReturnsAsync(new List<Coin>());
 
-        var currencyProviderMock = new Mock<ICurrencyProvider>();
-        currencyProviderMock.Setup(x => x.GetCurrenciesAsync()).ReturnsAsync(new List<Currency>());
+        _currencyProviderMock = new Mock<ICurrencyProvider>();
+        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync()).ReturnsAsync(new List<Currency>());
 
         var stockLogicMock = new Mock<IStockLogic>();
 
@@ -45,7 +46,7 @@ public class UpdateServiceTest
             Mock.Of<ILogger<AssetMetadataService>>(),
             _db,
             _cryptoTrackerLogicMock.Object,
-            currencyProviderMock.Object,
+            _currencyProviderMock.Object,
             stockLogicMock.Object,
             _config);
         _service = new UpdateService(Mock.Of<IServiceScopeFactory>(), Mock.Of<ILogger<UpdateService>>(), _config);
@@ -70,9 +71,14 @@ public class UpdateServiceTest
 
     private void SetupBalances(string integrationName, params (string Symbol, decimal Balance)[] balances)
     {
+        SetupBalanceResults(integrationName, balances.Select(b => new BalanceResult { Symbol = b.Symbol, Balance = b.Balance }).ToArray());
+    }
+
+    private void SetupBalanceResults(string integrationName, params BalanceResult[] balances)
+    {
         _cryptoTrackerLogicMock
             .Setup(x => x.GetAvailableIntegrationBalances(It.Is<CryptoTrackerIntegration>(i => i.Name == integrationName)))
-            .ReturnsAsync(balances.Select(b => new BalanceResult { Symbol = b.Symbol, Balance = b.Balance }).ToList());
+            .ReturnsAsync(balances.ToList());
     }
 
     private async Task<ExchangeIntegration> SeedIntegrationWithMeasurings(string name, DateTime timestamp, params (string Symbol, decimal Amount)[] measurings)
@@ -102,7 +108,7 @@ public class UpdateServiceTest
         return integration;
     }
 
-    private Task Import() => _service.Import(_db, _cryptoTrackerLogicMock.Object, _metadataService);
+    private Task Import() => _service.Import(_db, _cryptoTrackerLogicMock.Object, _currencyProviderMock.Object, _metadataService);
 
     private Task<List<AssetMeasuring>> TodaysMeasurings() =>
         _db.AssetMeasurings.Where(m => m.Timestamp >= DateTime.UtcNow.Date).ToListAsync();
@@ -190,6 +196,79 @@ public class UpdateServiceTest
         Assert.That(aMeasurings.Single().Amount, Is.EqualTo(0.7m));
         // B was imported despite A failing
         Assert.That(today.Count(m => m.Symbol == "XRP"), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Import_BalanceWithFiatTypeHint_CreatesFiatAsset()
+    {
+        AddConfigIntegration("A");
+        SetupBalanceResults("A", new BalanceResult { Symbol = "EUR", Balance = 100m, AssetType = AssetType.Fiat });
+
+        await Import();
+
+        var asset = await _db.Assets.FindAsync("EUR");
+        Assert.That(asset, Is.Not.Null);
+        Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Fiat));
+    }
+
+    [Test]
+    public async Task Import_NoTypeHint_KnownCurrencySymbol_CreatesFiatAsset()
+    {
+        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
+            .ReturnsAsync(new List<Currency> { new() { Symbol = "EUR", Name = "Euro" } });
+        AddConfigIntegration("A");
+        SetupBalances("A", ("eur", 100m)); // no type hint, casing differs from currency list
+
+        await Import();
+
+        var asset = await _db.Assets.FindAsync("eur");
+        Assert.That(asset, Is.Not.Null);
+        Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Fiat));
+    }
+
+    [Test]
+    public async Task Import_NoTypeHint_UnknownSymbol_CreatesCryptoAsset()
+    {
+        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
+            .ReturnsAsync(new List<Currency> { new() { Symbol = "EUR", Name = "Euro" } });
+        AddConfigIntegration("A");
+        SetupBalances("A", ("BTC", 0.5m));
+
+        await Import();
+
+        var asset = await _db.Assets.FindAsync("BTC");
+        Assert.That(asset, Is.Not.Null);
+        Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Crypto));
+    }
+
+    [Test]
+    public async Task Import_ExistingAsset_TypeIsNotOverwritten()
+    {
+        _db.Assets.Add(new Asset { Symbol = "EUR", AssetType = AssetType.Crypto, IsHidden = false });
+        await _db.SaveChangesAsync();
+        AddConfigIntegration("A");
+        SetupBalanceResults("A", new BalanceResult { Symbol = "EUR", Balance = 100m, AssetType = AssetType.Fiat });
+
+        await Import();
+
+        var asset = await _db.Assets.FindAsync("EUR");
+        Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Crypto));
+    }
+
+    [Test]
+    public async Task Import_NoTypeHint_CurrencyLookupFails_DefaultsToCrypto()
+    {
+        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
+            .ThrowsAsync(new HttpRequestException("frankfurter down"));
+        AddConfigIntegration("A");
+        SetupBalances("A", ("BTC", 0.5m));
+
+        await Import(); // must not throw
+
+        var asset = await _db.Assets.FindAsync("BTC");
+        Assert.That(asset, Is.Not.Null);
+        Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Crypto));
+        Assert.That(await TodaysMeasurings(), Has.Count.EqualTo(1));
     }
 
     [Test]

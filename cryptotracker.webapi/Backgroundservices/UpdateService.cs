@@ -34,11 +34,12 @@ public class UpdateService : BackgroundService
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
+                    var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
                     var assetMetadataService = scope.ServiceProvider.GetRequiredService<AssetMetadataService>();
 
                     try
                     {
-                        await Import(db, cryptoTrackerLogic, assetMetadataService);
+                        await Import(db, cryptoTrackerLogic, currencyProvider, assetMetadataService);
                     }
                     catch (Exception ex)
                     {
@@ -54,7 +55,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, AssetMetadataService assetMetadataService)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, AssetMetadataService assetMetadataService)
     {
         _logger.LogInformation("Starting Integration-Import");
 
@@ -84,12 +85,12 @@ public class UpdateService : BackgroundService
 
                 foreach (var balance in balances)
                 {
-                    await AddMeasuring(db, exchangeIntegration, balance.Symbol, balance.Balance);
+                    await AddMeasuring(db, currencyProvider, exchangeIntegration, balance.Symbol, balance.Balance, balance.AssetType);
                 }
                 foreach (var symbol in zeroSymbols)
                 {
                     _logger.LogInformation("Asset {Symbol} no longer reported by {Name}, recording balance 0", symbol, integration.Name);
-                    await AddMeasuring(db, exchangeIntegration, symbol, 0m);
+                    await AddMeasuring(db, currencyProvider, exchangeIntegration, symbol, 0m, null);
                 }
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -171,7 +172,7 @@ public class UpdateService : BackgroundService
         return previousSymbols.Where(s => !currentSymbols.Contains(s)).ToList();
     }
 
-    async Task AddMeasuring(DatabaseContext db, ExchangeIntegration exchangeIntegration, string symbol, decimal balance)
+    async Task AddMeasuring(DatabaseContext db, ICurrencyProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint)
     {
         var asset = await db.Assets.FindAsync(symbol);
 
@@ -180,10 +181,10 @@ public class UpdateService : BackgroundService
             asset = new Asset()
             {
                 Symbol = symbol,
-                AssetType = AssetType.Crypto,
+                AssetType = assetTypeHint ?? await ResolveAssetTypeAsync(currencyProvider, symbol),
                 IsHidden = false
             };
-            _logger.LogTrace("Adding new Asset: {Symbol}", asset.Symbol);
+            _logger.LogTrace("Adding new Asset: {Symbol} ({AssetType})", asset.Symbol, asset.AssetType);
             await db.Assets.AddAsync(asset);
         }
 
@@ -197,5 +198,23 @@ public class UpdateService : BackgroundService
 
         await db.AssetMeasurings.AddAsync(measuring);
         _logger.LogTrace("Adding new AssetMeasuring to {Name} for {Symbol} - {Amount}", exchangeIntegration.Name, measuring.Symbol, measuring.Amount);
+    }
+
+    /// <summary>
+    /// Fallback for sources that don't report an asset type: symbols matching a known
+    /// fiat currency are treated as fiat, everything else as crypto.
+    /// </summary>
+    async Task<AssetType> ResolveAssetTypeAsync(ICurrencyProvider currencyProvider, string symbol)
+    {
+        try
+        {
+            var currencies = await currencyProvider.GetCurrenciesAsync();
+            if (currencies.Any(c => c.Symbol.ToLower() == symbol.ToLower())) return AssetType.Fiat;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not fetch currency list to classify {Symbol}, defaulting to Crypto", symbol);
+        }
+        return AssetType.Crypto;
     }
 }

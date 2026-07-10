@@ -130,6 +130,16 @@ Currency-Mismatch-Zweig entfernen. Siehe auch [03 → Basiswährung](03-datenmod
 <a id="bug-4"></a>
 ## Bug 4 — Automatisch angelegte Assets sind immer `AssetType.Crypto` 🟠
 
+> **Status 2026-07-10: behoben.** `BalanceResult` trägt einen nullable Typ-Hinweis
+> (`AssetType?` — nullable, weil `Fiat` der Enum-Default 0 ist): Bitpanda setzt
+> Crypto/Fiat pro Wallet-Art, die Blockchain-Integrationen (BTC/ETH/XRP/ADA) setzen
+> Crypto, Misch-Exchanges (Coinbase, Binance, Kucoin, Crypto.com) lassen null.
+> Ohne Hinweis klassifiziert `UpdateService.ResolveAssetTypeAsync` per
+> Frankfurter-Währungsliste (Treffer → Fiat, sonst Crypto; Provider-Fehler → Crypto,
+> Import läuft weiter). Bestehende Assets werden nicht umtypisiert. Abgedeckt durch
+> 5 Tests in `UpdateServiceTest`. Offen aus der Empfehlung: „auto-matched,
+> unbestätigt"-Markierung zur UI-Bestätigung (bräuchte neue Spalte + UI).
+
 **Betroffen:** `UpdateService.cs:120–125` (`AddMeasuring`).
 
 Bitpanda liefert auch Fiat-Wallets (EUR, CHF, …) — `GetBitpandaFiatAccounts` wird
