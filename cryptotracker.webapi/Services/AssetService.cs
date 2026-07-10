@@ -8,16 +8,16 @@ namespace cryptotracker.webapi.Services
     public class AssetService
     {
         private readonly DatabaseContext _db;
-        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
-        private readonly ICurrencyProvider _currencyProvider;
+        private readonly IEnumerable<IPriceProvider> _priceProviders;
+        private IPriceProvider _currencyProvider => _priceProviders.First(p => p.Handles.Contains(AssetType.Fiat));
+        private IPriceProvider _cryptoProvider => _priceProviders.First(p => p.Handles.Contains(AssetType.Crypto));
         private readonly ICryptoTrackerConfig _config;
         private readonly AssetMetadataService _assetMetadataService;
 
-        public AssetService(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, ICryptoTrackerConfig config, AssetMetadataService assetMetadataService)
+        public AssetService(DatabaseContext db, IEnumerable<IPriceProvider> priceProviders, ICryptoTrackerConfig config, AssetMetadataService assetMetadataService)
         {
             _db = db;
-            _cryptoTrackerLogic = cryptoTrackerLogic;
-            _currencyProvider = currencyProvider;
+            _priceProviders = priceProviders;
             _config = config;
             _assetMetadataService = assetMetadataService;
         }
@@ -38,26 +38,26 @@ namespace cryptotracker.webapi.Services
             };
         }
 
-        public async Task<List<Coin>> GetCoinsAsync()
+        public async Task<List<ProviderAsset>> GetCoinsAsync()
         {
-            return await _cryptoTrackerLogic.GetCoinList();
+            return (await _cryptoProvider.GetAssetsAsync()).ToList();
         }
 
-        public async Task<List<Coin>> FindCoinsBySymbolAsync(string symbol)
+        public async Task<List<ProviderAsset>> FindCoinsBySymbolAsync(string symbol)
         {
-            var coinList = await _cryptoTrackerLogic.GetCoinList();
+            var coinList = await _cryptoProvider.GetAssetsAsync();
 
             return coinList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
         }
 
-        public async Task<List<Currency>> GetCurrenciesAsync()
+        public async Task<List<ProviderAsset>> GetCurrenciesAsync()
         {
-            return (await _currencyProvider.GetCurrenciesAsync()).ToList();
+            return (await _currencyProvider.GetAssetsAsync()).ToList();
         }
 
-        public async Task<List<Currency>> FindCurrenciesBySymbolAsync(string symbol)
+        public async Task<List<ProviderAsset>> FindCurrenciesBySymbolAsync(string symbol)
         {
-            var currencyList = await _currencyProvider.GetCurrenciesAsync();
+            var currencyList = await _currencyProvider.GetAssetsAsync();
 
             return currencyList.Where(x => x.Symbol.ToLower() == symbol.ToLower()).ToList();
         }

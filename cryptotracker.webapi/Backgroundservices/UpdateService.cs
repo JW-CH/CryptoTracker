@@ -34,11 +34,12 @@ public class UpdateService : BackgroundService
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
                     var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
-                    var currencyProvider = scope.ServiceProvider.GetRequiredService<ICurrencyProvider>();
+                    var priceProviders = scope.ServiceProvider.GetRequiredService<IEnumerable<IPriceProvider>>();
                     var assetMetadataService = scope.ServiceProvider.GetRequiredService<AssetMetadataService>();
 
                     try
                     {
+                        var currencyProvider = priceProviders.First(p => p.Handles.Contains(AssetType.Fiat));
                         await Import(db, cryptoTrackerLogic, currencyProvider, assetMetadataService);
                     }
                     catch (Exception ex)
@@ -55,7 +56,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, AssetMetadataService assetMetadataService)
+    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, IPriceProvider currencyProvider, AssetMetadataService assetMetadataService)
     {
         _logger.LogInformation("Starting Integration-Import");
 
@@ -172,7 +173,7 @@ public class UpdateService : BackgroundService
         return previousSymbols.Where(s => !currentSymbols.Contains(s)).ToList();
     }
 
-    async Task AddMeasuring(DatabaseContext db, ICurrencyProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint)
+    async Task AddMeasuring(DatabaseContext db, IPriceProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint)
     {
         var asset = await db.Assets.FindAsync(symbol);
 
@@ -204,11 +205,11 @@ public class UpdateService : BackgroundService
     /// Fallback for sources that don't report an asset type: symbols matching a known
     /// fiat currency are treated as fiat, everything else as crypto.
     /// </summary>
-    async Task<AssetType> ResolveAssetTypeAsync(ICurrencyProvider currencyProvider, string symbol)
+    async Task<AssetType> ResolveAssetTypeAsync(IPriceProvider currencyProvider, string symbol)
     {
         try
         {
-            var currencies = await currencyProvider.GetCurrenciesAsync();
+            var currencies = await currencyProvider.GetAssetsAsync();
             if (currencies.Any(c => c.Symbol.ToLower() == symbol.ToLower())) return AssetType.Fiat;
         }
         catch (Exception ex)

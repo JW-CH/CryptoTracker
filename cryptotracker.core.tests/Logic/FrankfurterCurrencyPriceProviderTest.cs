@@ -1,13 +1,14 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using cryptotracker.core.Logic.CurrencyPriceProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace cryptotracker.core.tests.Logic;
 
 [TestFixture]
-public class FrankfurterCurrencyProviderTest
+public class FrankfurterCurrencyPriceProviderTest
 {
     private static readonly Dictionary<string, string> Currencies = new()
     {
@@ -22,7 +23,7 @@ public class FrankfurterCurrencyProviderTest
         ["USD"] = 1.2366m,
     };
 
-    private FrankfurterCurrencyProvider _provider;
+    private FrankfurterCurrencyPriceProvider _provider;
 
     [SetUp]
     public void Setup()
@@ -31,10 +32,10 @@ public class FrankfurterCurrencyProviderTest
     }
 
     [Test]
-    public async Task GetLatestRatesAsync_ForeignCurrency_ReturnsValueOfOneUnitInBaseCurrency()
+    public async Task GetQuotesAsync_ForeignCurrency_ReturnsValueOfOneUnitInBaseCurrency()
     {
         // frankfurter: 1 CHF = <rate> EUR, so 1 EUR must be worth 1/<rate> CHF
-        var result = (await _provider.GetLatestRatesAsync("chf", new List<string> { "eur" })).ToList();
+        var result = (await _provider.GetQuotesAsync("chf", new List<string> { "eur" })).ToList();
 
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].Symbol, Is.EqualTo("EUR"));
@@ -44,18 +45,18 @@ public class FrankfurterCurrencyProviderTest
     }
 
     [Test]
-    public async Task GetLatestRatesAsync_BaseCurrencyItself_ReturnsPriceOfOne()
+    public async Task GetQuotesAsync_BaseCurrencyItself_ReturnsPriceOfOne()
     {
-        var result = (await _provider.GetLatestRatesAsync("chf", new List<string> { "chf" })).ToList();
+        var result = (await _provider.GetQuotesAsync("chf", new List<string> { "chf" })).ToList();
 
         Assert.That(result, Has.Count.EqualTo(1));
         Assert.That(result[0].Price, Is.EqualTo(1m));
     }
 
     [Test]
-    public async Task GetLatestRatesAsync_MixedCurrencies_ReturnsBaseAndConvertedPrices()
+    public async Task GetQuotesAsync_MixedCurrencies_ReturnsBaseAndConvertedPrices()
     {
-        var result = (await _provider.GetLatestRatesAsync("chf", new List<string> { "chf", "eur", "usd" })).ToList();
+        var result = (await _provider.GetQuotesAsync("chf", new List<string> { "chf", "eur", "usd" })).ToList();
 
         Assert.That(result, Has.Count.EqualTo(3));
         Assert.That(result.Single(x => x.Symbol == "chf").Price, Is.EqualTo(1m));
@@ -64,25 +65,26 @@ public class FrankfurterCurrencyProviderTest
     }
 
     [Test]
-    public async Task GetLatestRateAsync_SingleCurrency_ReturnsSameSemanticsAsBatch()
-    {
-        var result = await _provider.GetLatestRateAsync("chf", "usd");
-
-        Assert.That(result.Symbol, Is.EqualTo("USD"));
-        Assert.That(result.Price, Is.EqualTo(1m / RatesPerChf["USD"]));
-    }
-
-    [Test]
-    public async Task GetLatestRatesAsync_InvalidRate_IsSkipped()
+    public async Task GetQuotesAsync_InvalidRate_IsSkipped()
     {
         var provider = CreateProvider(_ => new Dictionary<string, decimal> { ["EUR"] = 0m });
 
-        var result = await provider.GetLatestRatesAsync("chf", new List<string> { "eur" });
+        var result = await provider.GetQuotesAsync("chf", new List<string> { "eur" });
 
         Assert.That(result, Is.Empty);
     }
 
-    private static FrankfurterCurrencyProvider CreateProvider(Func<HttpRequestMessage, Dictionary<string, decimal>> rates)
+    [Test]
+    public async Task GetAssetsAsync_ReturnsCurrencyList()
+    {
+        var result = (await _provider.GetAssetsAsync()).ToList();
+
+        Assert.That(result, Has.Count.EqualTo(3));
+        Assert.That(result.Single(x => x.Symbol == "EUR").Name, Is.EqualTo("Euro"));
+        Assert.That(result.Single(x => x.Symbol == "EUR").ExternalId, Is.EqualTo("EUR"), "for fiat the symbol is the external id; the UI relies on it being set");
+    }
+
+    private static FrankfurterCurrencyPriceProvider CreateProvider(Func<HttpRequestMessage, Dictionary<string, decimal>> rates)
     {
         var handler = new FakeHttpMessageHandler(request =>
         {
@@ -102,7 +104,7 @@ public class FrankfurterCurrencyProviderTest
             .Setup(x => x.CreateClient(It.IsAny<string>()))
             .Returns(() => new HttpClient(handler, disposeHandler: false));
 
-        return new FrankfurterCurrencyProvider(NullLogger.Instance, factoryMock.Object);
+        return new FrankfurterCurrencyPriceProvider(NullLogger.Instance, factoryMock.Object);
     }
 
     // mimics frankfurter: only the currencies from the symbols query parameter are returned

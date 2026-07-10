@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using cryptotracker.core.Logic;
+using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -33,25 +33,25 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("coin", Name = "GetCoins")]
-        public async Task<List<Coin>> GetCoins()
+        public async Task<List<ProviderAsset>> GetCoins()
         {
             return await _assetService.GetCoinsAsync();
         }
 
         [HttpGet("{symbol}/coin", Name = "FindCoinsBySymbol")]
-        public async Task<List<Coin>> FindCoinsBySymbol([Required] string symbol)
+        public async Task<List<ProviderAsset>> FindCoinsBySymbol([Required] string symbol)
         {
             return await _assetService.FindCoinsBySymbolAsync(symbol);
         }
 
         [HttpGet("fiat", Name = "GetFiats")]
-        public async Task<List<Currency>> GetFiats()
+        public async Task<List<ProviderAsset>> GetFiats()
         {
             return await _assetService.GetCurrenciesAsync();
         }
 
         [HttpGet("{symbol}/fiat", Name = "FindFiatBySymbol")]
-        public async Task<List<Currency>> FindFiatBySymbol([Required] string symbol)
+        public async Task<List<ProviderAsset>> FindFiatBySymbol([Required] string symbol)
         {
             return await _assetService.FindCurrenciesBySymbolAsync(symbol);
         }

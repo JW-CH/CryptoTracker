@@ -13,7 +13,7 @@ namespace cryptotracker.core.Models
         public CryptoTrackerAuth Auth { get; set; } = new();
         public CryptoTrackerOidc Oidc { get; set; } = new();
         public string LogLevel { get; set; } = "Information";
-        public string? StockApi { get; set; } = null;
+        public StockApi? StockApi { get; set; } = null;
         public int MaxFillDays { get; set; } = 10;
 
         private string _baseCurrency = "chf";

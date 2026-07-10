@@ -1,3 +1,4 @@
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
@@ -16,7 +17,8 @@ public class UpdateServiceTest
 {
     private DatabaseContext _db;
     private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
-    private Mock<ICurrencyProvider> _currencyProviderMock;
+    private Mock<IPriceProvider> _cryptoProviderMock;
+    private Mock<IPriceProvider> _currencyProviderMock;
     private AssetMetadataService _metadataService;
     private CryptoTrackerConfig _config;
     private UpdateService _service;
@@ -32,22 +34,24 @@ public class UpdateServiceTest
         _db = new DatabaseContext(options);
 
         _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
+
         // metadata import should be a no-op in these tests
-        _cryptoTrackerLogicMock.Setup(x => x.GetCoinList()).ReturnsAsync(new List<Coin>());
+        _cryptoProviderMock = new Mock<IPriceProvider>();
+        _cryptoProviderMock.Setup(x => x.Handles).Returns(new[] { AssetType.Crypto });
+        _cryptoProviderMock.Setup(x => x.GetAssetsAsync()).ReturnsAsync(new List<ProviderAsset>());
+        _cryptoProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>())).ReturnsAsync(new List<AssetMetadata>());
 
-        _currencyProviderMock = new Mock<ICurrencyProvider>();
-        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync()).ReturnsAsync(new List<Currency>());
-
-        var stockLogicMock = new Mock<IStockLogic>();
+        _currencyProviderMock = new Mock<IPriceProvider>();
+        _currencyProviderMock.Setup(x => x.Handles).Returns(new[] { AssetType.Fiat });
+        _currencyProviderMock.Setup(x => x.GetAssetsAsync()).ReturnsAsync(new List<ProviderAsset>());
+        _currencyProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>())).ReturnsAsync(new List<AssetMetadata>());
 
         _config = new CryptoTrackerConfig { Interval = 60 };
 
         _metadataService = new AssetMetadataService(
             Mock.Of<ILogger<AssetMetadataService>>(),
             _db,
-            _cryptoTrackerLogicMock.Object,
-            _currencyProviderMock.Object,
-            stockLogicMock.Object,
+            new[] { _cryptoProviderMock.Object, _currencyProviderMock.Object },
             _config);
         _service = new UpdateService(Mock.Of<IServiceScopeFactory>(), Mock.Of<ILogger<UpdateService>>(), _config);
 
@@ -214,8 +218,8 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_NoTypeHint_KnownCurrencySymbol_CreatesFiatAsset()
     {
-        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
-            .ReturnsAsync(new List<Currency> { new() { Symbol = "EUR", Name = "Euro" } });
+        _currencyProviderMock.Setup(x => x.GetAssetsAsync())
+            .ReturnsAsync(new List<ProviderAsset> { new() { Symbol = "EUR", Name = "Euro", ExternalId = "EUR" } });
         AddConfigIntegration("A");
         SetupBalances("A", ("eur", 100m)); // no type hint, casing differs from currency list
 
@@ -229,8 +233,8 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_NoTypeHint_UnknownSymbol_CreatesCryptoAsset()
     {
-        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
-            .ReturnsAsync(new List<Currency> { new() { Symbol = "EUR", Name = "Euro" } });
+        _currencyProviderMock.Setup(x => x.GetAssetsAsync())
+            .ReturnsAsync(new List<ProviderAsset> { new() { Symbol = "EUR", Name = "Euro", ExternalId = "EUR" } });
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
 
@@ -258,7 +262,7 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_NoTypeHint_CurrencyLookupFails_DefaultsToCrypto()
     {
-        _currencyProviderMock.Setup(x => x.GetCurrenciesAsync())
+        _currencyProviderMock.Setup(x => x.GetAssetsAsync())
             .ThrowsAsync(new HttpRequestException("frankfurter down"));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));

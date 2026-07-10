@@ -87,6 +87,21 @@ bauen; halbfertige Features nicht in den Dispatch hängen.
 
 <a id="a3"></a>
 
+> **Status 2026-07-10: umgesetzt.** Ein Interface `IPriceProvider`
+> (`Handles: IEnumerable<AssetType>`, `GetAssetsAsync` → `ProviderAsset`,
+> `GetQuotesAsync` → `AssetMetadata`) mit drei Implementierungen:
+> `CoingeckoPriceProvider`, `FrankfurterCurrencyPriceProvider` (dient Yahoo
+> zugleich als FX-Quelle) und `YahooFinancePriceProvider`. Registrierung als
+> `IEnumerable<IPriceProvider>`, Dispatch per `Handles` im `AssetMetadataService`;
+> fehlender Provider ist im Batch-Lauf ein Skip + Warning, nur bei expliziter
+> User-Aktion (`FetchMetadataAsync`) ein Fehler. `ICurrencyProvider`/`IStockLogic`
+> gelöscht, `ICryptoTrackerLogic` enthält nur noch Exchange-Balances (Vorarbeit
+> für A2). `stockapi` ist jetzt ein Enum (`yahoofinance`), Yahoo wird nur
+> konditional registriert; `AlphaVantageStockLogic`/`EmptyStockLogic` gelöscht
+> (Package-Referenzen `ThreeFourteen.AlphaVantage`/`TwelveDataSharp` können noch
+> aus dem csproj raus). API-Breaking umgesetzt: `Coin`/`Currency` →
+> `ProviderAsset` im generierten Client (`externalId` statt `id`).
+
 `ICryptoTrackerLogic` (Crypto via CoinGecko), `IFiatLogic` (Frankfurter),
 `IStockLogic` (Yahoo/AlphaVantage/Empty) haben fast identische Aufgaben, aber
 unterschiedliche Signaturen und — kritisch — unterschiedliche

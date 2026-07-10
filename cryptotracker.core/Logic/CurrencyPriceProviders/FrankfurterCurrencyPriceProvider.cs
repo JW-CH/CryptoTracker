@@ -1,8 +1,11 @@
 using System.Text.Json;
-using cryptotracker.core.Logic;
+using cryptotracker.core.Interfaces;
+using cryptotracker.database.Models;
 using Microsoft.Extensions.Logging;
 
-public class FrankfurterCurrencyProvider : ICurrencyProvider
+namespace cryptotracker.core.Logic.CurrencyPriceProviders;
+
+public class FrankfurterCurrencyPriceProvider : IPriceProvider
 {
     private const string DefaultBaseUrl = "https://api.frankfurter.dev/v1";
 
@@ -10,16 +13,18 @@ public class FrankfurterCurrencyProvider : ICurrencyProvider
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _baseUrl;
 
-    public FrankfurterCurrencyProvider(ILogger logger, IHttpClientFactory httpClientFactory, string? baseUrl = null)
+    public FrankfurterCurrencyPriceProvider(ILogger logger, IHttpClientFactory httpClientFactory, string? baseUrl = null)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _baseUrl = (baseUrl ?? DefaultBaseUrl).TrimEnd('/');
     }
 
+    public IEnumerable<AssetType> Handles => new[] { AssetType.Fiat };
 
-    private List<Currency>? _currencyList;
-    public async Task<IEnumerable<Currency>> GetCurrenciesAsync()
+    private List<ProviderAsset>? _currencyList;
+
+    public async Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
     {
         if (_currencyList != null) return _currencyList;
 
@@ -31,7 +36,7 @@ public class FrankfurterCurrencyProvider : ICurrencyProvider
         {
             _logger.LogError($"Failed to fetch currency list: {response.StatusCode}");
             _logger.LogError(await response.Content.ReadAsStringAsync());
-            return new List<Currency>();
+            return new List<ProviderAsset>();
         }
 
         var json = await response.Content.ReadAsStringAsync();
@@ -40,36 +45,28 @@ public class FrankfurterCurrencyProvider : ICurrencyProvider
         if (currencyDictionary == null)
         {
             _logger.LogError($"Failed to fetch currency list");
-            return new List<Currency>();
+            return new List<ProviderAsset>();
         }
 
-        _currencyList = currencyDictionary.Select(kvp => new Currency { Symbol = kvp.Key, Name = kvp.Value }).ToList();
+        _currencyList = currencyDictionary.Select(kvp => new ProviderAsset { Symbol = kvp.Key, Name = kvp.Value, ExternalId = kvp.Key }).ToList();
 
         return _currencyList;
     }
 
-
-    public async Task<AssetMetadata> GetLatestRateAsync(string baseCurrency, string currency)
+    public async Task<IEnumerable<AssetMetadata>> GetQuotesAsync(string baseCurrency, IEnumerable<string> externalIds)
     {
-        var assetMetaDataResults = await GetLatestRatesAsync(baseCurrency, new List<string> { currency });
+        _logger.LogTrace($"{nameof(GetQuotesAsync)}: {baseCurrency} - {string.Join(",", externalIds)}");
 
-        return assetMetaDataResults.FirstOrDefault();
-    }
-
-    public async Task<IEnumerable<AssetMetadata>> GetLatestRatesAsync(string baseCurrency, IEnumerable<string> symbols)
-    {
-        _logger.LogTrace($"{nameof(GetLatestRatesAsync)}: {baseCurrency} - {string.Join(",", symbols)}");
-
-        symbols = symbols.Distinct().Select(x => x.ToLower()).ToList();
+        externalIds = externalIds.Distinct().Select(x => x.ToLower()).ToList();
 
         var result = new List<AssetMetadata>();
 
-        if (symbols.Count() == 0) return result;
-        var symbolsQuery = string.Join(",", symbols);
+        if (externalIds.Count() == 0) return result;
+        var externalIdsQuery = string.Join(",", externalIds);
 
-        var currencyList = await GetCurrenciesAsync();
+        var currencyList = await GetAssetsAsync();
 
-        if (symbols.Contains(baseCurrency.ToLower()))
+        if (externalIds.Contains(baseCurrency.ToLower()))
         {
             result.Add(new AssetMetadata()
             {
@@ -82,19 +79,19 @@ public class FrankfurterCurrencyProvider : ICurrencyProvider
             });
         }
 
-        if (symbolsQuery == baseCurrency.ToLower())
+        if (externalIdsQuery == baseCurrency.ToLower())
         {
             return result;
         }
 
         using var client = _httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-        string apiUrl = $"{_baseUrl}/latest?base={baseCurrency}&symbols={symbolsQuery}";
+        string apiUrl = $"{_baseUrl}/latest?base={baseCurrency}&symbols={externalIdsQuery}";
         var response = await client.GetAsync(apiUrl);
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError($"{nameof(GetLatestRatesAsync)}: Failed to fetch currency rates: {response.StatusCode}");
+            _logger.LogError($"{nameof(GetQuotesAsync)}: Failed to fetch currency rates: {response.StatusCode}");
             _logger.LogError(await response.Content.ReadAsStringAsync());
             return result;
         }
@@ -107,13 +104,13 @@ public class FrankfurterCurrencyProvider : ICurrencyProvider
 
         if (rates == null)
         {
-            _logger.LogError($"{nameof(GetLatestRatesAsync)}: Failed to fetch currency rates: No rates were returned");
+            _logger.LogError($"{nameof(GetQuotesAsync)}: Failed to fetch currency rates: No rates were returned");
             return result;
         }
 
         foreach (var item in rates)
         {
-            _logger.LogTrace($"{nameof(GetLatestRatesAsync)}: {item.Key} - {item.Value}");
+            _logger.LogTrace($"{nameof(GetQuotesAsync)}: {item.Key} - {item.Value}");
 
             if (item.Value <= 0)
             {
