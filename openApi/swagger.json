@@ -183,7 +183,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -191,7 +191,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -199,7 +199,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               }
@@ -232,7 +232,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -240,7 +240,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -248,7 +248,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Coin"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               }
@@ -271,7 +271,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -279,7 +279,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -287,7 +287,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               }
@@ -320,7 +320,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -328,7 +328,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               },
@@ -336,7 +336,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Currency"
+                    "$ref": "#/components/schemas/ProviderAsset"
                   }
                 }
               }
@@ -1484,42 +1484,10 @@
         },
         "additionalProperties": false
       },
-      "Coin": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "symbol": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "ConfigResponse": {
         "type": "object",
         "properties": {
           "baseCurrency": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "Currency": {
-        "type": "object",
-        "properties": {
-          "symbol": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
             "type": "string",
             "nullable": true
           }
@@ -1653,6 +1621,24 @@
             "items": {
               "$ref": "#/components/schemas/IntegrationShit"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProviderAsset": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "nullable": true
+          },
+          "symbol": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
             "nullable": true
           }
         },

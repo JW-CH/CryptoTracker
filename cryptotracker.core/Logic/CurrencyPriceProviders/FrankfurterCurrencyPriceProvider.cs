@@ -48,7 +48,7 @@ public class FrankfurterCurrencyPriceProvider : IPriceProvider
             return new List<ProviderAsset>();
         }
 
-        _currencyList = currencyDictionary.Select(kvp => new ProviderAsset { Symbol = kvp.Key, Name = kvp.Value }).ToList();
+        _currencyList = currencyDictionary.Select(kvp => new ProviderAsset { Symbol = kvp.Key, Name = kvp.Value, ExternalId = kvp.Key }).ToList();
 
         return _currencyList;
     }

@@ -81,6 +81,7 @@ public class FrankfurterCurrencyPriceProviderTest
 
         Assert.That(result, Has.Count.EqualTo(3));
         Assert.That(result.Single(x => x.Symbol == "EUR").Name, Is.EqualTo("Euro"));
+        Assert.That(result.Single(x => x.Symbol == "EUR").ExternalId, Is.EqualTo("EUR"), "for fiat the symbol is the external id; the UI relies on it being set");
     }
 
     private static FrankfurterCurrencyPriceProvider CreateProvider(Func<HttpRequestMessage, Dictionary<string, decimal>> rates)

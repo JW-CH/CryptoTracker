@@ -30,12 +30,8 @@ export type AssetWithPriceDto = {
     asset: Asset;
     price: number;
 };
-export type Coin = {
-    id?: string | null;
-    "symbol"?: string | null;
-    name?: string | null;
-};
-export type Currency = {
+export type ProviderAsset = {
+    externalId?: string | null;
     "symbol"?: string | null;
     name?: string | null;
 };
@@ -138,7 +134,7 @@ export function deleteAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
 export function getCoins(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Coin[];
+        data: ProviderAsset[];
     }>("/api/Asset/coin", {
         ...opts
     });
@@ -146,7 +142,7 @@ export function getCoins(opts?: Oazapfts.RequestOpts) {
 export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Coin[];
+        data: ProviderAsset[];
     }>(`/api/Asset/${encodeURIComponent($symbol)}/coin`, {
         ...opts
     });
@@ -154,7 +150,7 @@ export function findCoinsBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) 
 export function getFiats(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Currency[];
+        data: ProviderAsset[];
     }>("/api/Asset/fiat", {
         ...opts
     });
@@ -162,7 +158,7 @@ export function getFiats(opts?: Oazapfts.RequestOpts) {
 export function findFiatBySymbol($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Currency[];
+        data: ProviderAsset[];
     }>(`/api/Asset/${encodeURIComponent($symbol)}/fiat`, {
         ...opts
     });

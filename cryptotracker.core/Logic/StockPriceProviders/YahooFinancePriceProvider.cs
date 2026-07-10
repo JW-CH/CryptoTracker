@@ -18,9 +18,11 @@ public class YahooFinancePriceProvider : IPriceProvider
 
     public IEnumerable<AssetType> Handles => new[] { AssetType.Stock };
 
-    public async Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
+    public Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
     {
-        throw new NotImplementedException();
+        // yahoo finance has no listing api; stocks are added by ticker symbol
+        _logger.LogWarning("YahooFinance does not support listing all stocks, returning empty list");
+        return Task.FromResult<IEnumerable<ProviderAsset>>(new List<ProviderAsset>());
     }
 
     public async Task<IEnumerable<AssetMetadata>> GetQuotesAsync(string baseCurrency, IEnumerable<string> externalIds)

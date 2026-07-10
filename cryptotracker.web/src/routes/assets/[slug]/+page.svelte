@@ -157,12 +157,12 @@
 				/>
 			{:else if assetInitialized}
 				<div
-					class="flex size-12 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground"
+					class="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full text-lg font-bold"
 				>
 					{(assetData?.asset.symbol ?? '?').slice(0, 2).toUpperCase()}
 				</div>
 			{:else}
-				<Skeleton class="size-12 rounded-full bg-muted" />
+				<Skeleton class="bg-muted size-12 rounded-full" />
 			{/if}
 			<div>
 				{#if assetInitialized}
@@ -170,18 +170,17 @@
 						<h1 class="text-2xl font-bold tracking-tight">
 							{assetData?.asset.name ?? assetData?.asset.symbol}
 						</h1>
-						<span
-							class="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
-						>
-							{assetData?.price} {$baseCurrency}
+						<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
+							{assetData?.price}
+							{$baseCurrency}
 						</span>
 					</div>
 					{#if assetData?.asset.name}
-						<p class="text-sm text-muted-foreground">{assetData?.asset.symbol}</p>
+						<p class="text-muted-foreground text-sm">{assetData?.asset.symbol}</p>
 					{/if}
 				{:else}
-					<Skeleton class="mb-1 h-7 w-40 bg-muted" />
-					<Skeleton class="h-4 w-20 bg-muted" />
+					<Skeleton class="bg-muted mb-1 h-7 w-40" />
+					<Skeleton class="bg-muted h-4 w-20" />
 				{/if}
 			</div>
 		</div>
@@ -203,7 +202,7 @@
 				</Card.Header>
 				<Card.Content class="flex items-center gap-3">
 					<select
-						class="rounded-lg border border-input bg-background px-3 py-2 pe-9 text-sm focus:border-ring focus:ring-1 focus:ring-ring"
+						class="border-input bg-background focus:border-ring focus:ring-ring rounded-lg border px-3 py-2 pe-9 text-sm focus:ring-1"
 						bind:value={selectedAssetType}
 					>
 						<option value="Fiat">Fiat</option>
@@ -221,7 +220,7 @@
 			</Card.Header>
 			<Card.Content class="flex items-center gap-3">
 				<select
-					class="rounded-lg border border-input bg-background px-3 py-2 pe-9 text-sm focus:border-ring focus:ring-1 focus:ring-ring"
+					class="border-input bg-background focus:border-ring focus:ring-ring rounded-lg border px-3 py-2 pe-9 text-sm focus:ring-1"
 					bind:value={selectedCoin}
 				>
 					{#key assetType}
@@ -234,7 +233,7 @@
 						{:else if assetType === 'Crypto'}
 							{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
 								{#each coins.data as coin}
-									<option value={coin.id}>{coin.name}</option>
+									<option value={coin.externalId}>{coin.name}</option>
 								{/each}
 							{/await}
 						{/if}
@@ -286,10 +285,10 @@
 						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
 							<a href="/integrations/{integrationItem.integration.id}" class="group">
 								<Card.Root
-									class="transition-all duration-200 hover:shadow-md hover:border-primary/20 group-hover:-translate-y-0.5"
+									class="hover:border-primary/20 transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 								>
 									<Card.Content class="pt-6">
-										<p class="text-sm font-medium text-muted-foreground">
+										<p class="text-muted-foreground text-sm font-medium">
 											{integrationItem.integration.name}
 										</p>
 										<p class="mt-1 text-xl font-semibold">
