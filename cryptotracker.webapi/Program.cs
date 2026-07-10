@@ -4,6 +4,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
+using cryptotracker.core.Logic.CryptoPriceProviders;
+using cryptotracker.core.Logic.StockPriceProviders;
+using cryptotracker.core.Logic.CurrencyPriceProviders;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Backgroundservices;
@@ -57,27 +60,32 @@ builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
     return new CryptoTrackerLogic(logger);
 });
 
-builder.Services.AddSingleton<ICurrencyProvider>(srv =>
+builder.Services.AddSingleton<IEnumerable<IPriceProvider>>(srv =>
 {
-    var logger = srv.GetRequiredService<ILogger<FrankfurterCurrencyProvider>>();
-    var clientFactory = srv.GetRequiredService<IHttpClientFactory>();
-    return new FrankfurterCurrencyProvider(logger, clientFactory);
-});
+    var list = new List<IPriceProvider>();
 
-builder.Services.AddSingleton<IStockLogic>(srv =>
-{
     ILogger logger;
-    var currencyProvider = srv.GetRequiredService<ICurrencyProvider>();
     var config = srv.GetRequiredService<ICryptoTrackerConfig>();
 
-    if (string.IsNullOrWhiteSpace(config?.StockApi))
+    logger = srv.GetRequiredService<ILogger<YahooFinancePriceProvider>>();
+
+    var currencyPriceProvider = new FrankfurterCurrencyPriceProvider(srv.GetRequiredService<ILogger<FrankfurterCurrencyPriceProvider>>(), srv.GetRequiredService<IHttpClientFactory>());
+    list.Add(currencyPriceProvider);
+    list.Add(new CoingeckoPriceProvider(srv.GetRequiredService<ILogger<CoingeckoPriceProvider>>()));
+
+    if (config.StockApi.HasValue)
     {
-        logger = srv.GetRequiredService<ILogger<EmptyStockLogic>>();
-        return new EmptyStockLogic(logger);
+        switch (config.StockApi)
+        {
+            case StockApi.YahooFinance:
+                list.Add(new YahooFinancePriceProvider(srv.GetRequiredService<ILogger<YahooFinancePriceProvider>>(), currencyPriceProvider));
+                break;
+            default:
+                throw new Exception($"Unknown StockApi: {config.StockApi}");
+        }
     }
 
-    logger = srv.GetRequiredService<ILogger<YahooFinanceStockLogic>>();
-    return new YahooFinanceStockLogic(logger, currencyProvider);
+    return list;
 });
 
 builder.Services.AddSingleton<JwtService>();

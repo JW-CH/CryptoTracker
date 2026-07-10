@@ -17,15 +17,12 @@ using cryptotracker.core.Helpers;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using ImmichFrame.Core.Helpers;
-using Kucoin.Net;
 using Kucoin.Net.Clients;
 using Kucoin.Net.Interfaces.Clients;
-using Kucoin.Net.Objects;
 using Kucoin.Net.Objects.Models.Spot;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Logic
 {
@@ -417,109 +414,8 @@ namespace cryptotracker.core.Logic
             var list = JsonSerializer.Deserialize<BitpandaAssetWallet>(json);
             return list?.Data.Attributes.Cryptocoin.Attributes.Wallets.Where(x => Convert.ToDecimal(x.Attributes.Balance) > 0).ToList() ?? new();
         }
-
-        public async Task<List<AssetMetadata>> GetCoinData(string currency, List<string> coinIds)
-        {
-            var result = new List<AssetMetadata>();
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-            string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={currency}&ids={string.Join(",", coinIds)}";
-
-            var response = await client.GetAsync(apiUrl);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError($"Failed to fetch Coin balances: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return result;
-            }
-
-            var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
-
-            if (data == null)
-            {
-                _logger.LogError($"Failed to fetch Coin balances: No balances were returned");
-                return result;
-            }
-
-            foreach (var item in data)
-            {
-                var id = item.GetProperty("id").GetString() ?? "";
-                var name = item.GetProperty("name").GetString() ?? "";
-                var image = item.GetProperty("image").GetString() ?? "";
-                var symbol = item.GetProperty("symbol").GetString() ?? "";
-                var price = item.GetProperty("current_price").GetDecimal();
-
-                result.Add(new AssetMetadata()
-                {
-                    AssetId = id,
-                    Symbol = symbol,
-                    Image = image,
-                    Currency = currency,
-                    Name = name,
-                    Price = price
-                });
-
-            }
-
-            return result;
-        }
-        private List<Coin>? _coinList;
-        public async Task<List<Coin>> GetCoinList()
-        {
-            if (_coinList != null) return _coinList;
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-            var url = "https://api.coingecko.com/api/v3/coins/list";
-            var response = await client.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError($"Failed to fetch Coin list: {response.StatusCode}");
-                _logger.LogError(await response.Content.ReadAsStringAsync());
-                return new();
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-            var data = JsonSerializer.Deserialize<List<Coin>>(json);
-
-            if (data == null)
-            {
-                _logger.LogError($"Failed to fetch Coin list");
-                return new();
-            }
-
-            _coinList = data;
-
-            return _coinList;
-        }
     }
 
-
-    public struct Coin
-    {
-        [JsonPropertyName("id")]
-        public string Id { get; set; }
-        [JsonPropertyName("symbol")]
-        public string Symbol { get; set; }
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-    }
-    public struct AssetMetadata
-    {
-        public string AssetId { get; set; }
-        public string Name { get; set; }
-        public string Symbol { get; set; }
-        public string Image { get; set; }
-        public string Currency { get; set; }
-        /// <summary>
-        /// Value of 1 unit of the asset, expressed in <see cref="Currency"/>.
-        /// All providers (crypto, fiat, stock) must follow this semantic.
-        /// </summary>
-        public decimal Price { get; set; }
-    }
     public struct BalanceResult
     {
         public string Symbol { get; set; }

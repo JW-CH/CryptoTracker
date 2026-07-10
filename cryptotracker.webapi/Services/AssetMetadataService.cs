@@ -9,18 +9,14 @@ namespace cryptotracker.webapi.Services
     {
         private readonly ILogger<AssetMetadataService> _logger;
         private readonly DatabaseContext _db;
-        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
-        private readonly ICurrencyProvider _currencyProvider;
-        private readonly IStockLogic _stockLogic;
+        private readonly IEnumerable<IPriceProvider> _priceProviders;
         private readonly ICryptoTrackerConfig _config;
 
-        public AssetMetadataService(ILogger<AssetMetadataService> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, ICurrencyProvider currencyProvider, IStockLogic stockLogic, ICryptoTrackerConfig config)
+        public AssetMetadataService(ILogger<AssetMetadataService> logger, DatabaseContext db, IEnumerable<IPriceProvider> priceProviders, ICryptoTrackerConfig config)
         {
             _logger = logger;
             _db = db;
-            _cryptoTrackerLogic = cryptoTrackerLogic;
-            _currencyProvider = currencyProvider;
-            _stockLogic = stockLogic;
+            _priceProviders = priceProviders;
             _config = config;
         }
 
@@ -32,22 +28,10 @@ namespace cryptotracker.webapi.Services
             var currency = _config.BaseCurrency;
 
             AssetMetadata metadata;
-            switch (assetType)
-            {
-                case AssetType.Crypto:
-                    var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, [externalId]);
-                    if (coinDataList.Count == 0) return null;
-                    metadata = coinDataList.First();
-                    break;
-                case AssetType.Fiat:
-                    metadata = await _currencyProvider.GetLatestRateAsync(currency, externalId);
-                    break;
-                case AssetType.Stock:
-                    metadata = await _stockLogic.GetStockByIdAsync(currency, externalId);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Asset type {assetType} not supported");
-            }
+
+            var priceProvider = GetPriceProviderOrThrow(assetType);
+
+            metadata = (await priceProvider.GetQuotesAsync(currency, new List<string> { externalId })).FirstOrDefault();
 
             return string.IsNullOrEmpty(metadata.AssetId) ? null : metadata;
         }
@@ -94,89 +78,120 @@ namespace cryptotracker.webapi.Services
             }
         }
 
+        private IPriceProvider GetPriceProviderOrThrow(AssetType assetType)
+        {
+            var provider = _priceProviders.FirstOrDefault(x => x.Handles.Contains(assetType)) ?? throw new InvalidOperationException($"No price provider found for asset type {assetType}");
+
+            return provider;
+        }
+
+        private IPriceProvider? GetPriceProvider(AssetType assetType)
+        {
+            var provider = _priceProviders.FirstOrDefault(x => x.Handles.Contains(assetType));
+
+            if (provider == null)
+                _logger.LogWarning("Assets of type {AssetType} exist but no price provider is configured for it, skipping", assetType);
+
+            return provider;
+        }
+
         public async Task UpdateAllAssetMetadataAsync()
         {
             var assets = await _db.Assets.ToListAsync();
+            var currency = _config.BaseCurrency;
             _logger.LogTrace("Found {Count} assets", assets.Count);
 
             if (assets.Count == 0) return;
 
-            var coinList = await _cryptoTrackerLogic.GetCoinList();
-            _logger.LogTrace("Fetched {Count} coins", coinList.Count);
+            var cryptoAssets = assets.Where(x => x.AssetType == AssetType.Crypto).ToList();
 
-            foreach (var asset in assets.Where(x => x.AssetType == AssetType.Crypto))
+            var cryptoPriceProvider = cryptoAssets.Any() ? GetPriceProvider(AssetType.Crypto) : null;
+            if (cryptoPriceProvider != null)
             {
-                Coin? coin = null;
-                if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                var coinList = await cryptoPriceProvider.GetAssetsAsync();
+                _logger.LogTrace("Fetched {Count} coins", coinList.Count());
+                foreach (var asset in cryptoAssets)
                 {
-                    var coins = coinList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
+                    ProviderAsset? coin = null;
+                    if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                    {
+                        var coins = coinList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
 
-                    if (coins.Count() != 1) continue;
+                        if (coins.Count() != 1) continue;
 
-                    coin = coins.First();
+                        coin = coins.First();
+                    }
+                    else
+                    {
+                        coin = coinList.FirstOrDefault(x => x.ExternalId.ToLower() == asset.ExternalId.ToLower());
+                    }
+
+                    if (coin == null) continue;
+
+                    if (string.IsNullOrWhiteSpace(asset.Name))
+                    {
+                        _logger.LogTrace("Update name for '{Symbol}' to '{Name}'", asset.Symbol, coin.Value.Name);
+                        asset.Name = coin.Value.Name;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                    {
+                        _logger.LogTrace("Update externalId for '{Symbol}' to '{ExternalId}'", asset.Symbol, coin.Value.ExternalId);
+                        asset.ExternalId = coin.Value.ExternalId;
+                    }
                 }
-                else
-                {
-                    coin = coinList.FirstOrDefault(x => x.Id.ToLower() == asset.ExternalId.ToLower());
-                }
-
-                if (coin == null) continue;
-
-                if (string.IsNullOrWhiteSpace(asset.Name))
-                {
-                    _logger.LogTrace("Update name for '{Symbol}' to '{Name}'", asset.Symbol, coin.Value.Name);
-                    asset.Name = coin.Value.Name;
-                }
-
-                if (string.IsNullOrWhiteSpace(asset.ExternalId))
-                {
-                    _logger.LogTrace("Update externalId for '{Symbol}' to '{ExternalId}'", asset.Symbol, coin.Value.Id);
-                    asset.ExternalId = coin.Value.Id;
-                }
+                await _db.SaveChangesAsync();
             }
-            await _db.SaveChangesAsync();
 
-            var currencyList = await _currencyProvider.GetCurrenciesAsync();
-            _logger.LogTrace("Fetched {Count} currencies", currencyList.Count());
 
-            foreach (var asset in assets.Where(x => x.AssetType == AssetType.Fiat))
+            var fiatAssets = assets.Where(x => x.AssetType == AssetType.Fiat).ToList();
+
+            var currencyPriceProvider = fiatAssets.Any() ? GetPriceProvider(AssetType.Fiat) : null;
+            if (currencyPriceProvider != null)
             {
-                Currency? matchedCurrency = null;
-                if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                var currencyList = await currencyPriceProvider.GetAssetsAsync();
+                _logger.LogTrace("Fetched {Count} currencies", currencyList.Count());
+                foreach (var asset in fiatAssets)
                 {
-                    var matches = currencyList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
+                    ProviderAsset? matchedCurrency = null;
+                    if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                    {
+                        var matches = currencyList.Where(x => x.Symbol.ToLower() == asset.Symbol.ToLower());
 
-                    if (matches.Count() != 1) continue;
+                        if (matches.Count() != 1) continue;
 
-                    matchedCurrency = matches.First();
-                }
-                else
-                {
-                    matchedCurrency = currencyList.FirstOrDefault(x => x.Symbol.ToLower() == asset.ExternalId.ToLower());
-                }
+                        matchedCurrency = matches.First();
+                    }
+                    else
+                    {
+                        matchedCurrency = currencyList.FirstOrDefault(x => x.Symbol.ToLower() == asset.ExternalId.ToLower());
+                    }
 
-                if (matchedCurrency == null) continue;
+                    if (matchedCurrency == null) continue;
 
-                if (string.IsNullOrWhiteSpace(asset.Name))
-                {
-                    _logger.LogTrace("Update name for '{Symbol}' to '{Name}'", asset.Symbol, matchedCurrency.Value.Name);
-                    asset.Name = matchedCurrency.Value.Name;
+                    if (string.IsNullOrWhiteSpace(asset.Name))
+                    {
+                        _logger.LogTrace("Update name for '{Symbol}' to '{Name}'", asset.Symbol, matchedCurrency.Value.Name);
+                        asset.Name = matchedCurrency.Value.Name;
+                    }
+                    if (string.IsNullOrWhiteSpace(asset.ExternalId))
+                    {
+                        _logger.LogTrace("Update externalId for '{Symbol}' to '{ExternalId}'", asset.Symbol, matchedCurrency.Value.Symbol);
+                        asset.ExternalId = matchedCurrency.Value.Symbol;
+                    }
                 }
-                if (string.IsNullOrWhiteSpace(asset.ExternalId))
-                {
-                    _logger.LogTrace("Update externalId for '{Symbol}' to '{ExternalId}'", asset.Symbol, matchedCurrency.Value.Symbol);
-                    asset.ExternalId = matchedCurrency.Value.Symbol;
-                }
+                await _db.SaveChangesAsync();
             }
-            await _db.SaveChangesAsync();
 
             var foundExternalIds = await _db.Assets.Where(x => !string.IsNullOrWhiteSpace(x.ExternalId)).Select(x => new { x.ExternalId, x.AssetType }).ToListAsync();
 
             if (foundExternalIds.Count == 0) return;
-            var currency = _config.BaseCurrency;
-            var coinDataList = await _cryptoTrackerLogic.GetCoinData(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList());
-            var currencyDataList = await _currencyProvider.GetLatestRatesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList());
-            var stockDataList = await _stockLogic.GetStocksByIdsAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Stock).Select(x => x.ExternalId!).ToList());
+
+            var coinDataList = cryptoPriceProvider != null ? await cryptoPriceProvider.GetQuotesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Crypto).Select(x => x.ExternalId!).ToList()) : new List<AssetMetadata>();
+            var currencyDataList = currencyPriceProvider != null ? await currencyPriceProvider.GetQuotesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Fiat).Select(x => x.ExternalId!).ToList()) : new List<AssetMetadata>();
+
+            var stockPriceProvider = foundExternalIds.Any(x => x.AssetType == AssetType.Stock) ? GetPriceProvider(AssetType.Stock) : null;
+            var stockDataList = stockPriceProvider != null ? await stockPriceProvider.GetQuotesAsync(currency, foundExternalIds.Where(x => x.AssetType == AssetType.Stock).Select(x => x.ExternalId!).ToList()) : new List<AssetMetadata>();
 
             var all = coinDataList.Union(currencyDataList).Union(stockDataList).ToList();
 

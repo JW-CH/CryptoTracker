@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using cryptotracker.core.Logic;
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
@@ -16,9 +16,9 @@ public class AssetServiceTest
 {
     private DatabaseContext _dbContext;
     private AssetService _service;
-    private Mock<ICurrencyProvider> _currencyProviderMock;
-    private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
-    private Mock<IStockLogic> _stockLogicMock;
+    private Mock<IPriceProvider> _cryptoProviderMock;
+    private Mock<IPriceProvider> _currencyProviderMock;
+    private Mock<IPriceProvider> _stockProviderMock;
 
     [SetUp]
     public async Task Setup()
@@ -30,28 +30,30 @@ public class AssetServiceTest
 
         _dbContext = new DatabaseContext(options);
 
-        _currencyProviderMock = new Mock<ICurrencyProvider>();
-        _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
+        _cryptoProviderMock = new Mock<IPriceProvider>();
+        _cryptoProviderMock.Setup(x => x.Handles).Returns(new[] { AssetType.Crypto });
 
-        _stockLogicMock = new Mock<IStockLogic>();
-        _stockLogicMock.Setup(x => x.GetAllStocksAsync()).ReturnsAsync(new List<Stock>() { new Stock { Symbol = "TST", Name = "Test Stock" } });
-        _stockLogicMock.Setup(x => x.GetStocksByIdsAsync(It.IsAny<string>(), It.IsAny<List<string>>())).ReturnsAsync(new List<AssetMetadata>() { new AssetMetadata { Symbol = "TST", Name = "Test Stock" } });
-        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync((string currency, string id) => new AssetMetadata { AssetId = id, Symbol = "TST", Name = "Test Stock" });
+        _currencyProviderMock = new Mock<IPriceProvider>();
+        _currencyProviderMock.Setup(x => x.Handles).Returns(new[] { AssetType.Fiat });
+
+        _stockProviderMock = new Mock<IPriceProvider>();
+        _stockProviderMock.Setup(x => x.Handles).Returns(new[] { AssetType.Stock });
+        _stockProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
+            .ReturnsAsync((string currency, IEnumerable<string> ids) => new List<AssetMetadata> { new AssetMetadata { AssetId = ids.First(), Symbol = "TST", Name = "Test Stock" } });
+
+        var priceProviders = new[] { _cryptoProviderMock.Object, _currencyProviderMock.Object, _stockProviderMock.Object };
 
         var config = new CryptoTrackerConfig();
         var metadataService = new AssetMetadataService(
             Mock.Of<ILogger<AssetMetadataService>>(),
             _dbContext,
-            _cryptoTrackerLogicMock.Object,
-            _currencyProviderMock.Object,
-            _stockLogicMock.Object,
+            priceProviders,
             config
         );
 
         _service = new AssetService(
             _dbContext,
-            _cryptoTrackerLogicMock.Object,
-            _currencyProviderMock.Object,
+            priceProviders,
             config,
             metadataService
         );
@@ -145,7 +147,7 @@ public class AssetServiceTest
             ExternalId = "ethereum"
         };
 
-        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData("chf", It.Is<List<string>>(l => l.Contains("ethereum"))))
+        _cryptoProviderMock.Setup(x => x.GetQuotesAsync("chf", It.Is<IEnumerable<string>>(l => l.Contains("ethereum"))))
             .ReturnsAsync(new List<AssetMetadata>
             {
                 new AssetMetadata
@@ -200,7 +202,7 @@ public class AssetServiceTest
             ExternalId = "does-not-exist"
         };
 
-        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()))
+        _cryptoProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
             .ReturnsAsync(new List<AssetMetadata>());
 
         // Act & Assert
@@ -274,7 +276,7 @@ public class AssetServiceTest
     }
 
     [Test]
-    public async Task SetExternalId_WithStockAsset_UsesStockLogicAndWritesPrice()
+    public async Task SetExternalId_WithStockAsset_UsesStockProviderAndWritesPrice()
     {
         // Arrange
         _dbContext.Assets.Add(new Asset
@@ -287,14 +289,17 @@ public class AssetServiceTest
         });
         await _dbContext.SaveChangesAsync();
 
-        _stockLogicMock.Setup(x => x.GetStockByIdAsync("chf", "apple"))
-            .ReturnsAsync(new AssetMetadata
+        _stockProviderMock.Setup(x => x.GetQuotesAsync("chf", It.Is<IEnumerable<string>>(l => l.Contains("apple"))))
+            .ReturnsAsync(new List<AssetMetadata>
             {
-                AssetId = "apple",
-                Symbol = "AAPL",
-                Name = "Apple Inc.",
-                Price = 42M,
-                Currency = "chf"
+                new AssetMetadata
+                {
+                    AssetId = "apple",
+                    Symbol = "AAPL",
+                    Name = "Apple Inc.",
+                    Price = 42M,
+                    Currency = "chf"
+                }
             });
 
         // Act
@@ -309,15 +314,15 @@ public class AssetServiceTest
         Assert.That(priceEntry.Price, Is.EqualTo(42M));
 
         // Stocks dürfen nicht über den Crypto-Pfad aufgelöst werden
-        _stockLogicMock.Verify(x => x.GetStockByIdAsync("chf", "apple"), Times.Once);
-        _cryptoTrackerLogicMock.Verify(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()), Times.Never);
+        _stockProviderMock.Verify(x => x.GetQuotesAsync("chf", It.Is<IEnumerable<string>>(l => l.Contains("apple"))), Times.Once);
+        _cryptoProviderMock.Verify(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()), Times.Never);
     }
 
     [Test]
     public async Task SetExternalId_WithUnknownCryptoExternalId_ThrowsInvalidOperationException()
     {
         // Arrange
-        _cryptoTrackerLogicMock.Setup(x => x.GetCoinData(It.IsAny<string>(), It.IsAny<List<string>>()))
+        _cryptoProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
             .ReturnsAsync(new List<AssetMetadata>());
 
         // Act & Assert
@@ -331,7 +336,7 @@ public class AssetServiceTest
     [Test]
     public async Task SetExternalId_WithMetadataWithoutAssetId_ThrowsInvalidOperationException()
     {
-        // Arrange (Provider liefert einen Default-Struct ohne AssetId)
+        // Arrange (Provider liefert Metadaten ohne AssetId)
         _dbContext.Assets.Add(new Asset
         {
             Symbol = "AAPL",
@@ -342,8 +347,8 @@ public class AssetServiceTest
         });
         await _dbContext.SaveChangesAsync();
 
-        _stockLogicMock.Setup(x => x.GetStockByIdAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new AssetMetadata { Symbol = "AAPL", Name = "Apple Inc." });
+        _stockProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>()))
+            .ReturnsAsync(new List<AssetMetadata> { new AssetMetadata { Symbol = "AAPL", Name = "Apple Inc." } });
 
         // Act & Assert
         Assert.ThrowsAsync<InvalidOperationException>(

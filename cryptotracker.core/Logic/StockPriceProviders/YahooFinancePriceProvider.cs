@@ -1,40 +1,39 @@
+using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
+using cryptotracker.database.Models;
 using Microsoft.Extensions.Logging;
 using YahooFinanceApi;
 
-public class YahooFinanceStockLogic : IStockLogic
+namespace cryptotracker.core.Logic.StockPriceProviders;
+
+public class YahooFinancePriceProvider : IPriceProvider
 {
     private ILogger _logger;
-    private ICurrencyProvider _currencyProvider;
-    public YahooFinanceStockLogic(ILogger logger, ICurrencyProvider currencyProvider)
+    private IPriceProvider _currencyProvider;
+    public YahooFinancePriceProvider(ILogger logger, IPriceProvider currencyProvider)
     {
         _logger = logger;
         _currencyProvider = currencyProvider;
     }
 
-    public Task<IEnumerable<Stock>> GetAllStocksAsync()
+    public IEnumerable<AssetType> Handles => new[] { AssetType.Stock };
+
+    public async Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
     {
         throw new NotImplementedException();
     }
 
-    public async Task<AssetMetadata> GetStockByIdAsync(string currency, string id)
+    public async Task<IEnumerable<AssetMetadata>> GetQuotesAsync(string baseCurrency, IEnumerable<string> externalIds)
     {
-        var assetMetaDataResults = await GetStocksByIdsAsync(currency, new List<string> { id });
+        externalIds = externalIds.Distinct().Select(x => x.ToLower()).ToList();
 
-        return assetMetaDataResults.FirstOrDefault();
-    }
-
-    public async Task<List<AssetMetadata>> GetStocksByIdsAsync(string currency, List<string> ids)
-    {
-        ids = ids.Distinct().Select(x => x.ToLower()).ToList();
-
-        _logger.LogTrace($"GetStocksByIdsAsync: {string.Join(",", ids)}");
+        _logger.LogTrace($"GetStocksByIdsAsync: {string.Join(",", externalIds)}");
 
         var result = new List<AssetMetadata>();
 
-        if (ids.Count == 0) return result;
+        if (externalIds.Count() == 0) return result;
 
-        var securities = await Yahoo.Symbols(ids.ToArray())
+        var securities = await Yahoo.Symbols(externalIds.ToArray())
         .Fields(Field.Symbol, Field.ShortName, Field.RegularMarketPrice, Field.Currency)
         .QueryAsync();
 
@@ -46,13 +45,13 @@ public class YahooFinanceStockLogic : IStockLogic
 
             var price = Convert.ToDecimal(security.Value.RegularMarketPrice);
 
-            if (security.Value.Currency.ToLower() != currency.ToLower())
+            if (security.Value.Currency.ToLower() != baseCurrency.ToLower())
             {
                 if (!currencyRates.ContainsKey(security.Value.Currency))
                 {
                     // value of 1 <stock currency> in <currency>
-                    var rateMetadata = await _currencyProvider.GetLatestRateAsync(currency, security.Value.Currency);
-                    currencyRates.Add(security.Value.Currency, rateMetadata.Price);
+                    var rateMetadata = await _currencyProvider.GetQuotesAsync(baseCurrency, new[] { security.Value.Currency });
+                    currencyRates.Add(security.Value.Currency, rateMetadata.First().Price);
                 }
                 price = price * currencyRates[security.Value.Currency];
             }
@@ -62,7 +61,7 @@ public class YahooFinanceStockLogic : IStockLogic
                 AssetId = security.Key,
                 Name = security.Value.ShortName ?? security.Key,
                 Price = price,
-                Currency = currency,
+                Currency = baseCurrency,
                 Symbol = security.Value.Symbol
             };
 
