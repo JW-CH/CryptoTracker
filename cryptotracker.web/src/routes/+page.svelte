@@ -7,12 +7,17 @@
 	import PieChart from '$lib/components/charts/PieChart.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
-	let assets: Set<string> = new Set<string>();
 	let summarize: boolean = true;
 	let selectedRange = $state<number>(14);
 
-	function AddAsset(assetId: string) {
-		assets.add(assetId);
+	function UniqueSymbols(data: { [key: string]: api.AssetHoldingDto[] }) {
+		return [
+			...new Set(
+				Object.values(data)
+					.flat()
+					.map((m) => m.asset.symbol ?? '')
+			)
+		];
 	}
 
 	function StringKeysToDates(arr: string[]) {
@@ -93,12 +98,9 @@
 			{#await api.getMeasuringsByDays(selectedRange)}
 				<LineChart skeleton={true} />
 			{:then stats}
-				{#each Object.values(stats.data).flat() as stat}
-					{AddAsset(stat.asset.symbol ?? '')}
-				{/each}
 				<LineChart
 					labels={StringKeysToDates(Object.keys(stats.data))}
-					datasets={Array.from(assets).map((assetId) => ({
+					datasets={UniqueSymbols(stats.data).map((assetId) => ({
 						name: assetId,
 						data: Object.values(stats.data).map(
 							(x) => x.find((y) => y.asset.symbol === assetId)?.totalValue ?? 0
