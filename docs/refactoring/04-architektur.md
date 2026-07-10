@@ -27,8 +27,8 @@ cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
 > unverändert, kein Client-Breaking). Entities werden nicht mehr roh serialisiert:
 > `AssetDto` (um `ExternalId`/`AssetType` erweitert) ersetzt das `Asset`-Entity in
 > `GetAssets` und `AssetWithPriceDto` (Client-Breaking, `make api` erledigt).
-> `MessungDto` heißt jetzt `AssetHoldingDto`. Damit ist A1 bis auf das
-> Route-Design (A6) vollständig umgesetzt.
+> `MessungDto` heißt jetzt `AssetHoldingDto`, das Route-Design ist bereinigt
+> (siehe A6). **Damit ist A1 vollständig umgesetzt.**
 
 **Befund:**
 
@@ -199,8 +199,11 @@ Details in [05](05-backend-codequalitaet.md), aber architekturrelevant:
 - ~~Namespace `ImmichFrame.Core.Helpers` (`HttpClientExtensionMethods.cs:1`) ist
   aus einem anderen Projekt kopiert — Namespace korrigieren.~~
   ✅ erledigt 2026-07-10 (`cryptotracker.core.Helpers`).
-- Route-Design uneinheitlich: `POST /api/Measuring?id=…` bindet die Integrations-Id
+- ~~Route-Design uneinheitlich: `POST /api/Measuring?id=…` bindet die Integrations-Id
   aus dem Query-String (`MeasuringController.cs:35`), während sonst Route-Parameter
   üblich sind (`/api/Integration/{id}/measuring` wäre konsistent). REST-Verben:
   `POST …/Visibility` mit bool-Body ist ok, aber `Reset` via `POST /api/Asset/Reset`
-  mit Symbol im Body bricht das Muster (`/api/Asset/{symbol}/reset`).
+  mit Symbol im Body bricht das Muster (`/api/Asset/{symbol}/reset`).~~
+  ✅ erledigt 2026-07-10: `POST /api/Asset/{symbol}/reset`; Measuring-Liste und
+  -Anlage liegen unter `GET|POST /api/Integration/{id}/measuring`, der
+  `MeasuringController` behält nur `DELETE /api/Measuring/{id}` (Measuring-Id).

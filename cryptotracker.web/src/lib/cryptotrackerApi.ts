@@ -187,15 +187,14 @@ export function setAssetTypeForSymbol($symbol: string, assetType?: AssetType, op
         body: assetType
     }));
 }
-export function resetAsset(body?: string, opts?: Oazapfts.RequestOpts) {
+export function resetAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>("/api/Asset/Reset", oazapfts.json({
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/reset`, {
         ...opts,
-        method: "POST",
-        body
-    }));
+        method: "POST"
+    });
 }
 export function getMe(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
@@ -340,9 +339,19 @@ export function getMeasuringsByIntegration(id: string, opts?: Oazapfts.RequestOp
     return oazapfts.fetchJson<{
         status: 200;
         data: AssetMeasuringDto[];
-    }>(`/api/Measuring/${encodeURIComponent(id)}`, {
+    }>(`/api/Integration/${encodeURIComponent(id)}/measuring`, {
         ...opts
     });
+}
+export function addIntegrationMeasuring(id: string, addMeasuringDto?: AddMeasuringDto, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Integration/${encodeURIComponent(id)}/measuring`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: addMeasuringDto
+    }));
 }
 export function deleteMeasuringById(id: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
@@ -352,16 +361,4 @@ export function deleteMeasuringById(id: string, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "DELETE"
     });
-}
-export function addIntegrationMeasuring(id: string, addMeasuringDto?: AddMeasuringDto, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.fetchJson<{
-        status: 200;
-        data: boolean;
-    }>(`/api/Measuring${QS.query(QS.explode({
-        id
-    }))}`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: addMeasuringDto
-    }));
 }

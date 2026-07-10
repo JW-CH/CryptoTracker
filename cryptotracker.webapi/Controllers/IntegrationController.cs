@@ -13,10 +13,12 @@ namespace cryptotracker.webapi.Controllers
     public class IntegrationController : ControllerBase
     {
         private readonly IntegrationService _integrationService;
+        private readonly MeasuringService _measuringService;
 
-        public IntegrationController(IntegrationService integrationService)
+        public IntegrationController(IntegrationService integrationService, MeasuringService measuringService)
         {
             _integrationService = integrationService;
+            _measuringService = measuringService;
         }
 
         [HttpGet(Name = "GetIntegrations")]
@@ -35,6 +37,19 @@ namespace cryptotracker.webapi.Controllers
         public async Task<bool> AddIntegration([FromBody] AddIntegrationDto dto)
         {
             await _integrationService.AddIntegrationAsync(dto);
+            return true;
+        }
+
+        [HttpGet("{id}/measuring", Name = "GetMeasuringsByIntegration")]
+        public async Task<List<AssetMeasuringDto>> GetMeasuringsByIntegration([Required] Guid id)
+        {
+            return await _measuringService.GetMeasuringsByIntegrationAsync(id);
+        }
+
+        [HttpPost("{id}/measuring", Name = "AddIntegrationMeasuring")]
+        public async Task<bool> AddIntegrationMeasuring([Required] Guid id, [FromBody] MeasuringService.AddMeasuringDto dto)
+        {
+            await _measuringService.AddIntegrationMeasuringAsync(id, dto);
             return true;
         }
     }

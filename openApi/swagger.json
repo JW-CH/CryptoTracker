@@ -522,31 +522,22 @@
         }
       }
     },
-    "/api/Asset/Reset": {
+    "/api/Asset/{symbol}/reset": {
       "post": {
         "tags": [
           "Asset"
         ],
         "operationId": "ResetAsset",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "type": "string"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "type": "string"
-              }
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -1168,10 +1159,10 @@
         }
       }
     },
-    "/api/Measuring/{id}": {
+    "/api/Integration/{id}/measuring": {
       "get": {
         "tags": [
-          "Measuring"
+          "Integration"
         ],
         "operationId": "GetMeasuringsByIntegration",
         "parameters": [
@@ -1217,56 +1208,15 @@
           }
         }
       },
-      "delete": {
-        "tags": [
-          "Measuring"
-        ],
-        "operationId": "DeleteMeasuringById",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "boolean"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "boolean"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "boolean"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Measuring": {
       "post": {
         "tags": [
-          "Measuring"
+          "Integration"
         ],
         "operationId": "AddIntegrationMeasuring",
         "parameters": [
           {
             "name": "id",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
@@ -1293,6 +1243,47 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Measuring/{id}": {
+      "delete": {
+        "tags": [
+          "Measuring"
+        ],
+        "operationId": "DeleteMeasuringById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",

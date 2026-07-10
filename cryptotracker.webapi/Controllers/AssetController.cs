@@ -91,8 +91,8 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
-        [HttpPost("Reset", Name = "ResetAsset")]
-        public async Task<bool> ResetAsset([FromBody] string symbol)
+        [HttpPost("{symbol}/reset", Name = "ResetAsset")]
+        public async Task<bool> ResetAsset([Required] string symbol)
         {
             await _assetService.ResetAssetAsync(symbol);
             return true;
