@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using cryptotracker.core.Interfaces;
-using cryptotracker.core.Logic;
 using cryptotracker.core.Logic.CryptoPriceProviders;
 using cryptotracker.core.Logic.Integrations;
 using cryptotracker.core.Logic.StockPriceProviders;
@@ -105,6 +104,8 @@ builder.Services.AddSingleton<JwtService>();
 builder.Services.AddScoped<PortfolioQueryService>();
 builder.Services.AddScoped<AssetMetadataService>();
 builder.Services.AddScoped<AssetService>();
+builder.Services.AddScoped<IntegrationService>();
+builder.Services.AddScoped<MeasuringService>();
 
 // DbContext
 builder.Services.AddDbContext<DatabaseContext>((serviceProvider, options) =>

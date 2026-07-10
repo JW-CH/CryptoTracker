@@ -18,8 +18,12 @@ cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
 > `CryptoTrackerAssetLogic` (core) → `AssetMetadataService` (webapi, scoped, DI):
 > DbContext injiziert statt als Methodenparameter, keine Hand-Instanziierung mehr;
 > Einzel- (`FetchMetadataAsync`) und Batch-Dispatch liegen jetzt in einer Klasse.
+> **Update 2026-07-10:** auch `IntegrationController` → `IntegrationService` und
+> `MeasuringController` → `MeasuringService` (Controller dünn, Fehlerfälle jetzt
+> einheitlich `KeyNotFoundException`/`InvalidOperationException` mit englischen
+> Meldungen, abgedeckt durch `IntegrationServiceTest`/`MeasuringServiceTest`).
 > Offen: DTOs liegen weiter im database-Projekt, Entities werden weiter roh
-> serialisiert.
+> serialisiert; `MessungDto`-Rename und Route-Design (A6) stehen aus.
 
 **Befund:**
 

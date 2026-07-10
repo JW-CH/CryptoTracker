@@ -1,10 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using cryptotracker.database.DTOs;
-using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using static cryptotracker.webapi.Services.IntegrationService;
 
 namespace cryptotracker.webapi.Controllers
 {
@@ -13,77 +12,30 @@ namespace cryptotracker.webapi.Controllers
     [Route("api/[controller]")]
     public class IntegrationController : ControllerBase
     {
-        private readonly ILogger<IntegrationController> _logger;
-        private readonly DatabaseContext _db;
-        private readonly PortfolioQueryService _portfolioQueryService;
+        private readonly IntegrationService _integrationService;
 
-        public IntegrationController(ILogger<IntegrationController> logger, DatabaseContext db, PortfolioQueryService portfolioQueryService)
+        public IntegrationController(IntegrationService integrationService)
         {
-            _logger = logger;
-            _db = db;
-            _portfolioQueryService = portfolioQueryService;
+            _integrationService = integrationService;
         }
 
         [HttpGet(Name = "GetIntegrations")]
-        public List<IntegrationDto> GetIntegrations()
+        public async Task<List<IntegrationDto>> GetIntegrations()
         {
-            return _db.ExchangeIntegrations.Select(IntegrationDto.FromModel).ToList();
+            return await _integrationService.GetIntegrationsAsync();
         }
 
         [HttpGet("{id}/detail", Name = "GetIntegrationDetails")]
         public async Task<IntegrationDetails?> GetIntegrationDetails([Required] Guid id)
         {
-            var integration = await _db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (integration == null) return null;
-
-            var today = DateOnly.FromDateTime(DateTime.Now);
-
-            var measurings = await _portfolioQueryService.GetAssetDayMeasuringAsync(today, integrationId: integration.Id);
-
-            return IntegrationDetails.FromIntegration(integration, measurings);
+            return await _integrationService.GetIntegrationDetailsAsync(id);
         }
 
         [HttpPost(Name = "AddIntegration")]
         public async Task<bool> AddIntegration([FromBody] AddIntegrationDto dto)
         {
-            if (await _db.ExchangeIntegrations.AnyAsync(x => x.Name.ToLower() == dto.Name.ToLower())) throw new Exception("Integration mit diesem Namen existiert bereits.");
-
-            var integration = new ExchangeIntegration
-            {
-                Name = dto.Name,
-                Description = dto.Description,
-                IsHidden = false,
-                IsManual = true,
-            };
-
-            await _db.AddAsync(integration);
-            await _db.SaveChangesAsync();
-
+            await _integrationService.AddIntegrationAsync(dto);
             return true;
-        }
-
-        public struct AddIntegrationDto
-        {
-            public string Name { get; set; }
-            public string? Description { get; set; }
-        }
-
-        public struct IntegrationDetails
-        {
-            public required IntegrationDto Integration { get; set; }
-            public required List<MessungDto> Measurings { get; set; }
-
-            public static IntegrationDetails FromIntegration(ExchangeIntegration integration) => FromIntegration(integration, new());
-
-            public static IntegrationDetails FromIntegration(ExchangeIntegration integration, List<MessungDto> measurings)
-            {
-                return new IntegrationDetails()
-                {
-                    Integration = IntegrationDto.FromModel(integration),
-                    Measurings = measurings ?? new()
-                };
-            }
         }
     }
 }
