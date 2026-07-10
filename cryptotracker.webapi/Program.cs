@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using cryptotracker.core.Interfaces;
@@ -242,6 +243,23 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// brute-force protection for credential endpoints (login/register).
+// note: behind a reverse proxy without X-Forwarded-For handling all clients
+// share the proxy ip, which makes the limit stricter, not weaker
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 builder.Services.AddHostedService<UpdateService>();
 
 var app = builder.Build();
@@ -269,6 +287,8 @@ if (app.Environment.IsProduction())
     app.UseDefaultFiles();
     app.UseStaticFiles();
 }
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

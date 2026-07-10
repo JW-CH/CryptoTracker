@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace cryptotracker.webapi.Controllers
 {
@@ -81,6 +82,7 @@ namespace cryptotracker.webapi.Controllers
             return Challenge(props, OpenIdConnectDefaults.AuthenticationScheme);
         }
 
+        [EnableRateLimiting("auth")]
         [HttpPost("login", Name = "Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -107,6 +109,7 @@ namespace cryptotracker.webapi.Controllers
             return Unauthorized();
         }
 
+        [EnableRateLimiting("auth")]
         [HttpPost("register", Name = "Register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {

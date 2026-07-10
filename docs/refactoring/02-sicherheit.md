@@ -38,7 +38,13 @@ bewirbt öffentliches Docker-Deployment. Das ist die größte einzelne Schwachst
 
 > **Status 2026-07-09: Lockout umgesetzt** via `CheckPasswordSignInAsync(...,
 > lockoutOnFailure: true)` (Identity-Defaults: 5 Versuche, 5 Minuten Sperre).
-> Offen: Rate-Limiting-Middleware auf `/api/auth/*`.
+> **Update 2026-07-10: Rate-Limiting umgesetzt** — `AddRateLimiter` mit Policy
+> „auth" (Fixed Window, 10 Requests/Minute pro Client-IP, 429 bei Überschreitung)
+> auf `POST /api/Auth/login` und `POST /api/Auth/register`; unkritische
+> GET-Endpoints (`me`, `oidc-enabled`, …) bewusst unlimitiert. Hinter einem
+> Reverse Proxy ohne X-Forwarded-For teilen sich alle Clients die Proxy-IP —
+> das macht das Limit strenger, nicht schwächer. Live verifiziert (10× 401,
+> dann 429). S2 damit vollständig erledigt.
 
 `AuthController.Login` benutzt `CheckPasswordAsync` direkt — das umgeht die
 Lockout-Zählung von ASP.NET Identity komplett. Brute-Force ist unbegrenzt möglich.
