@@ -22,8 +22,11 @@ cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
 > `MeasuringController` → `MeasuringService` (Controller dünn, Fehlerfälle jetzt
 > einheitlich `KeyNotFoundException`/`InvalidOperationException` mit englischen
 > Meldungen, abgedeckt durch `IntegrationServiceTest`/`MeasuringServiceTest`).
-> Offen: DTOs liegen weiter im database-Projekt, Entities werden weiter roh
-> serialisiert; `MessungDto`-Rename und Route-Design (A6) stehen aus.
+> DTOs sind aus dem database-Projekt in die webapi umgezogen
+> (`cryptotracker.webapi/Dtos/`, Namespace `cryptotracker.webapi.Dtos`; Schema-Ids
+> unverändert, kein Client-Breaking). Offen: `AssetController.GetAssets`
+> serialisiert weiter das rohe `Asset`-Entity; `MessungDto`-Rename und
+> Route-Design (A6) stehen aus.
 
 **Befund:**
 

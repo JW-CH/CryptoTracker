@@ -1,4 +1,4 @@
-using cryptotracker.database.DTOs;
+using cryptotracker.webapi.Dtos;
 using cryptotracker.database.Models;
 using Microsoft.EntityFrameworkCore;
 

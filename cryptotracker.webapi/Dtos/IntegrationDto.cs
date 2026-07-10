@@ -1,7 +1,7 @@
 
 using cryptotracker.database.Models;
 
-namespace cryptotracker.database.DTOs
+namespace cryptotracker.webapi.Dtos
 {
     public class IntegrationDto
     {
