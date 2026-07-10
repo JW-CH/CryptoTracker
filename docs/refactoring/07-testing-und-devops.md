@@ -1,36 +1,26 @@
 # Testing & DevOps
 
-## T1 — Testlage: der komplexeste Code ist ungetestet 🔴
+## T1 — Testlage 🔴 → weitgehend behoben
 
-**Ist:**
+> **Status 2026-07-10:** Die Prioritätenliste ist abgearbeitet — 71 Tests grün:
+> `PortfolioQueryServiceTest` (Fill-Grenze, 0-Filter, Batch),
+> `FrankfurterCurrencyPriceProviderTest` (Kursrichtung/Bug-1-Regression, Cache),
+> `CoingeckoPriceProviderTest` (Mapping, Cache, Fehlerpfade),
+> `UpdateServiceTest` (Fehler-Isolation, Idempotenz, AssetType-Erkennung,
+> Provider-Dispatch), `AssetServiceTest`, `IntegrationServiceTest`,
+> `MeasuringServiceTest`, `YamlConfigurationTest`.
 
-- `cryptotracker.core.tests`: eine Datei mit `Assert.Pass()` — Platzhalter,
-  testet nichts (`AssetTest.cs`).
-- `cryptotracker.webapi.tests`: solide CRUD-Tests für den `AssetController`
-  (InMemory-DB, Moq) plus ein kleiner Logic-Test. Gut als Muster, aber:
-- **Null Tests für die Aggregation** (`ApiHelper`) — das ist mit Abstand der
-  fehleranfälligste Code (Forward-Fill, Tagesgrenzen, Batch-Fenster; siehe
-  Bugs 1–3, 6). Genau die Bugs aus [01](01-kritische-bugs.md) hätten Tests
-  gefunden.
-- Null Tests für `UpdateService.Import` (Löschen/Schreiben, Fehlerpfade),
-  `CryptoTrackerAssetLogic` (Metadaten-Matching), `FiatLogic` (Kursrichtung!),
-  Auth.
+**Noch offen:**
 
-**Empfehlung — Prioritätenliste neuer Tests:**
-
-1. `PortfolioQueryService` (heute `ApiHelper`): Tabellen-getriebene Tests über
-   ein fixes Szenario (mehrere Integrationen, Lücken, verkaufte Assets,
-   Tagesgrenzen um Mitternacht UTC/lokal). Voraussetzung: `TimeProvider`
-   injizieren statt `DateTime.Now`.
-2. `FiatLogic`/Preis-Provider: Semantik „Preis = Wert einer Einheit in
-   Basiswährung" als Kontrakt-Test gegen gemockte HTTP-Responses
-   (`HttpMessageHandler`-Fake) — verhindert Regression von Bug 1.
-3. Import-Pipeline: Provider-Fake liefert Fehler/leer/Teilmengen → erwartete
-   Snapshot-Zustände (fixiert Bug 5-Verhalten).
+- **Auth** ist ungetestet (Login/Lockout/First-User-Setup/JWT).
+- **Tagesgrenzen-Szenarien** (Mitternacht UTC/lokal) brauchen den
+  `TimeProvider`-Umbau aus [Bug 6](01-kritische-bugs.md#bug-6) — bis dahin
+  hängen einzelne Tests an der Systemzeit (bewusst auf 12:00-UTC-Timestamps
+  ausgewichen).
 
 ## T2 — InMemory-Provider verdeckt genau die vorhandenen Bugs 🟠
 
-`UseInMemoryDatabase` (WebApiTest.cs:27) unterscheidet sich von Postgres genau
+`UseInMemoryDatabase` (alle webapi-Tests) unterscheidet sich von Postgres genau
 dort, wo dieses Projekt seine Probleme hat:
 
 - **Case-Sensitivity von Strings** („chf" vs „CHF", Bug 3) — InMemory vergleicht

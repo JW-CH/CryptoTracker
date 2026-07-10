@@ -21,14 +21,16 @@ ExchangeIntegration: Id (Guid PK), Name, Description, IsManual, IsHidden
 
 Datenfluss:
 
-1. `UpdateService` läuft alle `interval` Minuten, löscht pro Config-Integration
-   die heutigen Messungen und schreibt die aktuellen Balances als neue Messungen
-   mit `Timestamp = UtcNow`.
-2. `CryptoTrackerAssetLogic` schreibt/aktualisiert pro Asset genau eine
-   Preiszeile pro Tag (Basiswährung fest „chf").
-3. Lesend rekonstruiert `ApiHelper.GetAssetDayMeasuringBatchAsync` für beliebige
-   Tage den Bestand: pro `(Symbol, Integration)` die letzte Messung ≤ Stichtag,
-   multipliziert mit dem letzten Preis ≤ Stichtag (Forward-Fill für beides).
+1. `UpdateService` läuft alle `interval` Minuten, holt pro Config-Integration
+   die Balances (via `IIntegrationProvider`), löscht die heutigen Messungen und
+   schreibt die aktuellen Balances als neue Messungen mit `Timestamp = UtcNow`
+   (inkl. 0-Zeilen für verschwundene Assets, siehe Bug 2).
+2. `AssetMetadataService` schreibt/aktualisiert pro Asset genau eine
+   Preiszeile pro Tag (Basiswährung aus Config, lowercase-normalisiert).
+3. Lesend rekonstruiert `PortfolioQueryService.GetAssetDayMeasuringBatchAsync`
+   für beliebige Tage den Bestand: pro `(Symbol, Integration)` die letzte
+   Messung ≤ Stichtag, multipliziert mit dem letzten Preis ≤ Stichtag
+   (Forward-Fill, begrenzt auf `maxfilldays`).
 
 ---
 
@@ -46,8 +48,8 @@ Datenfluss:
 - **Kein Rename möglich:** Symbol-Umbenennungen (kommt bei Coins vor) erfordern
   Kaskaden-Updates über drei Tabellen.
 - **Case-Sensitivität:** Der Import schreibt Symbole, wie die Exchange sie liefert;
-  Abfragen normalisieren teils mit `ToLower()` (`ApiHelper.cs:23`), teils nicht
-  (`AssetController.GetAsset:41` vergleicht exakt). „btc" und „BTC" wären zwei Assets.
+  Abfragen normalisieren teils mit `ToLower()` (`PortfolioQueryService`), teils nicht
+  (`AssetService.GetAssetOrThrowAsync` vergleicht exakt). „btc" und „BTC" wären zwei Assets.
 
 **Empfehlung:** Surrogate Key (`Guid Id`), Unique-Index auf `(Symbol, AssetType)`,
 Symbol-Normalisierung (Uppercase) an genau einer Stelle beim Import. FKs in
@@ -90,44 +92,41 @@ Source            enum { Sync, Manual }
   kein Löschen, keine Transaktions-Akrobatik.
 - Der Import schreibt einen **vollständigen** Snapshot: Assets, die im letzten
   Snapshot der Integration vorkamen und jetzt fehlen, bekommen `Amount = 0`
-  (fixt [Bug 2](01-kritische-bugs.md#bug-2)).
+  (hat [Bug 2](01-kritische-bugs.md) bereits gefixt; das Snapshot-Modell macht die 0-Zeilen-Logik strukturell überflüssig).
 - Manuelle Einträge nutzen dieselbe Upsert-Semantik mit `Source = Manual`.
 - Wer Intraday-Historie *will*, sollte das als bewusstes Feature bauen
   (separate Tabelle mit Retention), nicht als Nebeneffekt.
 
-## D3 — Hinterfragt: Forward-Fill zur Abfragezeit, unbegrenzt, im Speicher 🔴
+## D3 — Hinterfragt: Forward-Fill zur Abfragezeit, teils gefixt 🔴
 
-**Ist:** `ApiHelper.GetAssetDayMeasuringBatchAsync` lädt
+> **Teilstatus 2026-07-09:** Die Mess-Query hat seit dem Bug-2-Fix eine untere
+> Datumsgrenze und der Forward-Fill ist auf `maxfilldays` begrenzt (Punkt 2
+> erledigt). Offen: Preiszeilen-Fenster, Indexe, `AsNoTracking()`.
+
+**Ist:** `PortfolioQueryService.GetAssetDayMeasuringBatchAsync` lädt
 
 - alle (nicht versteckten) Assets,
 - alle Integrationen,
-- **alle Preiszeilen** ≤ maxDay (`ApiHelper.cs:41`),
-- **alle Messungen** ≤ maxDay+1 (`ApiHelper.cs:51`) inkl. `Include(Integration)`
+- **alle Preiszeilen** ≤ maxDay,
+- Messungen im Fenster (seit Bug-2-Fix datumsbegrenzt) inkl. `Include(Integration)`
 
-in den Speicher und rechnet dort. Es gibt keine untere Datumsgrenze: Die Abfrage
-für „letzte 7 Tage" lädt die komplette Historie seit Anbeginn. Mit 20 Assets ×
-5 Integrationen × 365 Tagen sind das nach einem Jahr ~36'000 Messungen und
-~7'000 Preiszeilen **pro Dashboard-Aufruf** — Tendenz linear wachsend. Das
-n×3-Problem wurde kürzlich gefixt (Commit `f8fd36f`), aber die Grundlast bleibt.
+in den Speicher und rechnet dort. Für die Preiszeilen gibt es weiterhin keine
+untere Datumsgrenze — die Grundlast wächst mit der Historie.
 
-**Empfehlung:**
+**Empfehlung (Rest):**
 
-1. **Datumsfenster:** Für einen Bereich `[from, to]` werden nur benötigt:
-   die Zeilen im Fenster **plus** je `(Integration, Asset)` die letzte Zeile vor
-   `from` (als Startwert für den Fill). Letzteres ist in SQL ein
+1. **Datumsfenster auch für Preise:** Für einen Bereich `[from, to]` werden nur
+   benötigt: die Zeilen im Fenster **plus** je `(Integration, Asset)` die letzte
+   Zeile vor `from` (als Startwert für den Fill). Letzteres ist in SQL ein
    `DISTINCT ON`/`ROW_NUMBER()`-Query — mit EF machbar
    (`GroupBy` + `Max` oder Raw SQL), Npgsql unterstützt `DISTINCT ON` via
    `EF.Functions`. Damit skaliert die Abfrage mit dem Fenster, nicht mit der
    Tabellengröße.
-2. **Fill-Grenze:** Forward-Fill maximal N Tage (Config, z. B. 7). Ältere Lücken
-   sind ein Datenqualitätsproblem, das sichtbar sein soll — nicht kaschiert.
-   Mit dem Snapshot-Modell aus D2 (vollständige Snapshots inkl. Nullen) ist
-   Fill ohnehin nur noch für „Server war aus"-Lücken nötig.
-3. **Indexe:** Es gibt nur die automatischen FK-Indexe. Für die Leselast fehlen
+2. **Indexe:** Es gibt nur die automatischen FK-Indexe. Für die Leselast fehlen
    `AssetMeasuring (IntegrationId, Symbol, Timestamp DESC)` und
    `AssetPriceHistory (Symbol, Currency, Date DESC)`. Beim Umbau auf D2 wird der
    PK `(IntegrationId, AssetId, Date)` das größtenteils erledigen.
-4. **`AsNoTracking()`** für alle Lese-Queries (Aggregation trackt aktuell
+3. **`AsNoTracking()`** für alle Lese-Queries (Aggregation trackt aktuell
    tausende Entities völlig umsonst).
 
 **Bewusst NICHT empfohlen:** Vorberechnete Tageswerte (Materialisierung von
@@ -140,23 +139,22 @@ viele Nutzer zusammenkommen.
 
 <a id="basiswaehrung"></a>
 
-- Die Basiswährung „chf" ist an mindestens vier Stellen hartkodiert
-  (`ApiHelper.cs:39`, `CryptoTrackerAssetLogic.cs:161`, `AssetController.cs:90,163`)
-  und einmal im Frontend als Anzeige-Literal (`+page.svelte:52` u. a.).
-  → Config-Wert `baseCurrency`, vom Backend über einen Endpoint/Claim ans
-  Frontend gereicht. Casing-Problem siehe [Bug 3](01-kritische-bugs.md#bug-3).
+- ~~Basiswährung hartkodiert~~ ✅ erledigt 2026-07-09: `basecurrency` aus der
+  Config, Frontend liest sie über `GET /api/config`.
 - `AssetPriceHistory.Currency` im PK suggeriert Multi-Währungs-Fähigkeit, die
-  nirgends existiert (und `GetAsset` ignoriert die Spalte, [Bug 8](01-kritische-bugs.md)).
-  Entweder die Spalte konsequent nutzen (Preis-Abfragen immer mit Currency-Filter,
-  Umrechnung als Feature) oder sie entfernen und *eine* Basiswährung pro
-  Installation festschreiben. **Empfehlung: Letzteres** — Umrechnung bei Bedarf
-  über Fiat-Kurse zur Anzeigezeit, nicht über parallele Preisreihen.
+  nirgends existiert (die Abfragen filtern seit Bug 8 immerhin konsequent auf
+  die Basiswährung). Entweder die Spalte konsequent nutzen (Umrechnung als
+  Feature) oder sie entfernen und *eine* Basiswährung pro Installation
+  festschreiben. **Empfehlung: Letzteres** — Umrechnung bei Bedarf über
+  Fiat-Kurse zur Anzeigezeit, nicht über parallele Preisreihen. Achtung:
+  Währungswechsel auf bestehender Installation invalidiert die Preishistorie
+  (keine Umrechnung implementiert).
 - **Rückwirkende Preise fehlen:** Ein heute angelegtes Asset hat nur ab heute
   Preise; historische Bestände davor werden mit Preis 0 bewertet (stille Nullen,
   `ApiHelper.cs:83`). CoinGecko (`/market_chart`) und Frankfurter (`/v1/{date}`)
   liefern Historie — ein Backfill-Job beim Anlegen eines Assets wäre ein großer
   Qualitätsgewinn und würde auch die Altdaten-Migration von
-  [Bug 1](01-kritische-bugs.md#bug-1) erledigen.
+  [Bug 1](01-kritische-bugs.md) erledigen.
 - Preis 0 als Fallback ist gefährlich unsichtbar: Ein Asset ohne Preiszeile
   drückt den Portfoliowert still. Die API sollte „Preis unbekannt" von
   „Preis = 0" unterscheiden (nullable Price im DTO + UI-Hinweis).

@@ -4,31 +4,24 @@ Ergänzend zu den strukturellen Punkten in [04-architektur.md](04-architektur.md
 hier die handwerklichen Themen, jeweils mit Fundstelle.
 
 <a id="fehlerbehandlung"></a>
-## Q1 — Fehlerbehandlung: generische Exceptions als Kontrollfluss 🟠
+## Q1 — Fehlerbehandlung: Exceptions ohne Status-Mapping 🟠
 
-Controller werfen durchgängig `throw new Exception("Asset not found")`
-(`AssetController.cs:83,125,135,201,216`, `MeasuringController.cs:39,41,45`,
-`IntegrationController.cs:51` — dort sogar mit deutschem Text im API-Fehler).
-Ergebnis: alles wird zum 500er, der Client kann Fehlerarten nicht unterscheiden,
-und Swagger dokumentiert nur 200.
+> **Teilstatus 2026-07-10:** Die Services werfen inzwischen typisiert und
+> englisch (`KeyNotFoundException` für „nicht gefunden",
+> `InvalidOperationException` für fachliche Konflikte) — aber ohne Middleware
+> enden weiterhin alle als 500er.
 
-**Empfehlung:**
+**Empfehlung (Rest):**
 
 - Exception-Middleware + `ProblemDetails` (`AddProblemDetails()` ist in .NET 10
-  Standardkost); fachliche Fehler als typisierte Exceptions (`NotFoundException`
-  → 404, `ValidationException` → 400) oder Result-Pattern im Service-Layer.
+  Standardkost); `KeyNotFoundException` → 404, `InvalidOperationException` → 400/409.
 - Rückgabetypen ehrlich machen: `Task<bool>`, das nie `false` zurückgibt
   (`AddAsset`, `DeleteAsset`, `SetVisibilityForSymbol`, …) → `ActionResult` mit
   201/204/404. `GetIntegrationDetails` gibt bei unbekannter Id `null` → 200 mit
-  leerem Body statt 404 (`IntegrationController.cs:39`).
+  leerem Body statt 404.
 
 ## Q2 — Async/EF-Hygiene 🟠
 
-- `IntegrationController.GetIntegrations` und `MeasuringController.
-  GetMeasuringsByIntegration` sind synchron und materialisieren mit
-  LINQ-to-Objects (`.Select(IntegrationDto.FromModel)` auf dem DbSet zieht die
-  ganze Tabelle client-seitig). → `await …
-  .Select(x => new IntegrationDto{…}).ToListAsync()`.
 - Keine einzige Query nutzt `AsNoTracking()`; die Aggregation trackt tausende
   Entities (siehe [03/D3](03-datenmodell-und-aggregation.md)).
 - **Kein `CancellationToken` im gesamten Backend** — weder in Controllern noch
@@ -37,19 +30,16 @@ und Swagger dokumentiert nur 200.
   blockiert der Shutdown.
 - `db.AssetMeasurings.AddAsync(...)`: `AddAsync` ist nur für ValueGenerators
   nötig; `Add` reicht — Mikropunkt, aber überall.
-- `UpdateService.AddMeasuring` sucht die Integration **pro Balance** erneut in
-  der DB (`FirstOrDefaultAsync` je Aufruf in einer Schleife über alle Balances,
-  `UpdateService.cs:102`) — einmal vor der Schleife auflösen.
-- `Program.cs:93`: `LogTo(Console.WriteLine)` umgeht das Logging-Framework
+- `Program.cs`: `LogTo(Console.WriteLine)` umgeht das Logging-Framework
   (doppelte Ausgabe zu `AddFilter("Microsoft.EntityFrameworkCore", Warning)`).
 
 ## Q3 — HTTP-Aufrufe: keine Timeouts, kein Retry, kein Rate-Limit-Umgang 🟠
 
-- CoinGecko free tier: ~5–15 req/min. `GetCoinList` (unpaginiert, ~2 MB JSON)
-  und `GetCoinData` werden ohne Backoff aufgerufen; bei 429 wird nur geloggt
-  und leer zurückgegeben. Der `UpdateService` läuft dann mit leeren Metadaten
-  weiter — Preise des Tages fehlen einfach.
-- `GetCoinData` baut **alle** externen Ids in eine URL (`CryptoTrackerLogic.cs:438`)
+- CoinGecko free tier: ~5–15 req/min. Listing (unpaginiert, ~2 MB JSON, seit
+  Bug 9 immerhin 24h gecacht) und Quotes werden ohne Backoff aufgerufen; bei
+  429 **wirft** der Provider inzwischen (statt still leer) → der Metadaten-Lauf
+  der Runde fällt aus. Retry/Backoff fehlt weiterhin.
+- `CoingeckoPriceProvider.GetQuotesAsync` baut **alle** externen Ids in eine URL
   — bei vielen Assets drohen URL-Längen-Limits und CoinGecko paginiert die
   Antwort (per_page Default 100) — mehr als 100 Assets liefern still unvollständige
   Preise. Chunking einbauen.
@@ -59,27 +49,22 @@ und Swagger dokumentiert nur 200.
 - JSON-Parsing durchweg mit manuellem `JsonElement.GetProperty` — wirft
   `KeyNotFoundException` bei API-Änderungen. DTOs mit `JsonPropertyName`
   (wie bei den Bitpanda-Modellen schon vorhanden) konsequent nutzen.
-- `decimal.TryParse(balance, …)` in `GetRippleAvailableBalances:214` ohne
+- `decimal.TryParse(balance, …)` im `RippleIntegrationProvider` ohne
   `CultureInfo.InvariantCulture` — auf Systemen mit `,`-Dezimaltrenner falsch.
 
 ## Q4 — Naming, toter Code, Kleinkram 🟡
 
+Die meisten Punkte dieser Liste sind mit A1–A6 erledigt (Renames, tote
+Codepfade, Logger-Kategorien, ungenutzte Injektionen, Message-Templates in den
+Services — siehe [04](04-architektur.md)). Übrig:
+
 | Fundstelle | Punkt |
 |---|---|
-| `AssetMeasuringDto.cs:78` | `IntegrationShit` → `IntegrationAmount`; ist Teil des generierten TS-Clients |
-| `AssetMeasuringDto.cs:26` | `MessungDto` → `AssetHoldingDto` (API-weit deutsch/englisch gemischt) |
-| `HttpClientExtensionMethods.cs:1` | Namespace `ImmichFrame.Core.Helpers` aus fremdem Projekt |
-| `CryptoTrackerLogic.cs:52–53` | Auskommentierter Code (Bitpanda-Portfolio) |
-| `CryptoTrackerLogic.cs:142–201` | Cardano: `throw NotImplementedException` mit unerreichbarem Code dahinter |
-| `AlphaVantageStockLogic.cs` | Toter Code (nie registriert); `TwelveDataSharp`-Package ungenutzt |
-| `cryptotracker.worker/` | ~~Legacy-Duplikat der Import-Logik → löschen~~ ✅ erledigt 2026-07-09 |
-| `AssetController.cs:119` | `}; ;` Doppel-Semikolon; `AssetController.cs:165` `= null; ;` |
-| `AssetController.cs:15` | `ILogger<CryptoTrackerController>` in fremden Controllern (Copy-Paste; auch Integration/Measuring) |
-| `MeasuringController.cs:19` | `_cryptoTrackerLogic` injiziert und nie benutzt (auch IntegrationController) |
+| `BitpandaIntegrationProvider.cs` | Auskommentierter Code (Bitpanda-Portfolio-Endpoint) — nutzen oder löschen |
 | `Asset.cs:17` | `AssetType`-Enum: `[Description]`-Attribute werden nirgends gelesen |
-| `Program.cs:225` | Kommentar „apply apply migrations" |
-| Logging durchweg | String-Interpolation (`$"…"`) statt strukturierter Templates — AuthController macht es richtig vor |
-| `FiatLogic.cs:48` | Vergleich `fiatSymbols == baseCurrency.ToLower()` funktioniert nur, wenn genau eine Währung angefragt wurde — fragile Kurzschluss-Logik |
+| `Program.cs` | Kommentar „apply apply migrations" |
+| Preis-/Integration-Provider | Logging teils noch String-Interpolation (`$"…"`) statt strukturierter Templates (Frankfurter, Yahoo) |
+| `FrankfurterCurrencyPriceProvider.cs:83` | Vergleich `externalIdsQuery == baseCurrency.ToLower()` funktioniert nur, wenn genau eine Währung angefragt wurde — fragile Kurzschluss-Logik |
 | `CryptoTrackerConfig` | `Interval` ohne Validierung: `interval: 0` → `TimeSpan.Zero` → `PeriodicTimer`-Exception beim Start |
 
 ## Q5 — `UpdateService`-Verhalten hinterfragt 🟡
@@ -105,6 +90,7 @@ und Swagger dokumentiert nur 200.
   fällt erst zur Laufzeit auf. Besser: Swagger-JSON im Build erzeugen
   (`dotnet swagger tofile` oder `Microsoft.Extensions.ApiDescription.Server`)
   und den TS-Client in CI auf Aktualität prüfen.
-- Controller-Rückgaben wie `Task<List<Asset>>` (EF-Entity) und structs mit
-  öffentlichen Settern erzeugen schwache OpenAPI-Schemata (alles nullable/optional).
-  Mit DTOs + `[ProducesResponseType]` wird der generierte Client deutlich besser.
+- ~~EF-Entities als Controller-Rückgaben~~ ✅ erledigt 2026-07-10 (`AssetDto`).
+  Offen: structs mit öffentlichen Settern erzeugen weiter schwache
+  OpenAPI-Schemata (alles nullable/optional) — `[ProducesResponseType]` und
+  `required`-Properties würden den generierten Client verbessern.

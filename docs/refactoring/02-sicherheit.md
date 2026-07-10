@@ -1,57 +1,24 @@
 # Sicherheit
 
-## S1 — Offene Registrierung auf einem gemeinsamen Portfolio 🔴
+Stand 2026-07-10: S1 ist entschärft, S2 vollständig erledigt (siehe
+Kurzprotokoll unten). Offen sind die Grundsatzfrage aus S1 sowie S3–S7.
 
-> **Status 2026-07-09: entschärft.** First-User-Setup umgesetzt: Registrierung ist
-> offen, solange kein User existiert, danach zu (Override: `auth.allowregistration`).
-> OIDC-Auto-Provisioning bleibt bewusst an (Jans Entscheidung — eigener IdP,
-> bestehende Accounts sollen sich anmelden können), ist aber per
-> `oidc.autoprovision: false` abschaltbar. Status-Endpoint
-> `GET /api/auth/registration-enabled` vorhanden (aktuell ohne UI-Nutzung).
-> Die Grundsatzfrage Single- vs. Multi-Tenant bleibt offen (Phase 3+).
+## S1 — Grundsatzfrage: Single- oder Multi-Tenant 🟠
 
-**Befund:** `AuthController.Register` (`AuthController.cs:84`) ist anonym erreichbar.
-Gleichzeitig gibt es **keine Datenhoheit**: `Asset`, `ExchangeIntegration` und
-`AssetMeasuring` haben keinen Bezug zu einem Benutzer. Jeder, der den Server
-erreicht, kann sich registrieren und sieht sofort das komplette Portfolio inkl.
-aller Bestände und Integrationsnamen — und kann Assets löschen/verstecken und
-manuelle Messungen anlegen.
+Die akute Schwachstelle (offene Registrierung auf einem gemeinsamen Portfolio)
+ist seit 2026-07-09 entschärft: First-User-Setup (Registrierung offen, solange
+kein User existiert, danach zu; Override `auth.allowregistration`),
+OIDC-Auto-Provisioning bewusst an (eigener IdP), per `oidc.autoprovision: false`
+abschaltbar.
 
-Für einen Self-Hosted-Tracker hinter VPN mag das akzeptabel sein, aber das README
-bewirbt öffentliches Docker-Deployment. Das ist die größte einzelne Schwachstelle.
-
-**Empfehlung (gestaffelt):**
-
-1. **Sofort:** Config-Flag `auth.allowRegistration` (Default: `false`, sobald
-   mindestens ein Benutzer existiert — „First-User-Setup"-Muster). OIDC-Auto-
-   Provisionierung (`Program.cs:180`) separat schaltbar machen
-   (`oidc.autoProvision`), denn auch dort legt jedes gültige OIDC-Konto einen
-   User an.
-2. **Grundsatzentscheidung:** Ist CryptoTracker Single-Tenant (ein Portfolio,
-   mehrere gleichberechtigte Logins) oder Multi-User? Beides ist legitim —
-   aber es sollte eine dokumentierte Entscheidung sein. Multi-User bedeutet
-   `UserId` auf Integrationen (und damit transitiv auf Messungen), Filterung in
-   jeder Query, Migration der Bestandsdaten. Aufwand ≈ 3–5 PT, am besten
-   zusammen mit dem Datenmodell-Umbau ([03](03-datenmodell-und-aggregation.md)).
-
-## S2 — Kein Lockout / Rate-Limit beim Login 🟠
-
-> **Status 2026-07-09: Lockout umgesetzt** via `CheckPasswordSignInAsync(...,
-> lockoutOnFailure: true)` (Identity-Defaults: 5 Versuche, 5 Minuten Sperre).
-> **Update 2026-07-10: Rate-Limiting umgesetzt** — `AddRateLimiter` mit Policy
-> „auth" (Fixed Window, 10 Requests/Minute pro Client-IP, 429 bei Überschreitung)
-> auf `POST /api/Auth/login` und `POST /api/Auth/register`; unkritische
-> GET-Endpoints (`me`, `oidc-enabled`, …) bewusst unlimitiert. Hinter einem
-> Reverse Proxy ohne X-Forwarded-For teilen sich alle Clients die Proxy-IP —
-> das macht das Limit strenger, nicht schwächer. Live verifiziert (10× 401,
-> dann 429). S2 damit vollständig erledigt.
-
-`AuthController.Login` benutzt `CheckPasswordAsync` direkt — das umgeht die
-Lockout-Zählung von ASP.NET Identity komplett. Brute-Force ist unbegrenzt möglich.
-
-**Fix:** `SignInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true)`
-verwenden und Identity-Lockout-Optionen konfigurieren. Zusätzlich ASP.NET
-Rate-Limiting-Middleware auf `/api/auth/*`.
+**Offen bleibt die Grundsatzentscheidung:** Ist CryptoTracker Single-Tenant
+(ein Portfolio, mehrere gleichberechtigte Logins) oder Multi-User? `Asset`,
+`ExchangeIntegration` und `AssetMeasuring` haben keinen Bezug zu einem Benutzer —
+jeder Login sieht und verwaltet alles. Beides ist legitim, sollte aber eine
+dokumentierte Entscheidung sein. Multi-User bedeutet `UserId` auf Integrationen
+(transitiv auf Messungen), Filterung in jeder Query, Migration der Bestandsdaten;
+Aufwand ≈ 3–5 PT, am besten zusammen mit dem Datenmodell-Umbau
+([03](03-datenmodell-und-aggregation.md)).
 
 ## S3 — Exchange-Secrets im Klartext in `config.yml` 🟠
 
@@ -63,12 +30,15 @@ Risiken: Backups, Docker-Volumes und `docker inspect`-fähige Bind-Mounts
 enthalten die Keys; die Datei wird beim Start komplett eingelesen und die
 Secrets leben in einem Singleton.
 
-**Empfehlung:** Zusammen mit dem Umzug der Integrationen in die DB
-([04 → A3](04-architektur.md#a3)) die Secrets mit ASP.NET Data Protection
-verschlüsseln (Key-Ring auf Volume). Mindestens aber: Env-Var-Substitution in der
-Config unterstützen (`secret: ${COINBASE_SECRET}`), damit Secrets über den
-Orchestrator injiziert werden können. Wichtig: Exchange-Keys als **read-only**
-anlegen dokumentieren (README erwähnt das nicht).
+**Teilweise entschärft durch A5 (2026-07-10):** Secrets können jetzt per
+Env-Var injiziert werden (`CRYPTOTRACKER_AUTH__SECRET`,
+`CRYPTOTRACKER_INTEGRATIONS__0__SECRET`, …) — die Datei kann secrets-frei
+bleiben, der Orchestrator liefert die Werte.
+
+**Verbleibend:** Zusammen mit dem Umzug der Integrationen in die DB
+([03/D5](03-datenmodell-und-aggregation.md)) die Secrets mit ASP.NET Data
+Protection verschlüsseln (Key-Ring auf Volume). Außerdem: Exchange-Keys als
+**read-only** anlegen im README dokumentieren.
 
 ## S4 — JWT-Details 🟡
 
@@ -89,33 +59,44 @@ anlegen dokumentieren (README erwähnt das nicht).
 
 ## S5 — ForwardedHeaders ohne KnownProxies 🟡
 
-`Program.cs:217` akzeptiert `X-Forwarded-Host/-Proto` von **jedem** Client
+`Program.cs` akzeptiert `X-Forwarded-Host/-Proto` von **jedem** Client
 (Default `KnownProxies`/`KnownNetworks` werden nicht gesetzt, aber
 `UseForwardedHeaders` mit expliziten Options überschreibt die Defaults, die
 sonst nur Loopback erlauben — prüfen!). Ein Client kann damit Scheme/Host
 spoofen, was in den JWT-Issuer (`GetIssuer`) und das `Secure`-Flag des Cookies
 einfließt. `KnownNetworks`/`KnownProxies` konfigurieren oder Middleware nur
-aktivieren, wenn ein Proxy konfiguriert ist.
+aktivieren, wenn ein Proxy konfiguriert ist. Betrifft auch das
+IP-basierte Rate-Limiting (S2): ohne `X-Forwarded-For` teilen sich alle
+Clients hinter dem Proxy einen Bucket (strenger, nicht schwächer).
 
 ## S6 — Externe Dienste erhalten Wallet-Adressen und XPUBs 🟡
 
 Für BTC/ETH/XRP werden Adressen bzw. **XPUB/ZPUB** (daraus sind *alle* Adressen
 der Wallet ableitbar!) an blockchain.info, ethplorer.io (mit `freekey`) und
-xrpscan.com gesendet (`CryptoTrackerLogic.cs:257,226,204`). Das ist funktional
-notwendig, sollte aber im README als Privacy-Tradeoff dokumentiert werden;
-optional eigene Node/anderer Provider konfigurierbar.
+xrpscan.com gesendet (`Bitcoin`/`Ethereum`/`RippleIntegrationProvider`). Das ist
+funktional notwendig, sollte aber im README als Privacy-Tradeoff dokumentiert
+werden; optional eigene Node/anderer Provider konfigurierbar.
 
 ## S7 — Fehler-Antworten leaken Interna 🟡
 
-Controller werfen generische `Exception`s („Asset not found", aber auch EF-Fehler),
-die als 500 mit Stacktrace (Dev) bzw. nichtssagend (Prod) enden. Einheitliche
-Fehler-Middleware mit ProblemDetails einführen; fachliche Fehler als 4xx.
-Details in [05](05-backend-codequalitaet.md#fehlerbehandlung).
+Die Services werfen inzwischen typisiert (`KeyNotFoundException`,
+`InvalidOperationException` mit englischen Meldungen), aber ohne
+Exception-Middleware enden weiterhin alle als 500 (mit Stacktrace in Dev).
+Einheitliche Fehler-Middleware mit ProblemDetails einführen; fachliche Fehler
+als 4xx mappen. Details in [05/Q1](05-backend-codequalitaet.md#fehlerbehandlung).
+
+## Erledigt (Kurzprotokoll)
+
+- **S2 — Lockout & Rate-Limiting:** Lockout via `CheckPasswordSignInAsync(...,
+  lockoutOnFailure: true)` (2026-07-09); Rate-Limiting via `AddRateLimiter`,
+  Policy „auth" (Fixed Window, 10 Req/min pro Client-IP, 429) auf
+  `login`/`register`, live verifiziert (2026-07-10).
 
 ## Positiv
 
 - `config.yml` ist gitignored; keine Secrets in der Git-Historie gefunden
   (`git log -- config/config.yml` leer).
-- JWT-Secret-Mindestlänge wird erzwungen (`Program.cs:104`).
+- JWT-Secret-Mindestlänge wird erzwungen.
 - Swagger nur in Development.
 - Docker-Container läuft als Non-Root (`APP_UID`).
+- Auth-Endpoints (`login`/`register`) sind rate-limitiert.

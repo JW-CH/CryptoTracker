@@ -8,13 +8,10 @@ Backend, aber einige betreffen Korrektheit.
 
 `src/routes/+page.svelte`:
 
-- `assets` ist ein plain `Set` (Zeile 9), wird aber im Template während des
-  Renderns mutiert: `{#each …}{AddAsset(stat.asset.symbol)}{/each}` (Zeile 95–97).
-  Seiteneffekte im Markup sind ein Anti-Pattern; beim Wechsel von `selectedRange`
-  wird das Set nicht geleert und akkumuliert Symbole über Abfragen hinweg.
-  → Symbolliste als `$derived` aus den Response-Daten berechnen
-  (`[...new Set(Object.values(data).flat().map(m => m.asset.symbol))]`).
-- `summarize` (Zeile 10) ist als Toggle gedacht, aber weder `$state` noch je
+- ~~Set-Mutation im `{#each}`-Template~~ ✅ behoben 2026-07-10
+  ([Bug 10](01-kritische-bugs.md)): Symbolliste wird pur aus den Response-Daten
+  berechnet (`UniqueSymbols`).
+- `summarize` ist als Toggle gedacht, aber weder `$state` noch je
   verändert — toter Schalter.
 - `TrimMeasurings` wird pro Chart zweimal aufgerufen (Labels + Values, Zeile 70–71)
   und **sortiert das Array in place** (`data.sort`) — einmal berechnen, Ergebnis
@@ -78,7 +75,7 @@ Self-Hosted-Projekt mit GitHub-Publikum: **englische Default-UI** empfohlen.
 
 - `report/+page.svelte` filtert `isHidden` client-seitig (Zeile 44), obwohl der
   Endpoint versteckte Assets bereits ausschließt — doppelte Logik, eine Quelle wählen.
-- `data: api.MessungDto[] | null` ohne Initialisierung (`undefined` ≠ `null`,
+- `data: api.AssetHoldingDto[] | null` ohne Initialisierung (`undefined` ≠ `null`,
   TS-Strictness prüfen); mit SvelteKit-Load-Funktionen (`+page.ts`) statt
   `onMount`-Fetches bekäme man Typen, SSR-Fähigkeit und Ladezustände geschenkt —
   aktuell wird durchgängig das `onMount`/`{#await}`-Muster verwendet, was mit

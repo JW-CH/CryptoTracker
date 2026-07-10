@@ -1,6 +1,9 @@
 # Refactoring-Plan CryptoTracker
 
-Stand: 2026-07-09. Basis: Commit `fb1c4d3` auf `main`.
+Stand: 2026-07-09 (Bestandsaufnahme, Basis Commit `fb1c4d3`),
+aktualisiert 2026-07-10. Erledigte Punkte werden aus den Dokumenten entfernt
+bzw. als Kurzprotokoll geführt — die ursprünglichen Befunde stehen in der
+Git-Historie.
 
 Dieses Verzeichnis dokumentiert eine vollständige Bestandsaufnahme des Projekts mit
 konkreten Befunden, hinterfragten Design-Entscheidungen und Verbesserungsvorschlägen.
@@ -30,70 +33,52 @@ Jedes Dokument ist so geschrieben, dass die Punkte später einzeln abgearbeitet 
 - Multi-Stage-Dockerfile mit Non-Root-User.
 - JWT + optionales OIDC mit sinnvollen Defaults.
 
-**Die fünf größten Baustellen (Details in den verlinkten Dokumenten):**
+**Die fünf größten Baustellen der Bestandsaufnahme — alle behoben:**
 
-1. **Fiat-Bewertung ist invertiert** — EUR/USD-Bestände werden mit dem falschen
-   Wechselkurs bewertet (Faktor ~1.18 bzw. ~1.53 zu hoch). Bestätigt gegen die
-   Frankfurter-API. → [01, Bug 1](01-kritische-bugs.md#bug-1)
-2. **Verkaufte Assets zählen ewig weiter** — das Forward-Fill in `ApiHelper` trägt
-   den letzten bekannten Bestand unbegrenzt fort; Exchanges melden aber nur
-   Balances > 0. Wer alles verkauft, sieht den Bestand trotzdem für immer.
-   → [01, Bug 2](01-kritische-bugs.md#bug-2) und [03](03-datenmodell-und-aggregation.md)
-3. **Jeder kann sich registrieren und sieht das gesamte Portfolio** — es gibt
-   keine Datenhoheit pro Benutzer und keinen Schalter, Registrierung zu deaktivieren.
-   → [02](02-sicherheit.md)
-4. **Die Aggregation lädt die komplette Messhistorie in den Speicher** — die
-   Batch-Abfrage filtert nicht auf den angefragten Zeitraum; das skaliert mit der
-   Tabellengröße, nicht mit den angefragten Tagen. → [03](03-datenmodell-und-aggregation.md)
-5. **Integrations-Abrufe, die still fehlschlagen, löschen Tagesdaten** — der
-   Import löscht erst die heutigen Messungen und schreibt dann die neuen; liefert
-   die Exchange-API einen Fehler (kein Throw, nur leere Liste), bleibt der Tag leer.
-   → [01, Bug 5](01-kritische-bugs.md#bug-5)
+1. ~~Fiat-Bewertung invertiert~~ ✅ 2026-07-09 (Altdaten bewusst nicht migriert)
+2. ~~Verkaufte Assets zählen ewig weiter~~ ✅ 2026-07-09 (0-Messungen + `maxfilldays`)
+3. ~~Offene Registrierung auf gemeinsamem Portfolio~~ ✅ 2026-07-09 entschärft
+   (First-User-Setup; Grundsatzfrage Single-/Multi-Tenant weiter offen, [02](02-sicherheit.md))
+4. ~~Aggregation lädt komplette Messhistorie~~ ✅ teilweise 2026-07-09
+   (Mess-Query datumsbegrenzt; Preiszeilen-Fenster noch offen, [03/D3](03-datenmodell-und-aggregation.md))
+5. ~~Fehlgeschlagene Abrufe löschen Tagesdaten~~ ✅ 2026-07-09 (fetch-before-delete, Fehler-Isolation)
 
 ## Empfohlene Reihenfolge (Roadmap)
 
 Die Phasen sind so geschnitten, dass jede für sich mergebar ist und die späteren
 Phasen auf den früheren aufbauen. Grobe Aufwandsschätzung in Personentagen (PT).
 
-### Phase 1 — Korrektheit (≈ 3–5 PT)
-Falsche Zahlen sind für einen Portfolio-Tracker das schlimmste Problem.
+### Phase 1 — Korrektheit ✅ (bis auf Bug 6)
+- ~~Bugs 1–5~~ ✅ erledigt 2026-07-09/10
+- **Offen: UTC/Lokalzeit-Konsistenz (Bug 6)** — der letzte große Block,
+  zusammen mit Phase 3 angehen
 
-- Fiat-Kursrichtung fixen (Bug 1)
-- Forward-Fill begrenzen / Null-Bestände schreiben (Bug 2)
-- Währungs-Casing vereinheitlichen (Bug 3)
-- AssetType-Erkennung beim Import (Bug 4)
-- Import-Fehlerbehandlung: keine Löschung ohne erfolgreichen Abruf (Bug 5)
-- UTC/Lokalzeit-Konsistenz herstellen (Bug 6)
+### Phase 2 — Sicherheit ✅ (bis auf Grundsatzfrage)
+- ~~First-User-Setup, Lockout, Rate-Limiting~~ ✅ erledigt 2026-07-09/10
+- **Offen: Entscheidung dokumentieren** — Single-Tenant oder Multi-User ([02/S1](02-sicherheit.md))
 
-### Phase 2 — Sicherheit (≈ 2–3 PT)
-- Registrierung per Config abschaltbar machen (Default: aus, wenn schon ein User existiert)
-- Login-Härtung (Lockout, Rate-Limiting)
-- Entscheidung dokumentieren: Single-Tenant (ein Portfolio, mehrere Logins) oder Multi-User
-
-### Phase 3 — Datenmodell & Aggregation (≈ 5–8 PT)
+### Phase 3 — Datenmodell & Aggregation (≈ 5–8 PT) — OFFEN
 - `AssetMeasuring` auf Tages-Snapshot mit natürlichem Schlüssel `(IntegrationId, Symbol, Date)` umstellen
-- Aggregation auf datumsbereichs-beschränkte Abfragen umbauen, Indexe ergänzen
-- `TimeProvider` einführen (testbare Zeit), Basiswährung konfigurierbar machen
+- Preiszeilen-Abfrage datumsbegrenzen, Indexe ergänzen (Mess-Query ist schon begrenzt)
+- `TimeProvider` einführen (testbare Zeit, Bug 6); ~~Basiswährung konfigurierbar~~ ✅
 
-### Phase 4 — Architektur (≈ 5–8 PT)
-- Integration-Provider-Pattern statt `switch` (eine Klasse pro Exchange)
-- Service-Schicht zwischen Controller und EF; DTOs raus aus dem database-Projekt
-- Preis-Provider vereinheitlichen (`IPriceProvider` pro AssetType)
-- ~~`cryptotracker.worker` löschen~~ (✅ erledigt 2026-07-09), tote Codepfade entfernen
+### Phase 4 — Architektur ✅
+- ~~Integration-Provider-Pattern, Service-Schicht, DTO-Umzug, Preis-Provider,
+  Config via IConfiguration, tote Codepfade~~ ✅ erledigt 2026-07-09/10
+  (Kurzprotokoll in [04](04-architektur.md); Rest: Exchange-SDK-DI)
 
-### Phase 5 — Robustheit & Code-Qualität (≈ 3–5 PT)
-- `IHttpClientFactory` überall, Retry/Rate-Limit (CoinGecko!), TTL-Caches
-- Fehler-Middleware mit ProblemDetails statt generischer Exceptions
-- CancellationTokens durchreichen, Naming-Bereinigung (`MessungDto`, `IntegrationShit`, …)
+### Phase 5 — Robustheit & Code-Qualität (≈ 2–3 PT) — TEILWEISE
+- ~~`IHttpClientFactory` in eigenen HTTP-Aufrufen, TTL-Caches, Naming~~ ✅
+- **Offen:** Retry/Backoff + Chunking (CoinGecko), Timeouts,
+  Fehler-Middleware mit ProblemDetails, CancellationTokens ([05](05-backend-codequalitaet.md))
 
-### Phase 6 — Frontend (≈ 2–4 PT)
-- Svelte-5-Reaktivität fixen (`$state`, Seiteneffekte im Template)
-- Zentrale Formatierungs-Helper, Fehlerbehandlung, Sprach-Entscheidung (de/en)
+### Phase 6 — Frontend (≈ 2–4 PT) — TEILWEISE
+- ~~Seiteneffekt im Template (Bug 10)~~ ✅ 2026-07-10
+- **Offen:** zentrale Formatierungs-Helper, Auth-Handling/401, Sprach-Entscheidung (de/en) ([06](06-frontend.md))
 
-### Phase 7 — Testing & CI (≈ 3–5 PT)
-- Aggregationslogik testen (der komplexeste Code hat null Tests)
-- Testcontainers statt InMemory für DB-nahe Tests
-- GitHub Actions: Build, Test, Lint, Docker-Push
+### Phase 7 — Testing & CI (≈ 2–3 PT) — TEILWEISE
+- ~~Aggregations-, Provider-, Service- und Import-Tests~~ ✅ (71 Tests, [07/T1](07-testing-und-devops.md))
+- **Offen:** Auth-Tests, Testcontainers statt InMemory, GitHub Actions (Build, Test, Lint, Docker-Push)
 
 ## Leitfragen, die vor Phase 3/4 beantwortet werden sollten
 
