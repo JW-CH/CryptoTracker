@@ -1,59 +1,63 @@
 using System.Text.Json;
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace cryptotracker.core.Logic.CryptoPriceProviders;
 
 public class CoingeckoPriceProvider : IPriceProvider
 {
-    private ILogger _logger;
+    private const string CoinListCacheKey = "coingecko:coins";
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
-    public CoingeckoPriceProvider(ILogger logger)
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMemoryCache _cache;
+
+    public CoingeckoPriceProvider(IHttpClientFactory httpClientFactory, IMemoryCache cache)
     {
-        _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _cache = cache;
     }
 
     public IEnumerable<AssetType> Handles => new[] { AssetType.Crypto };
 
-    private List<ProviderAsset>? _assetList;
     public async Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
     {
-        if (_assetList != null) return _assetList;
-
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
-        var url = "https://api.coingecko.com/api/v3/coins/list";
-        var response = await client.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
+        // failures throw, so only successful responses end up in the cache
+        return await _cache.GetOrCreateAsync(CoinListCacheKey, async entry =>
         {
-            throw new Exception($"Failed to fetch Coin list: {response.StatusCode}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}");
-        }
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
 
-        var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
+            using var client = CreateClient();
+            var url = "https://api.coingecko.com/api/v3/coins/list";
+            var response = await client.GetAsync(url);
 
-        if (data == null)
-        {
-            throw new Exception($"Failed to fetch Coin list: No coins were returned");
-        }
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Failed to fetch Coin list: {response.StatusCode}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}");
+            }
 
-        _assetList = data.Select(x => new ProviderAsset
-        {
-            ExternalId = x.GetProperty("id").GetString() ?? "",
-            Name = x.GetProperty("name").GetString() ?? "",
-            Symbol = x.GetProperty("symbol").GetString() ?? ""
-        }).ToList();
+            var data = JsonSerializer.Deserialize<List<JsonElement>>(await response.Content.ReadAsStringAsync());
 
-        return _assetList;
+            if (data == null)
+            {
+                throw new Exception($"Failed to fetch Coin list: No coins were returned");
+            }
+
+            return data.Select(x => new ProviderAsset
+            {
+                ExternalId = x.GetProperty("id").GetString() ?? "",
+                Name = x.GetProperty("name").GetString() ?? "",
+                Symbol = x.GetProperty("symbol").GetString() ?? ""
+            }).ToList();
+        }) ?? new List<ProviderAsset>();
     }
 
     public async Task<IEnumerable<AssetMetadata>> GetQuotesAsync(string baseCurrency, IEnumerable<string> externalIds)
     {
         var result = new List<AssetMetadata>();
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
+        using var client = CreateClient();
         string apiUrl = $"https://api.coingecko.com/api/v3/coins/markets?vs_currency={baseCurrency}&ids={string.Join(",", externalIds)}";
 
         var response = await client.GetAsync(apiUrl);
@@ -91,5 +95,12 @@ public class CoingeckoPriceProvider : IPriceProvider
         }
 
         return result;
+    }
+
+    private HttpClient CreateClient()
+    {
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("User-Agent", "cryptotracker");
+        return client;
     }
 }

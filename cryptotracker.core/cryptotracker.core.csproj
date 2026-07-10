@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="CardanoSharp.Wallet" />
     <PackageReference Include="CryptoClients.Net" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
     <PackageReference Include="NBitcoin" />
     <PackageReference Include="YahooFinanceApi" />
     <PackageReference Include="YamlDotNet" />

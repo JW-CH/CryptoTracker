@@ -1,9 +1,7 @@
 using System.Net;
-using System.Text;
-using System.Text.Json;
 using cryptotracker.core.Logic.CurrencyPriceProviders;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 
 namespace cryptotracker.core.tests.Logic;
 
@@ -24,11 +22,18 @@ public class FrankfurterCurrencyPriceProviderTest
     };
 
     private FrankfurterCurrencyPriceProvider _provider;
+    private FakeHttpMessageHandler _handler;
 
     [SetUp]
     public void Setup()
     {
-        _provider = CreateProvider(RatesForRequest);
+        (_provider, _handler) = CreateProvider(RatesForRequest);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        _handler?.Dispose();
     }
 
     [Test]
@@ -67,11 +72,23 @@ public class FrankfurterCurrencyPriceProviderTest
     [Test]
     public async Task GetQuotesAsync_InvalidRate_IsSkipped()
     {
-        var provider = CreateProvider(_ => new Dictionary<string, decimal> { ["EUR"] = 0m });
+        var (provider, _) = CreateProvider(_ => new Dictionary<string, decimal> { ["EUR"] = 0m });
 
         var result = await provider.GetQuotesAsync("chf", new List<string> { "eur" });
 
         Assert.That(result, Is.Empty);
+    }
+
+    [Test]
+    public void GetQuotesAsync_ApiError_Throws()
+    {
+        var handler = new FakeHttpMessageHandler(request =>
+            request.RequestUri!.ToString().Contains("/currencies")
+                ? HttpTestHelpers.JsonResponse(Currencies)
+                : new HttpResponseMessage(HttpStatusCode.InternalServerError) { Content = new StringContent("") });
+        var provider = new FrankfurterCurrencyPriceProvider(NullLogger.Instance, HttpTestHelpers.FactoryFor(handler), new MemoryCache(new MemoryCacheOptions()));
+
+        Assert.ThrowsAsync<Exception>(() => provider.GetQuotesAsync("chf", new List<string> { "eur" }));
     }
 
     [Test]
@@ -84,27 +101,51 @@ public class FrankfurterCurrencyPriceProviderTest
         Assert.That(result.Single(x => x.Symbol == "EUR").ExternalId, Is.EqualTo("EUR"), "for fiat the symbol is the external id; the UI relies on it being set");
     }
 
-    private static FrankfurterCurrencyPriceProvider CreateProvider(Func<HttpRequestMessage, Dictionary<string, decimal>> rates)
+    [Test]
+    public async Task GetAssetsAsync_SecondCall_IsServedFromCache()
+    {
+        await _provider.GetAssetsAsync();
+        await _provider.GetAssetsAsync();
+
+        Assert.That(_handler.RequestCount("/currencies"), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task GetAssetsAsync_ApiError_ThrowsAndIsNotCached()
+    {
+        var failing = true;
+        var handler = new FakeHttpMessageHandler(_ =>
+            failing
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError) { Content = new StringContent("") }
+                : HttpTestHelpers.JsonResponse(Currencies));
+        var provider = new FrankfurterCurrencyPriceProvider(NullLogger.Instance, HttpTestHelpers.FactoryFor(handler), new MemoryCache(new MemoryCacheOptions()));
+
+        Assert.ThrowsAsync<Exception>(() => provider.GetAssetsAsync());
+
+        // the failure must not be cached: once the API recovers, the next call succeeds
+        failing = false;
+        var result = await provider.GetAssetsAsync();
+        Assert.That(result, Is.Not.Empty);
+    }
+
+    private static (FrankfurterCurrencyPriceProvider Provider, FakeHttpMessageHandler Handler) CreateProvider(Func<HttpRequestMessage, Dictionary<string, decimal>> rates)
     {
         var handler = new FakeHttpMessageHandler(request =>
         {
             var url = request.RequestUri!.ToString();
 
             if (url.Contains("/currencies"))
-                return JsonResponse(Currencies);
+                return HttpTestHelpers.JsonResponse(Currencies);
 
             if (url.Contains("/latest"))
-                return JsonResponse(new { amount = 1.0, @base = "CHF", rates = rates(request) });
+                return HttpTestHelpers.JsonResponse(new { amount = 1.0, @base = "CHF", rates = rates(request) });
 
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         });
 
-        var factoryMock = new Mock<IHttpClientFactory>();
-        factoryMock
-            .Setup(x => x.CreateClient(It.IsAny<string>()))
-            .Returns(() => new HttpClient(handler, disposeHandler: false));
+        var provider = new FrankfurterCurrencyPriceProvider(NullLogger.Instance, HttpTestHelpers.FactoryFor(handler), new MemoryCache(new MemoryCacheOptions()));
 
-        return new FrankfurterCurrencyPriceProvider(NullLogger.Instance, factoryMock.Object);
+        return (provider, handler);
     }
 
     // mimics frankfurter: only the currencies from the symbols query parameter are returned
@@ -117,28 +158,5 @@ public class FrankfurterCurrencyPriceProviderTest
             .Select(s => s.ToUpperInvariant())
             .Where(RatesPerChf.ContainsKey)
             .ToDictionary(s => s, s => RatesPerChf[s]);
-    }
-
-    private static HttpResponseMessage JsonResponse(object payload)
-    {
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
-        };
-    }
-
-    private class FakeHttpMessageHandler : HttpMessageHandler
-    {
-        private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
-
-        public FakeHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder)
-        {
-            _responder = responder;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(_responder(request));
-        }
     }
 }

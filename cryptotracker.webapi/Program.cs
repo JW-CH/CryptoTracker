@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -49,6 +50,7 @@ builder.Services.AddLogging(builder =>
             builder.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         });
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
 {
     return config;
@@ -64,14 +66,13 @@ builder.Services.AddSingleton<IEnumerable<IPriceProvider>>(srv =>
 {
     var list = new List<IPriceProvider>();
 
-    ILogger logger;
     var config = srv.GetRequiredService<ICryptoTrackerConfig>();
+    var httpClientFactory = srv.GetRequiredService<IHttpClientFactory>();
+    var memoryCache = srv.GetRequiredService<IMemoryCache>();
 
-    logger = srv.GetRequiredService<ILogger<YahooFinancePriceProvider>>();
-
-    var currencyPriceProvider = new FrankfurterCurrencyPriceProvider(srv.GetRequiredService<ILogger<FrankfurterCurrencyPriceProvider>>(), srv.GetRequiredService<IHttpClientFactory>());
+    var currencyPriceProvider = new FrankfurterCurrencyPriceProvider(srv.GetRequiredService<ILogger<FrankfurterCurrencyPriceProvider>>(), httpClientFactory, memoryCache);
     list.Add(currencyPriceProvider);
-    list.Add(new CoingeckoPriceProvider(srv.GetRequiredService<ILogger<CoingeckoPriceProvider>>()));
+    list.Add(new CoingeckoPriceProvider(httpClientFactory, memoryCache));
 
     if (config.StockApi.HasValue)
     {

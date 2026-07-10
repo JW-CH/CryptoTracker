@@ -255,6 +255,18 @@ Währungen unterstützt werden, ist der zurückgegebene Preis zufällig.
 
 ## Bug 9 — In-Memory-Caches ohne Ablauf in Singletons 🟡
 
+> **Status 2026-07-10: behoben.** Die Listen-Caches in `CoingeckoPriceProvider`
+> und `FrankfurterCurrencyPriceProvider` laufen jetzt über ein injiziertes
+> `IMemoryCache` (`AddMemoryCache()` in Program.cs) mit 24h-TTL. Fehlerpfade
+> werfen (Frankfurter dabei auf die CoinGecko-Linie angeglichen: keine leeren
+> Listen mehr als Fehlersignal) — dadurch landen nur erfolgreiche Antworten im
+> Cache. CoinGecko nutzt jetzt `IHttpClientFactory` statt `new HttpClient()`
+> pro Aufruf (A4-Teilfix). Abgedeckt durch `CoingeckoPriceProviderTest` (neu)
+> und `FrankfurterCurrencyPriceProviderTest` (Cache-Hit, Fehler-nicht-gecacht,
+> Throw-Pfade). Rest-Risiko: paralleler Erst-Aufruf kann doppelt laden
+> (`GetOrCreateAsync` ohne Stampede-Schutz) — gleiches Verhalten wie vorher,
+> bewusst akzeptiert.
+
 `CryptoTrackerLogic._coinList` (`CryptoTrackerLogic.cs:479`) und
 `FiatLogic._fiatList` (`FiatLogic.cs:101`) werden einmal pro Prozesslaufzeit
 gefüllt und nie invalidiert. Neu gelistete Coins werden bis zum nächsten

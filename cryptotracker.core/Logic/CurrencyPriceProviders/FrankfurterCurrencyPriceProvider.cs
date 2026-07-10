@@ -1,6 +1,7 @@
 using System.Text.Json;
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace cryptotracker.core.Logic.CurrencyPriceProviders;
@@ -8,49 +9,49 @@ namespace cryptotracker.core.Logic.CurrencyPriceProviders;
 public class FrankfurterCurrencyPriceProvider : IPriceProvider
 {
     private const string DefaultBaseUrl = "https://api.frankfurter.dev/v1";
+    private const string CurrencyListCacheKey = "frankfurter:currencies";
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
-    private ILogger _logger;
+    private readonly ILogger _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMemoryCache _cache;
     private readonly string _baseUrl;
 
-    public FrankfurterCurrencyPriceProvider(ILogger logger, IHttpClientFactory httpClientFactory, string? baseUrl = null)
+    public FrankfurterCurrencyPriceProvider(ILogger logger, IHttpClientFactory httpClientFactory, IMemoryCache cache, string? baseUrl = null)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _cache = cache;
         _baseUrl = (baseUrl ?? DefaultBaseUrl).TrimEnd('/');
     }
 
     public IEnumerable<AssetType> Handles => new[] { AssetType.Fiat };
 
-    private List<ProviderAsset>? _currencyList;
-
     public async Task<IEnumerable<ProviderAsset>> GetAssetsAsync()
     {
-        if (_currencyList != null) return _currencyList;
-
-        using var client = _httpClientFactory.CreateClient();
-        var url = $"{_baseUrl}/currencies";
-        var response = await client.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
+        return await _cache.GetOrCreateAsync(CurrencyListCacheKey, async entry =>
         {
-            _logger.LogError($"Failed to fetch currency list: {response.StatusCode}");
-            _logger.LogError(await response.Content.ReadAsStringAsync());
-            return new List<ProviderAsset>();
-        }
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
 
-        var json = await response.Content.ReadAsStringAsync();
-        var currencyDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+            using var client = _httpClientFactory.CreateClient();
+            var url = $"{_baseUrl}/currencies";
+            var response = await client.GetAsync(url);
 
-        if (currencyDictionary == null)
-        {
-            _logger.LogError($"Failed to fetch currency list");
-            return new List<ProviderAsset>();
-        }
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Failed to fetch currency list: {response.StatusCode}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}");
+            }
 
-        _currencyList = currencyDictionary.Select(kvp => new ProviderAsset { Symbol = kvp.Key, Name = kvp.Value, ExternalId = kvp.Key }).ToList();
+            var json = await response.Content.ReadAsStringAsync();
+            var currencyDictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
-        return _currencyList;
+            if (currencyDictionary == null)
+            {
+                throw new Exception("Failed to fetch currency list: no currencies were returned");
+            }
+
+            return currencyDictionary.Select(kvp => new ProviderAsset { Symbol = kvp.Key, Name = kvp.Value, ExternalId = kvp.Key }).ToList();
+        }) ?? new List<ProviderAsset>();
     }
 
     public async Task<IEnumerable<AssetMetadata>> GetQuotesAsync(string baseCurrency, IEnumerable<string> externalIds)
@@ -91,9 +92,7 @@ public class FrankfurterCurrencyPriceProvider : IPriceProvider
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError($"{nameof(GetQuotesAsync)}: Failed to fetch currency rates: {response.StatusCode}");
-            _logger.LogError(await response.Content.ReadAsStringAsync());
-            return result;
+            throw new Exception($"Failed to fetch currency rates: {response.StatusCode}{Environment.NewLine}{await response.Content.ReadAsStringAsync()}");
         }
 
         var data = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
@@ -104,8 +103,7 @@ public class FrankfurterCurrencyPriceProvider : IPriceProvider
 
         if (rates == null)
         {
-            _logger.LogError($"{nameof(GetQuotesAsync)}: Failed to fetch currency rates: No rates were returned");
-            return result;
+            throw new Exception("Failed to fetch currency rates: no rates were returned");
         }
 
         foreach (var item in rates)
