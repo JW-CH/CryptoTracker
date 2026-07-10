@@ -29,8 +29,6 @@
     </PackageVersion>
     <PackageVersion Include="NUnit3TestAdapter" Version="6.0.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.0.0" />
-    <PackageVersion Include="ThreeFourteen.AlphaVantage" Version="1.0.3" />
-    <PackageVersion Include="TwelveDataSharp" Version="1.1.0" />
     <PackageVersion Include="YahooFinanceApi" Version="2.3.3" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>

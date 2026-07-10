@@ -4,8 +4,6 @@
     <PackageReference Include="CardanoSharp.Wallet" />
     <PackageReference Include="CryptoClients.Net" />
     <PackageReference Include="NBitcoin" />
-    <PackageReference Include="ThreeFourteen.AlphaVantage" />
-    <PackageReference Include="TwelveDataSharp" />
     <PackageReference Include="YahooFinanceApi" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

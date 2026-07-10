@@ -97,9 +97,9 @@ bauen; halbfertige Features nicht in den Dispatch hängen.
 > User-Aktion (`FetchMetadataAsync`) ein Fehler. `ICurrencyProvider`/`IStockLogic`
 > gelöscht, `ICryptoTrackerLogic` enthält nur noch Exchange-Balances (Vorarbeit
 > für A2). `stockapi` ist jetzt ein Enum (`yahoofinance`), Yahoo wird nur
-> konditional registriert; `AlphaVantageStockLogic`/`EmptyStockLogic` gelöscht
-> (Package-Referenzen `ThreeFourteen.AlphaVantage`/`TwelveDataSharp` können noch
-> aus dem csproj raus). API-Breaking umgesetzt: `Coin`/`Currency` →
+> konditional registriert; `AlphaVantageStockLogic`/`EmptyStockLogic` gelöscht,
+> ebenso die Packages `ThreeFourteen.AlphaVantage`/`TwelveDataSharp`
+> (csproj + Directory.Packages.props). API-Breaking umgesetzt: `Coin`/`Currency` →
 > `ProviderAsset` im generierten Client (`externalId` statt `id`).
 
 `ICryptoTrackerLogic` (Crypto via CoinGecko), `IFiatLogic` (Frankfurter),
