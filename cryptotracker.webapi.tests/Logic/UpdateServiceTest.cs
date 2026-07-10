@@ -1,5 +1,4 @@
 using cryptotracker.core.Interfaces;
-using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Backgroundservices;
@@ -16,7 +15,7 @@ namespace cryptotracker.webapi.tests.Logic;
 public class UpdateServiceTest
 {
     private DatabaseContext _db;
-    private Mock<ICryptoTrackerLogic> _cryptoTrackerLogicMock;
+    private Mock<IIntegrationProvider> _integrationProviderMock;
     private Mock<IPriceProvider> _cryptoProviderMock;
     private Mock<IPriceProvider> _currencyProviderMock;
     private AssetMetadataService _metadataService;
@@ -33,7 +32,8 @@ public class UpdateServiceTest
 
         _db = new DatabaseContext(options);
 
-        _cryptoTrackerLogicMock = new Mock<ICryptoTrackerLogic>();
+        _integrationProviderMock = new Mock<IIntegrationProvider>();
+        _integrationProviderMock.Setup(x => x.Type).Returns(CryptoTrackerIntegrationType.Coinbase);
 
         // metadata import should be a no-op in these tests
         _cryptoProviderMock = new Mock<IPriceProvider>();
@@ -80,8 +80,8 @@ public class UpdateServiceTest
 
     private void SetupBalanceResults(string integrationName, params BalanceResult[] balances)
     {
-        _cryptoTrackerLogicMock
-            .Setup(x => x.GetAvailableIntegrationBalances(It.Is<CryptoTrackerIntegration>(i => i.Name == integrationName)))
+        _integrationProviderMock
+            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegration>(i => i.Name == integrationName)))
             .ReturnsAsync(balances.ToList());
     }
 
@@ -112,7 +112,7 @@ public class UpdateServiceTest
         return integration;
     }
 
-    private Task Import() => _service.Import(_db, _cryptoTrackerLogicMock.Object, _currencyProviderMock.Object, _metadataService);
+    private Task Import() => _service.Import(_db, new[] { _integrationProviderMock.Object }, _currencyProviderMock.Object, _metadataService);
 
     private Task<List<AssetMeasuring>> TodaysMeasurings() =>
         _db.AssetMeasurings.Where(m => m.Timestamp >= DateTime.UtcNow.Date).ToListAsync();
@@ -185,8 +185,8 @@ public class UpdateServiceTest
         var seeded = await SeedIntegrationWithMeasurings("A", DateTime.UtcNow, ("BTC", 0.7m));
         AddConfigIntegration("A");
         AddConfigIntegration("B");
-        _cryptoTrackerLogicMock
-            .Setup(x => x.GetAvailableIntegrationBalances(It.Is<CryptoTrackerIntegration>(i => i.Name == "A")))
+        _integrationProviderMock
+            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegration>(i => i.Name == "A")))
             .ThrowsAsync(new InvalidOperationException("exchange down"));
         SetupBalances("B", ("XRP", 3m));
 
@@ -273,6 +273,20 @@ public class UpdateServiceTest
         Assert.That(asset, Is.Not.Null);
         Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Crypto));
         Assert.That(await TodaysMeasurings(), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Import_IntegrationTypeWithoutProvider_IsSkippedAndOthersContinue()
+    {
+        _config.Integrations.Add(new CryptoTrackerIntegration { Name = "A", Type = CryptoTrackerIntegrationType.Cardano });
+        AddConfigIntegration("B");
+        SetupBalances("B", ("XRP", 3m));
+
+        await Import(); // must not throw
+
+        var today = await TodaysMeasurings();
+        Assert.That(today, Has.Count.EqualTo(1));
+        Assert.That(today.Single().Symbol, Is.EqualTo("XRP"));
     }
 
     [Test]

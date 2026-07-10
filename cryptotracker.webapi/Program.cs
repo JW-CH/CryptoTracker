@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Logic;
 using cryptotracker.core.Logic.CryptoPriceProviders;
+using cryptotracker.core.Logic.Integrations;
 using cryptotracker.core.Logic.StockPriceProviders;
 using cryptotracker.core.Logic.CurrencyPriceProviders;
 using cryptotracker.core.Models;
@@ -56,10 +57,21 @@ builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
     return config;
 });
 
-builder.Services.AddSingleton<ICryptoTrackerLogic>(srv =>
+builder.Services.AddSingleton<IEnumerable<IIntegrationProvider>>(srv =>
 {
-    var logger = srv.GetRequiredService<ILogger<CryptoTrackerLogic>>();
-    return new CryptoTrackerLogic(logger);
+    var httpClientFactory = srv.GetRequiredService<IHttpClientFactory>();
+
+    return new List<IIntegrationProvider>
+    {
+        new BitpandaIntegrationProvider(httpClientFactory),
+        new CoinbaseIntegrationProvider(),
+        new BinanceIntegrationProvider(),
+        new KucoinIntegrationProvider(),
+        new CryptocomIntegrationProvider(),
+        new BitcoinIntegrationProvider(httpClientFactory),
+        new EthereumIntegrationProvider(httpClientFactory),
+        new RippleIntegrationProvider(httpClientFactory),
+    };
 });
 
 builder.Services.AddSingleton<IEnumerable<IPriceProvider>>(srv =>

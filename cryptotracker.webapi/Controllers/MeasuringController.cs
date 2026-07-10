@@ -14,15 +14,11 @@ namespace cryptotracker.webapi.Controllers
     [Route("api/[controller]")]
     public class MeasuringController : ControllerBase
     {
-        private readonly ILogger<MeasuringController> _logger;
         private readonly DatabaseContext _db;
-        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
 
-        public MeasuringController(ILogger<MeasuringController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic)
+        public MeasuringController(DatabaseContext db)
         {
-            _logger = logger;
             _db = db;
-            _cryptoTrackerLogic = cryptoTrackerLogic;
         }
 
         [HttpGet("{id}", Name = "GetMeasuringsByIntegration")]

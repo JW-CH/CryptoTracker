@@ -1,5 +1,4 @@
 using cryptotracker.core.Interfaces;
-using cryptotracker.core.Logic;
 using cryptotracker.core.Models;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
@@ -33,14 +32,14 @@ public class UpdateService : BackgroundService
                     _logger.LogInformation("Starting import");
 
                     var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-                    var cryptoTrackerLogic = scope.ServiceProvider.GetRequiredService<ICryptoTrackerLogic>();
+                    var integrationProviders = scope.ServiceProvider.GetRequiredService<IEnumerable<IIntegrationProvider>>();
                     var priceProviders = scope.ServiceProvider.GetRequiredService<IEnumerable<IPriceProvider>>();
                     var assetMetadataService = scope.ServiceProvider.GetRequiredService<AssetMetadataService>();
 
                     try
                     {
                         var currencyProvider = priceProviders.First(p => p.Handles.Contains(AssetType.Fiat));
-                        await Import(db, cryptoTrackerLogic, currencyProvider, assetMetadataService);
+                        await Import(db, integrationProviders, currencyProvider, assetMetadataService);
                     }
                     catch (Exception ex)
                     {
@@ -56,7 +55,7 @@ public class UpdateService : BackgroundService
         }
     }
 
-    internal async Task Import(DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, IPriceProvider currencyProvider, AssetMetadataService assetMetadataService)
+    internal async Task Import(DatabaseContext db, IEnumerable<IIntegrationProvider> integrationProviders, IPriceProvider currencyProvider, AssetMetadataService assetMetadataService)
     {
         _logger.LogInformation("Starting Integration-Import");
 
@@ -69,7 +68,10 @@ public class UpdateService : BackgroundService
 
             try
             {
-                var balances = await cryptoTrackerLogic.GetAvailableIntegrationBalances(integration);
+                var provider = integrationProviders.FirstOrDefault(p => p.Type == integration.Type)
+                    ?? throw new InvalidOperationException($"No integration provider found for type {integration.Type}");
+
+                var balances = await provider.GetBalancesAsync(integration);
                 _logger.LogTrace("Fetched {Count} balances for {Name}", balances.Count(), integration.Name);
 
                 var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);

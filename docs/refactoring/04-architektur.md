@@ -52,6 +52,20 @@ Infrastruktur (DbContext, IIntegrationProvider, IPriceProvider)
 
 ## A2 — Der Integration-`switch`: Provider-Pattern 🟠
 
+> **Status 2026-07-10: umgesetzt.** `IIntegrationProvider` (`Type`,
+> `GetBalancesAsync(integration)`) mit acht Implementierungen in
+> `core/Logic/Integrations/` (Bitpanda, Coinbase, Binance, Kucoin, Crypto.com,
+> Bitcoin, Ethereum, Ripple); Registrierung als `IEnumerable<IIntegrationProvider>`,
+> Dispatch per `Type` im `UpdateService`. Kein Provider für einen konfigurierten
+> Typ → Fehler nur für diese Integration (Bug-5-Isolation), Rest läuft weiter.
+> `ICryptoTrackerLogic`/`CryptoTrackerLogic` komplett gelöscht. Der tote
+> Cardano-Zweig ist entfernt (Enum-Wert bleibt, damit alte Configs nicht am
+> YAML-Parse scheitern), ebenso `CardanoHelper` + Package `CardanoSharp.Wallet`.
+> Blockchain-Provider (BTC/ETH/XRP) nutzen `IHttpClientFactory`. Offen aus der
+> Empfehlung: Exchange-SDK-Clients werden weiter pro Aufruf von Hand erzeugt
+> (CryptoClients.Net-DI wäre ein eigener Schritt), Metadaten-Ausgliederung ist
+> via A3 erledigt.
+
 `CryptoTrackerLogic.GetAvailableIntegrationBalances` ist ein 100-Zeilen-`switch`
 über String-Typen mit je eigener Client-Erzeugung, plus ~300 Zeilen private
 Abruf-Methoden — dazu CoinGecko-Zugriff in derselben Klasse. Die Klasse hat

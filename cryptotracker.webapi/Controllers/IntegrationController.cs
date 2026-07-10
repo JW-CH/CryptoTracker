@@ -1,6 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
-using cryptotracker.core.Logic;
 using cryptotracker.database.DTOs;
 using cryptotracker.database.Models;
 using cryptotracker.webapi.Services;
@@ -17,14 +15,12 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<IntegrationController> _logger;
         private readonly DatabaseContext _db;
-        private readonly ICryptoTrackerLogic _cryptoTrackerLogic;
         private readonly PortfolioQueryService _portfolioQueryService;
 
-        public IntegrationController(ILogger<IntegrationController> logger, DatabaseContext db, ICryptoTrackerLogic cryptoTrackerLogic, PortfolioQueryService portfolioQueryService)
+        public IntegrationController(ILogger<IntegrationController> logger, DatabaseContext db, PortfolioQueryService portfolioQueryService)
         {
             _logger = logger;
             _db = db;
-            _cryptoTrackerLogic = cryptoTrackerLogic;
             _portfolioQueryService = portfolioQueryService;
         }
 
