@@ -1,4 +1,4 @@
-﻿using Binance.Net.Clients;
+using Binance.Net.Clients;
 using Binance.Net.Objects.Models.Spot;
 using CardanoSharp.Wallet.Enums;
 using CardanoSharp.Wallet.Extensions.Models;
@@ -15,6 +15,7 @@ using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using cryptotracker.core.Helpers;
 using cryptotracker.core.Models;
+using cryptotracker.database.Models;
 using ImmichFrame.Core.Helpers;
 using Kucoin.Net;
 using Kucoin.Net.Clients;
@@ -55,8 +56,8 @@ namespace cryptotracker.core.Logic
                         var accounts = await GetBitpandaAccounts(bitpandaClient);
                         var fiat = await GetBitpandaFiatAccounts(bitpandaClient);
 
-                        result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
-                        result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance) }).ToList());
+                        result.AddRange(accounts.Select(account => new BalanceResult { Symbol = account.Attributes.CryptocoinSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance), AssetType = AssetType.Crypto }).ToList());
+                        result.AddRange(fiat.Select(account => new BalanceResult { Symbol = account.Attributes.FiatSymbol, Balance = Convert.ToDecimal(account.Attributes.Balance), AssetType = AssetType.Fiat }).ToList());
 
                         return result;
                     }
@@ -105,7 +106,8 @@ namespace cryptotracker.core.Logic
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
                             Symbol = "BTC",
-                            Balance = await GetBitcoinAvailableBalances(client, integration.Key)
+                            Balance = await GetBitcoinAvailableBalances(client, integration.Key),
+                            AssetType = AssetType.Crypto
                         }};
                     }
                 case CryptoTrackerIntegrationType.Ethereum:
@@ -113,7 +115,8 @@ namespace cryptotracker.core.Logic
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
                             Symbol = "ETH",
-                            Balance = await GetEthereumAvailableBalances(client, integration.Key)
+                            Balance = await GetEthereumAvailableBalances(client, integration.Key),
+                            AssetType = AssetType.Crypto
                         }};
                     }
                 case CryptoTrackerIntegrationType.Ripple:
@@ -121,7 +124,8 @@ namespace cryptotracker.core.Logic
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
                             Symbol = "XRP",
-                            Balance = await GetRippleAvailableBalances(client, integration.Key)
+                            Balance = await GetRippleAvailableBalances(client, integration.Key),
+                            AssetType = AssetType.Crypto
                         }};
                     }
                 case CryptoTrackerIntegrationType.Cardano:
@@ -129,7 +133,8 @@ namespace cryptotracker.core.Logic
                     {
                         return new List<BalanceResult>() { new BalanceResult(){
                             Symbol = "ADA",
-                            Balance = await GetCardanoAvailableBalances(client, integration.Key)
+                            Balance = await GetCardanoAvailableBalances(client, integration.Key),
+                            AssetType = AssetType.Crypto
                         }};
                     }
                 default:
@@ -519,5 +524,6 @@ namespace cryptotracker.core.Logic
     {
         public string Symbol { get; set; }
         public decimal Balance { get; set; }
+        public AssetType? AssetType { get; set; }
     }
 }
