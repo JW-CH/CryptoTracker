@@ -6,7 +6,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { baseCurrency } from '$lib/stores/config';
 
-	let data: api.MessungDto[] | null;
+	let data: api.AssetHoldingDto[] | null;
 	let date: Date = new Date();
 
 	onMount(async () => {

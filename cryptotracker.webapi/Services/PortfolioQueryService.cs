@@ -16,17 +16,17 @@ namespace cryptotracker.webapi.Services
             _config = config;
         }
 
-        public async Task<List<MessungDto>> GetAssetDayMeasuringAsync(DateOnly day, string? symbol = null, Guid? integrationId = null)
+        public async Task<List<AssetHoldingDto>> GetAssetDayMeasuringAsync(DateOnly day, string? symbol = null, Guid? integrationId = null)
         {
             var result = await GetAssetDayMeasuringBatchAsync([day], symbol, integrationId);
             return result.GetValueOrDefault(day) ?? [];
         }
 
-        public async Task<Dictionary<DateOnly, List<MessungDto>>> GetAssetDayMeasuringBatchAsync(
+        public async Task<Dictionary<DateOnly, List<AssetHoldingDto>>> GetAssetDayMeasuringBatchAsync(
             List<DateOnly> days, string? symbol = null, Guid? integrationId = null)
         {
             if (days.Count == 0)
-                return new Dictionary<DateOnly, List<MessungDto>>();
+                return new Dictionary<DateOnly, List<AssetHoldingDto>>();
 
             var maxFillDays = _config.MaxFillDays;
 
@@ -47,7 +47,7 @@ namespace cryptotracker.webapi.Services
             var allIntegrationIds = integrationList.Select(x => x.Id).ToList();
 
             if (allSymbols.Count == 0 || allIntegrationIds.Count == 0)
-                return days.ToDictionary(d => d, _ => new List<MessungDto>());
+                return days.ToDictionary(d => d, _ => new List<AssetHoldingDto>());
 
             var maxDay = days.Max();
             var currency = _config.BaseCurrency;
@@ -77,7 +77,7 @@ namespace cryptotracker.webapi.Services
                 .GroupBy(x => (x.Symbol, x.IntegrationId))
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Timestamp).ToList());
 
-            var result = new Dictionary<DateOnly, List<MessungDto>>();
+            var result = new Dictionary<DateOnly, List<AssetHoldingDto>>();
             foreach (var day in days)
             {
                 result[day] = BuildDayResult(day, assetList, integrationList, pricesBySymbol, measuringsByKey, maxFillDays);
@@ -86,7 +86,7 @@ namespace cryptotracker.webapi.Services
             return result;
         }
 
-        private static List<MessungDto> BuildDayResult(
+        private static List<AssetHoldingDto> BuildDayResult(
             DateOnly day,
             List<Asset> assets,
             List<ExchangeIntegration> integrations,
@@ -98,7 +98,7 @@ namespace cryptotracker.webapi.Services
             // forward-fill limit: only carry a measuring into this day if it is at most
             // maxFillDays old; older data counts as missing instead of silently stale
             var minTimestamp = day.AddDays(-maxFillDays).ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
-            var result = new List<MessungDto>();
+            var result = new List<AssetHoldingDto>();
 
             foreach (var asset in assets)
             {
@@ -133,7 +133,7 @@ namespace cryptotracker.webapi.Services
 
                 if (!hasAnyData) continue;
 
-                var dto = MessungDto.SumFromModels(asset, allMeasurings, price);
+                var dto = AssetHoldingDto.SumFromModels(asset, allMeasurings, price);
 
                 // sold positions (explicit zero measurings) shouldn't show up as 0-rows;
                 // the total is summed across integrations, so partial holdings survive

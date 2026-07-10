@@ -3,7 +3,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
 
-	export let measurings: api.MessungDto[] = [];
+	export let measurings: api.AssetHoldingDto[] = [];
 	export let hidden: boolean = false;
 	export let skeleton: boolean = false;
 </script>

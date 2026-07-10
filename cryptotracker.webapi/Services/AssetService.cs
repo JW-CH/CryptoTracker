@@ -1,6 +1,6 @@
 using cryptotracker.core.Interfaces;
-using cryptotracker.core.Logic;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Dtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace cryptotracker.webapi.Services
@@ -22,9 +22,9 @@ namespace cryptotracker.webapi.Services
             _assetMetadataService = assetMetadataService;
         }
 
-        public async Task<List<Asset>> GetAssetsAsync()
+        public async Task<List<AssetDto>> GetAssetsAsync()
         {
-            return await _db.Assets.ToListAsync();
+            return (await _db.Assets.ToListAsync()).Select(AssetDto.FromModel).ToList();
         }
 
         public async Task<AssetWithPriceDto> GetAssetWithPriceAsync(string symbol)
@@ -33,7 +33,7 @@ namespace cryptotracker.webapi.Services
 
             return new AssetWithPriceDto
             {
-                Asset = asset,
+                Asset = AssetDto.FromModel(asset),
                 Price = await GetLatestPriceAsync(asset.Symbol)
             };
         }
@@ -80,7 +80,7 @@ namespace cryptotracker.webapi.Services
 
             return new AssetWithPriceDto
             {
-                Asset = asset,
+                Asset = AssetDto.FromModel(asset),
                 Price = await GetLatestPriceAsync(asset.Symbol)
             };
         }
@@ -175,7 +175,7 @@ namespace cryptotracker.webapi.Services
 
         public struct AssetWithPriceDto
         {
-            public required Asset Asset { get; set; }
+            public required AssetDto Asset { get; set; }
             public required decimal Price { get; set; }
         }
     }

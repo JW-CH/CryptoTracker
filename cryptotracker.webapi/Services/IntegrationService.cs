@@ -58,9 +58,9 @@ namespace cryptotracker.webapi.Services
         public struct IntegrationDetails
         {
             public required IntegrationDto Integration { get; set; }
-            public required List<MessungDto> Measurings { get; set; }
+            public required List<AssetHoldingDto> Measurings { get; set; }
 
-            public static IntegrationDetails FromIntegration(ExchangeIntegration integration, List<MessungDto> measurings)
+            public static IntegrationDetails FromIntegration(ExchangeIntegration integration, List<AssetHoldingDto> measurings)
             {
                 return new IntegrationDetails()
                 {

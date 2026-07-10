@@ -11,7 +11,7 @@
 
 	interface DailyMeasurings {
 		date: string;
-		measurings: api.MessungDto[];
+		measurings: api.AssetHoldingDto[];
 	}
 
 	let assetInitialized = $state<boolean>(false);

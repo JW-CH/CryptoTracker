@@ -24,9 +24,11 @@ cryptotracker.database DbContext, Entities, Migrations — und DTOs (!)
 > Meldungen, abgedeckt durch `IntegrationServiceTest`/`MeasuringServiceTest`).
 > DTOs sind aus dem database-Projekt in die webapi umgezogen
 > (`cryptotracker.webapi/Dtos/`, Namespace `cryptotracker.webapi.Dtos`; Schema-Ids
-> unverändert, kein Client-Breaking). Offen: `AssetController.GetAssets`
-> serialisiert weiter das rohe `Asset`-Entity; `MessungDto`-Rename und
-> Route-Design (A6) stehen aus.
+> unverändert, kein Client-Breaking). Entities werden nicht mehr roh serialisiert:
+> `AssetDto` (um `ExternalId`/`AssetType` erweitert) ersetzt das `Asset`-Entity in
+> `GetAssets` und `AssetWithPriceDto` (Client-Breaking, `make api` erledigt).
+> `MessungDto` heißt jetzt `AssetHoldingDto`. Damit ist A1 bis auf das
+> Route-Design (A6) vollständig umgesetzt.
 
 **Befund:**
 
@@ -187,9 +189,10 @@ Konfiguration ersetzen: `stocks.provider: yahoo|alphavantage|none` +
 
 Details in [05](05-backend-codequalitaet.md), aber architekturrelevant:
 
-- Deutsch/Englisch gemischt bis in die API: `MessungDto` ist Teil des generierten
+- ~~Deutsch/Englisch gemischt bis in die API: `MessungDto` ist Teil des generierten
   TypeScript-Clients. Vor dem API-Freeze auf Englisch vereinheitlichen
-  (`AssetHoldingDto`), sonst zieht sich das für immer durch.
+  (`AssetHoldingDto`), sonst zieht sich das für immer durch.~~
+  ✅ erledigt 2026-07-10 (`AssetHoldingDto`, inkl. `make api` + Frontend).
 - ~~`IntegrationShit` (`AssetMeasuringDto.cs:78`) — offensichtlich ein Platzhalter,
   der es in den öffentlichen API-Vertrag geschafft hat → `IntegrationAmount`.~~
   ✅ erledigt 2026-07-10 (inkl. `make api`).

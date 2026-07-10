@@ -21,7 +21,7 @@
 		);
 	}
 
-	function TrimMeasurings(data: api.MessungDto[]) {
+	function TrimMeasurings(data: api.AssetHoldingDto[]) {
 		let sortedMeasuring = data.sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
 		if (!summarize || sortedMeasuring.length <= 7) {
 			return sortedMeasuring;
@@ -31,7 +31,7 @@
 		let otherMeasuring = sortedMeasuring.slice(7);
 		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
 		return topMeasuring.concat({
-			asset: { symbol: 'Other' },
+			asset: { symbol: 'Other', assetType: 'Crypto' },
 			totalValue: otherFiatValue,
 			price: 0,
 			totalAmount: 0,

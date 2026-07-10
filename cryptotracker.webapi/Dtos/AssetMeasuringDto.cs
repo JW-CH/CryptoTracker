@@ -23,7 +23,7 @@ namespace cryptotracker.webapi.Dtos
         }
     }
 
-    public class MessungDto
+    public class AssetHoldingDto
     {
         public required AssetDto Asset { get; set; }
         public required decimal Price { get; set; }
@@ -31,7 +31,7 @@ namespace cryptotracker.webapi.Dtos
         public required decimal TotalValue { get; set; }
         public required List<IntegrationAmount> IntegrationValues { get; set; }
 
-        public static MessungDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
+        public static AssetHoldingDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
             var groupedMeasurings = measurings.GroupBy(x => x.Integration);
             var integrationValues = groupedMeasurings.Select(x => new IntegrationAmount
@@ -42,7 +42,7 @@ namespace cryptotracker.webapi.Dtos
 
             var amt = measurings.Sum(x => x.Amount);
 
-            return new MessungDto()
+            return new AssetHoldingDto()
             {
                 Asset = AssetDto.FromModel(asset),
                 IntegrationValues = integrationValues,
@@ -51,7 +51,7 @@ namespace cryptotracker.webapi.Dtos
                 TotalValue = amt * price,
             };
         }
-        public static MessungDto FromModel(AssetMeasuring measuring, decimal price)
+        public static AssetHoldingDto FromModel(AssetMeasuring measuring, decimal price)
         {
             if (measuring.Asset == null) throw new Exception("Asset is null");
 
@@ -64,7 +64,7 @@ namespace cryptotracker.webapi.Dtos
                 }
             };
 
-            return new MessungDto()
+            return new AssetHoldingDto()
             {
                 Asset = AssetDto.FromModel(measuring.Asset),
                 IntegrationValues = integrationValues,

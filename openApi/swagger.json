@@ -19,7 +19,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Asset"
+                    "$ref": "#/components/schemas/AssetDto"
                   }
                 }
               },
@@ -27,7 +27,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Asset"
+                    "$ref": "#/components/schemas/AssetDto"
                   }
                 }
               },
@@ -35,7 +35,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Asset"
+                    "$ref": "#/components/schemas/AssetDto"
                   }
                 }
               }
@@ -823,7 +823,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               },
@@ -831,7 +831,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               },
@@ -839,7 +839,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               }
@@ -883,7 +883,7 @@
                   "additionalProperties": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/MessungDto"
+                      "$ref": "#/components/schemas/AssetHoldingDto"
                     }
                   }
                 }
@@ -894,7 +894,7 @@
                   "additionalProperties": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/MessungDto"
+                      "$ref": "#/components/schemas/AssetHoldingDto"
                     }
                   }
                 }
@@ -905,7 +905,7 @@
                   "additionalProperties": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/MessungDto"
+                      "$ref": "#/components/schemas/AssetHoldingDto"
                     }
                   }
                 }
@@ -983,7 +983,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               },
@@ -991,7 +991,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               },
@@ -999,7 +999,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/MessungDto"
+                    "$ref": "#/components/schemas/AssetHoldingDto"
                   }
                 }
               }
@@ -1369,10 +1369,9 @@
         },
         "additionalProperties": false
       },
-      "Asset": {
+      "AssetDto": {
         "required": [
           "assetType",
-          "isHidden",
           "symbol"
         ],
         "type": "object",
@@ -1402,26 +1401,37 @@
         },
         "additionalProperties": false
       },
-      "AssetDto": {
+      "AssetHoldingDto": {
         "required": [
-          "symbol"
+          "asset",
+          "integrationValues",
+          "price",
+          "totalAmount",
+          "totalValue"
         ],
         "type": "object",
         "properties": {
-          "symbol": {
-            "type": "string",
-            "nullable": true
+          "asset": {
+            "$ref": "#/components/schemas/AssetDto"
           },
-          "name": {
-            "type": "string",
-            "nullable": true
+          "price": {
+            "type": "number",
+            "format": "double"
           },
-          "image": {
-            "type": "string",
-            "nullable": true
+          "totalAmount": {
+            "type": "number",
+            "format": "double"
           },
-          "isHidden": {
-            "type": "boolean"
+          "totalValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "integrationValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationAmount"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1475,7 +1485,7 @@
         "type": "object",
         "properties": {
           "asset": {
-            "$ref": "#/components/schemas/Asset"
+            "$ref": "#/components/schemas/AssetDto"
           },
           "price": {
             "type": "number",
@@ -1524,7 +1534,7 @@
           "measurings": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MessungDto"
+              "$ref": "#/components/schemas/AssetHoldingDto"
             },
             "nullable": true
           }
@@ -1586,41 +1596,6 @@
           },
           "displayName": {
             "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "MessungDto": {
-        "required": [
-          "asset",
-          "integrationValues",
-          "price",
-          "totalAmount",
-          "totalValue"
-        ],
-        "type": "object",
-        "properties": {
-          "asset": {
-            "$ref": "#/components/schemas/AssetDto"
-          },
-          "price": {
-            "type": "number",
-            "format": "double"
-          },
-          "totalAmount": {
-            "type": "number",
-            "format": "double"
-          },
-          "totalValue": {
-            "type": "number",
-            "format": "double"
-          },
-          "integrationValues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IntegrationAmount"
-            },
             "nullable": true
           }
         },

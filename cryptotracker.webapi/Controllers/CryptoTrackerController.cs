@@ -22,13 +22,13 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
-        public async Task<List<MessungDto>> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
+        public async Task<List<AssetHoldingDto>> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
             return await _portfolioQueryService.GetAssetDayMeasuringAsync(DateOnly.FromDateTime(date.ToLocalTime()), symbol);
         }
 
         [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
-        public async Task<Dictionary<DateOnly, List<MessungDto>>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
+        public async Task<Dictionary<DateOnly, List<AssetHoldingDto>>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateOnly>();
             var today = DateOnly.FromDateTime(DateTime.Now);
@@ -60,7 +60,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("measuring", Name = "GetLatestMeasurings")]
-        public async Task<List<MessungDto>> GetLatestMeasurings()
+        public async Task<List<AssetHoldingDto>> GetLatestMeasurings()
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 

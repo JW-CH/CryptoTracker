@@ -5,7 +5,7 @@
 	import * as api from '$lib/cryptotrackerApi';
 	import { onMount } from 'svelte';
 
-	let assets: api.Asset[];
+	let assets: api.AssetDto[];
 	let selectedAsset: string;
 	let amount: number = 0;
 	let date: string = new Date().toISOString().split('T')[0];

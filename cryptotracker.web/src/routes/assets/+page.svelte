@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import AssetTiles from './AssetTiles.svelte';
 
-	let assets: api.Asset[] | null = null;
+	let assets: api.AssetDto[] | null = null;
 
 	onMount(async () => {
 		let request = await api.getAssets();

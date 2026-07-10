@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using cryptotracker.core.Interfaces;
 using cryptotracker.database.Models;
+using cryptotracker.webapi.Dtos;
 using cryptotracker.webapi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet(Name = "GetAssets")]
-        public async Task<List<Asset>> GetAssets()
+        public async Task<List<AssetDto>> GetAssets()
         {
             return await _assetService.GetAssetsAsync();
         }

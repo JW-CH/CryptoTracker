@@ -13,13 +13,13 @@ export const defaults: Oazapfts.Defaults<Oazapfts.CustomHeaders> = {
 const oazapfts = Oazapfts.runtime(defaults);
 export const servers = {};
 export type AssetType = "Fiat" | "Crypto" | "Stock" | "ETF" | "Commodity" | "RealEstate";
-export type Asset = {
+export type AssetDto = {
     "symbol": string | null;
     externalId?: string | null;
     name?: string | null;
     image?: string | null;
     assetType: AssetType;
-    isHidden: boolean;
+    isHidden?: boolean;
 };
 export type AddAssetDto = {
     "symbol"?: string | null;
@@ -27,7 +27,7 @@ export type AddAssetDto = {
     externalId?: string | null;
 };
 export type AssetWithPriceDto = {
-    asset: Asset;
+    asset: AssetDto;
     price: number;
 };
 export type ProviderAsset = {
@@ -52,12 +52,6 @@ export type RegisterRequest = {
 export type ConfigResponse = {
     baseCurrency?: string | null;
 };
-export type AssetDto = {
-    "symbol": string | null;
-    name?: string | null;
-    image?: string | null;
-    isHidden?: boolean;
-};
 export type IntegrationDto = {
     id: string;
     name: string | null;
@@ -69,7 +63,7 @@ export type IntegrationAmount = {
     integration: IntegrationDto;
     amount: number;
 };
-export type MessungDto = {
+export type AssetHoldingDto = {
     asset: AssetDto;
     price: number;
     totalAmount: number;
@@ -82,7 +76,7 @@ export type AddIntegrationDto = {
 };
 export type IntegrationDetails = {
     integration: IntegrationDto;
-    measurings: MessungDto[] | null;
+    measurings: AssetHoldingDto[] | null;
 };
 export type AssetMeasuringDto = {
     id?: string;
@@ -99,7 +93,7 @@ export type AddMeasuringDto = {
 export function getAssets(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: Asset[];
+        data: AssetDto[];
     }>("/api/Asset", {
         ...opts
     });
@@ -269,7 +263,7 @@ export function getMeasuringsByDate(date: string, { $symbol }: {
 } = {}, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: MessungDto[];
+        data: AssetHoldingDto[];
     }>(`/api/CryptoTracker/measuring/date/${encodeURIComponent(date)}${QS.query(QS.explode({
         "symbol": $symbol
     }))}`, {
@@ -282,7 +276,7 @@ export function getMeasuringsByDays(days: number, { $symbol }: {
     return oazapfts.fetchJson<{
         status: 200;
         data: {
-            [key: string]: MessungDto[];
+            [key: string]: AssetHoldingDto[];
         };
     }>(`/api/CryptoTracker/measuring/days/${encodeURIComponent(days)}${QS.query(QS.explode({
         "symbol": $symbol
@@ -303,7 +297,7 @@ export function getStandingsByDay(days: number, opts?: Oazapfts.RequestOpts) {
 export function getLatestMeasurings(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: MessungDto[];
+        data: AssetHoldingDto[];
     }>("/api/CryptoTracker/measuring", {
         ...opts
     });
