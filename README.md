@@ -63,6 +63,9 @@ interval: 120
 # Log level: debug, info, warning, error
 loglevel: info
 
+# Optional: stock price provider (enables price lookups for assets of type Stock)
+stockapi: yahoofinance
+
 # JWT Authentication
 auth:
   secret: your-jwt-secret-minimum-32-characters
@@ -89,6 +92,10 @@ integrations:
     secret: unused
     description: Hardware wallet
 ```
+
+> **Note:** Run only a single instance of the container. The background import
+> and the automatic database migrations on startup are not coordinated across
+> replicas — multiple instances would import duplicate data.
 
 ### Supported Integration Types
 

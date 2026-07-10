@@ -29,12 +29,12 @@ namespace cryptotracker.database.DTOs
         public required decimal Price { get; set; }
         public required decimal TotalAmount { get; set; }
         public required decimal TotalValue { get; set; }
-        public required List<IntegrationShit> IntegrationValues { get; set; }
+        public required List<IntegrationAmount> IntegrationValues { get; set; }
 
         public static MessungDto SumFromModels(Asset asset, List<AssetMeasuring> measurings, decimal price)
         {
             var groupedMeasurings = measurings.GroupBy(x => x.Integration);
-            var integrationValues = groupedMeasurings.Select(x => new IntegrationShit
+            var integrationValues = groupedMeasurings.Select(x => new IntegrationAmount
             {
                 Integration = IntegrationDto.FromModel(x.Key),
                 Amount = x.Sum(y => y.Amount)
@@ -55,9 +55,9 @@ namespace cryptotracker.database.DTOs
         {
             if (measuring.Asset == null) throw new Exception("Asset is null");
 
-            List<IntegrationShit> integrationValues = new()
+            List<IntegrationAmount> integrationValues = new()
             {
-                new IntegrationShit()
+                new IntegrationAmount()
                 {
                     Integration = IntegrationDto.FromModel(measuring.Integration),
                     Amount = measuring.Amount
@@ -75,7 +75,7 @@ namespace cryptotracker.database.DTOs
         }
     }
 
-    public struct IntegrationShit()
+    public struct IntegrationAmount()
     {
         public required IntegrationDto Integration { get; set; }
         public required decimal Amount { get; set; }

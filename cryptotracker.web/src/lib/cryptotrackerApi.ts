@@ -65,7 +65,7 @@ export type IntegrationDto = {
     isHidden?: boolean;
     isManual?: boolean;
 };
-export type IntegrationShit = {
+export type IntegrationAmount = {
     integration: IntegrationDto;
     amount: number;
 };
@@ -74,7 +74,7 @@ export type MessungDto = {
     price: number;
     totalAmount: number;
     totalValue: number;
-    integrationValues: IntegrationShit[] | null;
+    integrationValues: IntegrationAmount[] | null;
 };
 export type AddIntegrationDto = {
     name?: string | null;

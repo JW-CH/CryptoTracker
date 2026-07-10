@@ -1,4 +1,4 @@
-﻿namespace ImmichFrame.Core.Helpers
+﻿namespace cryptotracker.core.Helpers
 {
     public static class HttpClientExtensionMethods
     {

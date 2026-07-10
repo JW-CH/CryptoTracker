@@ -183,10 +183,12 @@ Details in [05](05-backend-codequalitaet.md), aber architekturrelevant:
 - Deutsch/Englisch gemischt bis in die API: `MessungDto` ist Teil des generierten
   TypeScript-Clients. Vor dem API-Freeze auf Englisch vereinheitlichen
   (`AssetHoldingDto`), sonst zieht sich das für immer durch.
-- `IntegrationShit` (`AssetMeasuringDto.cs:78`) — offensichtlich ein Platzhalter,
-  der es in den öffentlichen API-Vertrag geschafft hat → `IntegrationAmount`.
-- Namespace `ImmichFrame.Core.Helpers` (`HttpClientExtensionMethods.cs:1`) ist
-  aus einem anderen Projekt kopiert — Namespace korrigieren.
+- ~~`IntegrationShit` (`AssetMeasuringDto.cs:78`) — offensichtlich ein Platzhalter,
+  der es in den öffentlichen API-Vertrag geschafft hat → `IntegrationAmount`.~~
+  ✅ erledigt 2026-07-10 (inkl. `make api`).
+- ~~Namespace `ImmichFrame.Core.Helpers` (`HttpClientExtensionMethods.cs:1`) ist
+  aus einem anderen Projekt kopiert — Namespace korrigieren.~~
+  ✅ erledigt 2026-07-10 (`cryptotracker.core.Helpers`).
 - Route-Design uneinheitlich: `POST /api/Measuring?id=…` bindet die Integrations-Id
   aus dem Query-String (`MeasuringController.cs:35`), während sonst Route-Parameter
   üblich sind (`/api/Integration/{id}/measuring` wäre konsistent). REST-Verben:

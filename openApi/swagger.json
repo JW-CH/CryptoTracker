@@ -1494,6 +1494,23 @@
         },
         "additionalProperties": false
       },
+      "IntegrationAmount": {
+        "required": [
+          "amount",
+          "integration"
+        ],
+        "type": "object",
+        "properties": {
+          "integration": {
+            "$ref": "#/components/schemas/IntegrationDto"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "IntegrationDetails": {
         "required": [
           "integration",
@@ -1538,23 +1555,6 @@
           },
           "isManual": {
             "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "IntegrationShit": {
-        "required": [
-          "amount",
-          "integration"
-        ],
-        "type": "object",
-        "properties": {
-          "integration": {
-            "$ref": "#/components/schemas/IntegrationDto"
-          },
-          "amount": {
-            "type": "number",
-            "format": "double"
           }
         },
         "additionalProperties": false
@@ -1619,7 +1619,7 @@
           "integrationValues": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IntegrationShit"
+              "$ref": "#/components/schemas/IntegrationAmount"
             },
             "nullable": true
           }
