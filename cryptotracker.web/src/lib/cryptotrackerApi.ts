@@ -78,12 +78,13 @@ export type IntegrationDetails = {
     integration: IntegrationDto;
     measurings: AssetHoldingDto[] | null;
 };
-export type AssetMeasuringDto = {
-    id?: string;
-    "symbol": string | null;
+export type HoldingSource = "Sync" | "Manual";
+export type DailyHoldingDto = {
     integrationId: string;
-    timestamp?: string;
+    "symbol": string | null;
+    date?: string;
     amount?: number;
+    source?: HoldingSource;
 };
 export type AddMeasuringDto = {
     "symbol"?: string | null;
@@ -338,7 +339,7 @@ export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
 export function getMeasuringsByIntegration(id: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
-        data: AssetMeasuringDto[];
+        data: DailyHoldingDto[];
     }>(`/api/Integration/${encodeURIComponent(id)}/measuring`, {
         ...opts
     });
@@ -353,11 +354,14 @@ export function addIntegrationMeasuring(id: string, addMeasuringDto?: AddMeasuri
         body: addMeasuringDto
     }));
 }
-export function deleteMeasuringById(id: string, opts?: Oazapfts.RequestOpts) {
+export function deleteIntegrationMeasuring(id: string, $symbol: string, date: string, opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{
         status: 200;
         data: boolean;
-    }>(`/api/Measuring/${encodeURIComponent(id)}`, {
+    }>(`/api/Integration/${encodeURIComponent(id)}/measuring${QS.query(QS.explode({
+        "symbol": $symbol,
+        date
+    }))}`, {
         ...opts,
         method: "DELETE"
     });

@@ -26,7 +26,7 @@ public class IntegrationServiceTest
 
         var config = new CryptoTrackerConfig();
         _clock = TestClock.Create();
-        _service = new IntegrationService(_db, new PortfolioQueryService(_db, config, _clock), _clock);
+        _service = new IntegrationService(_db, new PortfolioQueryService(_db, config), _clock);
 
         await _db.SaveChangesAsync();
     }
@@ -86,14 +86,13 @@ public class IntegrationServiceTest
         _db.ExchangeIntegrations.Add(integration);
         _db.Assets.Add(new Asset { Symbol = "BTC", AssetType = AssetType.Crypto, IsHidden = false });
 
-        // noon UTC of the clock's "today" is inside the Zurich day window
-        var today = _clock.Today;
-        _db.AssetMeasurings.Add(new AssetMeasuring
+        _db.DailyHoldings.Add(new DailyHolding
         {
             Symbol = "BTC",
             IntegrationId = integration.Id,
-            Timestamp = today.ToDateTime(new TimeOnly(12, 0), DateTimeKind.Utc),
-            Amount = 1.5m
+            Date = _clock.Today,
+            Amount = 1.5m,
+            Source = HoldingSource.Sync
         });
         await _db.SaveChangesAsync();
 

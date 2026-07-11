@@ -4,11 +4,17 @@
 	import { page } from '$app/state';
 	import Button from '$lib/components/ui/button/button.svelte';
 
-	async function deleteMeasuring(measuringId: string) {
-		let x = await api.deleteMeasuringById(measuringId);
+	async function deleteMeasuring(measuring: api.DailyHoldingDto) {
+		let x = await api.deleteIntegrationMeasuring(
+			measuring.integrationId,
+			measuring.symbol ?? '',
+			measuring.date ?? ''
+		);
 
 		if (x.data) {
-			measurings = measurings.filter((x) => x.id !== measuringId);
+			measurings = measurings.filter(
+				(m) => !(m.symbol === measuring.symbol && m.date === measuring.date)
+			);
 		}
 	}
 
@@ -18,17 +24,16 @@
 		});
 	});
 
-	let measurings: api.AssetMeasuringDto[] = [];
+	let measurings: api.DailyHoldingDto[] = [];
 </script>
 
 Messungen für {page.params.slug}
-{#each measurings.sort((a, b) => ((a.timestamp ?? '') > (b.timestamp ?? '') ? 1 : -1)) as measuring}
+{#each measurings.sort((a, b) => ((a.date ?? '') > (b.date ?? '') ? 1 : -1)) as measuring}
 	<div class="grid-tem grid grid-cols-2 gap-4 p-2">
 		<div class="items-center">
-			{measuring.timestamp} - {measuring.symbol}: {measuring.amount}
+			{measuring.date} - {measuring.symbol}: {measuring.amount}
 		</div>
-		<Button onclick={() => deleteMeasuring(measuring.id!)} variant="destructive" class="w-min"
-			>X</Button
+		<Button onclick={() => deleteMeasuring(measuring)} variant="destructive" class="w-min">X</Button
 		>
 	</div>
 {/each}

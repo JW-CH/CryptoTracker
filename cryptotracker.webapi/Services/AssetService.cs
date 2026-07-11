@@ -131,7 +131,7 @@ namespace cryptotracker.webapi.Services
         {
             var asset = await GetAssetOrThrowAsync(symbol);
 
-            if (await _db.AssetMeasurings.AnyAsync(x => x.Asset == asset))
+            if (await _db.DailyHoldings.AnyAsync(x => x.Asset == asset))
                 throw new InvalidOperationException("Asset has measurings and cannot be deleted");
 
             _db.AssetPriceHistory.RemoveRange(_db.AssetPriceHistory.Where(x => x.Asset == asset));

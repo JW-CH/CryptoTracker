@@ -41,7 +41,7 @@ namespace cryptotracker.webapi.Controllers
         }
 
         [HttpGet("{id}/measuring", Name = "GetMeasuringsByIntegration")]
-        public async Task<List<AssetMeasuringDto>> GetMeasuringsByIntegration([Required] Guid id)
+        public async Task<List<DailyHoldingDto>> GetMeasuringsByIntegration([Required] Guid id)
         {
             return await _measuringService.GetMeasuringsByIntegrationAsync(id);
         }
@@ -50,6 +50,13 @@ namespace cryptotracker.webapi.Controllers
         public async Task<bool> AddIntegrationMeasuring([Required] Guid id, [FromBody] MeasuringService.AddMeasuringDto dto)
         {
             await _measuringService.AddIntegrationMeasuringAsync(id, dto);
+            return true;
+        }
+
+        [HttpDelete("{id}/measuring", Name = "DeleteIntegrationMeasuring")]
+        public async Task<bool> DeleteIntegrationMeasuring([Required] Guid id, [Required] string symbol, [Required] DateOnly date)
+        {
+            await _measuringService.DeleteMeasuringAsync(id, symbol, date);
             return true;
         }
     }

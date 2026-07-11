@@ -88,7 +88,7 @@ public class UpdateServiceTest
             .ReturnsAsync(balances.ToList());
     }
 
-    private async Task<ExchangeIntegration> SeedIntegrationWithMeasurings(string name, DateTime timestamp, params (string Symbol, decimal Amount)[] measurings)
+    private async Task<ExchangeIntegration> SeedIntegrationWithHoldings(string name, DateOnly date, params (string Symbol, decimal Amount)[] holdings)
     {
         var integration = await _db.ExchangeIntegrations.FirstOrDefaultAsync(x => x.Name == name);
         if (integration == null)
@@ -97,17 +97,18 @@ public class UpdateServiceTest
             _db.ExchangeIntegrations.Add(integration);
         }
 
-        foreach (var (symbol, amount) in measurings)
+        foreach (var (symbol, amount) in holdings)
         {
             if (await _db.Assets.FindAsync(symbol) == null)
                 _db.Assets.Add(new Asset { Symbol = symbol, AssetType = AssetType.Crypto, IsHidden = false });
 
-            _db.AssetMeasurings.Add(new AssetMeasuring
+            _db.DailyHoldings.Add(new DailyHolding
             {
                 Symbol = symbol,
                 IntegrationId = integration.Id,
-                Timestamp = timestamp,
-                Amount = amount
+                Date = date,
+                Amount = amount,
+                Source = HoldingSource.Sync
             });
         }
 
@@ -117,8 +118,8 @@ public class UpdateServiceTest
 
     private Task Import() => _service.Import(_db, new[] { _integrationProviderMock.Object }, _currencyProviderMock.Object, _metadataService);
 
-    private Task<List<AssetMeasuring>> TodaysMeasurings() =>
-        _db.AssetMeasurings.Where(m => m.Timestamp >= _clock.StartOfDayUtc(_clock.Today)).ToListAsync();
+    private Task<List<DailyHolding>> TodaysHoldings() =>
+        _db.DailyHoldings.Where(h => h.Date == _clock.Today).ToListAsync();
 
     [Test]
     public async Task Import_WritesMeasuringsAndCreatesAssetsAndIntegration()
@@ -128,10 +129,11 @@ public class UpdateServiceTest
 
         await Import();
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(2));
         Assert.That(today.Single(m => m.Symbol == "BTC").Amount, Is.EqualTo(0.5m));
         Assert.That(today.Single(m => m.Symbol == "ETH").Amount, Is.EqualTo(2m));
+        Assert.That(today.All(h => h.Source == HoldingSource.Sync && h.RecordedAtUtc == _clock.UtcNow), Is.True);
         Assert.That(await _db.ExchangeIntegrations.CountAsync(x => x.Name == "A"), Is.EqualTo(1));
         Assert.That(await _db.Assets.CountAsync(), Is.EqualTo(2));
     }
@@ -139,13 +141,13 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_DisappearedAsset_GetsSingleZeroMeasuring()
     {
-        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
+        await SeedIntegrationWithHoldings("A", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.6m)); // ETH no longer reported -> sold
 
         await Import();
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(2));
         Assert.That(today.Single(m => m.Symbol == "BTC").Amount, Is.EqualTo(0.6m));
         Assert.That(today.Single(m => m.Symbol == "ETH").Amount, Is.EqualTo(0m));
@@ -154,13 +156,13 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_AssetAlreadyZeroInLastSnapshot_GetsNoFurtherZero()
     {
-        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
+        await SeedIntegrationWithHoldings("A", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
 
         await Import();
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(1));
         Assert.That(today.Single().Symbol, Is.EqualTo("BTC"));
     }
@@ -170,14 +172,14 @@ public class UpdateServiceTest
     {
         // day -2 still had ETH, day -1 recorded the sale as 0; only the most
         // recent snapshot may be used as reference, so no new zero today
-        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-2), ("BTC", 0.5m), ("ETH", 2m));
-        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
+        await SeedIntegrationWithHoldings("A", _clock.Today.AddDays(-2), ("BTC", 0.5m), ("ETH", 2m));
+        await SeedIntegrationWithHoldings("A", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
 
         await Import();
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(1));
         Assert.That(today.Single().Symbol, Is.EqualTo("BTC"));
     }
@@ -185,7 +187,7 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_FailingIntegration_KeepsTodaysDataAndOthersContinue()
     {
-        var seeded = await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime, ("BTC", 0.7m));
+        var seeded = await SeedIntegrationWithHoldings("A", _clock.Today, ("BTC", 0.7m));
         AddConfigIntegration("A");
         AddConfigIntegration("B");
         _integrationProviderMock
@@ -195,12 +197,11 @@ public class UpdateServiceTest
 
         await Import(); // must not throw
 
-        var today = await TodaysMeasurings();
-        // A failed after its data would have been cleared in the old code;
-        // fetch-before-delete keeps today's existing measuring intact
-        var aMeasurings = today.Where(m => m.IntegrationId == seeded.Id).ToList();
-        Assert.That(aMeasurings, Has.Count.EqualTo(1));
-        Assert.That(aMeasurings.Single().Amount, Is.EqualTo(0.7m));
+        var today = await TodaysHoldings();
+        // the upsert never deletes: a failing fetch leaves A's existing snapshot intact
+        var aHoldings = today.Where(m => m.IntegrationId == seeded.Id).ToList();
+        Assert.That(aHoldings, Has.Count.EqualTo(1));
+        Assert.That(aHoldings.Single().Amount, Is.EqualTo(0.7m));
         // B was imported despite A failing
         Assert.That(today.Count(m => m.Symbol == "XRP"), Is.EqualTo(1));
     }
@@ -275,7 +276,7 @@ public class UpdateServiceTest
         var asset = await _db.Assets.FindAsync("BTC");
         Assert.That(asset, Is.Not.Null);
         Assert.That(asset!.AssetType, Is.EqualTo(AssetType.Crypto));
-        Assert.That(await TodaysMeasurings(), Has.Count.EqualTo(1));
+        Assert.That(await TodaysHoldings(), Has.Count.EqualTo(1));
     }
 
     [Test]
@@ -287,13 +288,13 @@ public class UpdateServiceTest
 
         await Import(); // must not throw
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(1));
         Assert.That(today.Single().Symbol, Is.EqualTo("XRP"));
     }
 
     [Test]
-    public async Task Import_RunTwiceSameDay_ReplacesTodaysMeasurings()
+    public async Task Import_RunTwiceSameDay_ReplacesTodaysHoldings()
     {
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
@@ -302,7 +303,7 @@ public class UpdateServiceTest
         SetupBalances("A", ("BTC", 0.6m));
         await Import();
 
-        var today = await TodaysMeasurings();
+        var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(1));
         Assert.That(today.Single().Amount, Is.EqualTo(0.6m));
     }

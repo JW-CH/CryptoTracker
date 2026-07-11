@@ -62,8 +62,6 @@ public class UpdateService : BackgroundService
         _logger.LogInformation("Starting Integration-Import");
 
         var today = _clock.Today;
-        var todayStart = _clock.StartOfDayUtc(today);
-        var tomorrowStart = _clock.StartOfDayUtc(today.AddDays(1));
         foreach (var integration in _config.Integrations)
         {
             _logger.LogTrace("Starting DB-Transaction");
@@ -81,22 +79,16 @@ public class UpdateService : BackgroundService
 
                 // symbols the last snapshot still had but the exchange no longer reports:
                 // their balance dropped to 0 (exchanges omit empty positions)
-                var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, todayStart);
-
-                _logger.LogTrace("Clearing today's AssetMeasurings entries for integration {Name}", integration.Name);
-                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= todayStart && x.Timestamp < tomorrowStart && x.IntegrationId == exchangeIntegration.Id);
-                var count = entries.Count();
-                db.AssetMeasurings.RemoveRange(entries);
-                _logger.LogTrace("Removed {Count} AssetMeasurings for integration {Name}", count, integration.Name);
+                var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
 
                 foreach (var balance in balances)
                 {
-                    await AddMeasuring(db, currencyProvider, exchangeIntegration, balance.Symbol, balance.Balance, balance.AssetType);
+                    await UpsertHolding(db, currencyProvider, exchangeIntegration, balance.Symbol, balance.Balance, balance.AssetType, today);
                 }
                 foreach (var symbol in zeroSymbols)
                 {
                     _logger.LogInformation("Asset {Symbol} no longer reported by {Name}, recording balance 0", symbol, integration.Name);
-                    await AddMeasuring(db, currencyProvider, exchangeIntegration, symbol, 0m, null);
+                    await UpsertHolding(db, currencyProvider, exchangeIntegration, symbol, 0m, null, today);
                 }
                 await db.SaveChangesAsync();
                 await tx.CommitAsync();
@@ -149,29 +141,24 @@ public class UpdateService : BackgroundService
 
     /// <summary>
     /// Returns the symbols that had a non-zero balance in the integration's most recent
-    /// snapshot before <paramref name="todayStartUtc"/> but are missing from the freshly
-    /// fetched balances — i.e. positions that were emptied since the last import.
+    /// snapshot before <paramref name="today"/> but are missing from the freshly fetched
+    /// balances — i.e. positions that were emptied since the last import.
     /// </summary>
-    async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateTime todayStartUtc)
+    async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateOnly today)
     {
-        var lastTimestamp = await db.AssetMeasurings
-            .Where(m => m.IntegrationId == integrationId && m.Timestamp < todayStartUtc)
-            .MaxAsync(m => (DateTime?)m.Timestamp);
+        var lastDate = await db.DailyHoldings
+            .Where(h => h.IntegrationId == integrationId && h.Date < today)
+            .MaxAsync(h => (DateOnly?)h.Date);
 
-        if (lastTimestamp == null) return new();
-
-        var lastDay = _clock.ToPortfolioDay(lastTimestamp.Value);
-        var lastDayStart = _clock.StartOfDayUtc(lastDay);
-        var lastDayEnd = _clock.StartOfDayUtc(lastDay.AddDays(1));
+        if (lastDate == null) return new();
 
         // Amount != 0 keeps the zero-markers self-terminating: an asset recorded as 0
         // is no longer part of the previous snapshot and won't get another 0 tomorrow
-        var previousSymbols = await db.AssetMeasurings
-            .Where(m => m.IntegrationId == integrationId
-                     && m.Timestamp >= lastDayStart && m.Timestamp < lastDayEnd
-                     && m.Amount != 0)
-            .Select(m => m.Symbol)
-            .Distinct()
+        var previousSymbols = await db.DailyHoldings
+            .Where(h => h.IntegrationId == integrationId
+                     && h.Date == lastDate
+                     && h.Amount != 0)
+            .Select(h => h.Symbol)
             .ToListAsync();
 
         var currentSymbols = balances.Select(b => b.Symbol).ToHashSet();
@@ -179,7 +166,7 @@ public class UpdateService : BackgroundService
         return previousSymbols.Where(s => !currentSymbols.Contains(s)).ToList();
     }
 
-    async Task AddMeasuring(DatabaseContext db, IPriceProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint)
+    async Task UpsertHolding(DatabaseContext db, IPriceProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint, DateOnly today)
     {
         var asset = await db.Assets.FindAsync(symbol);
 
@@ -192,19 +179,26 @@ public class UpdateService : BackgroundService
                 IsHidden = false
             };
             _logger.LogTrace("Adding new Asset: {Symbol} ({AssetType})", asset.Symbol, asset.AssetType);
-            await db.Assets.AddAsync(asset);
+            db.Assets.Add(asset);
         }
 
-        var measuring = new AssetMeasuring()
-        {
-            Symbol = asset.Symbol,
-            IntegrationId = exchangeIntegration.Id,
-            Timestamp = _clock.UtcNow,
-            Amount = balance
-        };
+        var holding = await db.DailyHoldings.FindAsync(exchangeIntegration.Id, asset.Symbol, today);
 
-        await db.AssetMeasurings.AddAsync(measuring);
-        _logger.LogTrace("Adding new AssetMeasuring to {Name} for {Symbol} - {Amount}", exchangeIntegration.Name, measuring.Symbol, measuring.Amount);
+        if (holding == null)
+        {
+            holding = new DailyHolding()
+            {
+                IntegrationId = exchangeIntegration.Id,
+                Symbol = asset.Symbol,
+                Date = today,
+                Source = HoldingSource.Sync,
+            };
+            db.DailyHoldings.Add(holding);
+        }
+
+        holding.Amount = balance;
+        holding.RecordedAtUtc = _clock.UtcNow;
+        _logger.LogTrace("Upserting DailyHolding for {Name}/{Symbol}/{Date} - {Amount}", exchangeIntegration.Name, holding.Symbol, holding.Date, holding.Amount);
     }
 
     /// <summary>

@@ -11,7 +11,9 @@ public class MeasuringServiceTest
 {
     private DatabaseContext _db;
     private MeasuringService _service;
+    private PortfolioClock _clock;
     private ExchangeIntegration _manualIntegration;
+    private DateOnly _today;
 
     [SetUp]
     public async Task Setup()
@@ -22,7 +24,9 @@ public class MeasuringServiceTest
             .Options;
 
         _db = new DatabaseContext(options);
-        _service = new MeasuringService(_db, TestClock.Create());
+        _clock = TestClock.Create();
+        _today = _clock.Today;
+        _service = new MeasuringService(_db, _clock);
 
         _manualIntegration = new ExchangeIntegration { Name = "Manual", IsManual = true };
         _db.ExchangeIntegrations.Add(_manualIntegration);
@@ -37,54 +41,40 @@ public class MeasuringServiceTest
         _db?.Dispose();
     }
 
-    private AddMeasuringDto Dto(decimal amount, DateTime? date = null) =>
-        new() { Symbol = "BTC", Amount = amount, Date = date ?? TestClock.Now.UtcDateTime };
+    private AddMeasuringDto Dto(decimal amount, DateOnly? date = null) =>
+        new() { Symbol = "BTC", Amount = amount, Date = date ?? _today };
 
     [Test]
-    public async Task AddIntegrationMeasuring_CreatesMeasuring()
+    public async Task AddIntegrationMeasuring_CreatesManualHolding()
     {
         await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.5m));
 
-        var measuring = await _db.AssetMeasurings.SingleAsync();
-        Assert.That(measuring.Symbol, Is.EqualTo("BTC"));
-        Assert.That(measuring.Amount, Is.EqualTo(0.5m));
-        Assert.That(measuring.IntegrationId, Is.EqualTo(_manualIntegration.Id));
+        var holding = await _db.DailyHoldings.SingleAsync();
+        Assert.That(holding.Symbol, Is.EqualTo("BTC"));
+        Assert.That(holding.Amount, Is.EqualTo(0.5m));
+        Assert.That(holding.IntegrationId, Is.EqualTo(_manualIntegration.Id));
+        Assert.That(holding.Date, Is.EqualTo(_today));
+        Assert.That(holding.Source, Is.EqualTo(HoldingSource.Manual));
+        Assert.That(holding.RecordedAtUtc, Is.EqualTo(_clock.UtcNow));
     }
 
     [Test]
-    public async Task AddIntegrationMeasuring_SameDay_UpdatesExistingMeasuring()
+    public async Task AddIntegrationMeasuring_SameDay_UpdatesExistingHolding()
     {
         await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.5m));
         await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.7m));
 
-        var measuring = await _db.AssetMeasurings.SingleAsync();
-        Assert.That(measuring.Amount, Is.EqualTo(0.7m));
+        var holding = await _db.DailyHoldings.SingleAsync();
+        Assert.That(holding.Amount, Is.EqualTo(0.7m));
     }
 
     [Test]
-    public async Task AddIntegrationMeasuring_UnspecifiedKind_IsStoredAsUtc()
+    public async Task AddIntegrationMeasuring_DifferentDays_CreatesSeparateHoldings()
     {
-        // clients may send dates without Z suffix; Npgsql would reject non-UTC kinds
-        var date = new DateTime(2026, 7, 8, 12, 0, 0, DateTimeKind.Unspecified);
+        await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.5m, _today.AddDays(-1)));
+        await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.7m, _today));
 
-        await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.5m, date));
-
-        var measuring = await _db.AssetMeasurings.SingleAsync();
-        Assert.That(measuring.Timestamp.Kind, Is.EqualTo(DateTimeKind.Utc));
-    }
-
-    [Test]
-    public async Task AddIntegrationMeasuring_LateEveningUtc_BelongsToNextZurichDay()
-    {
-        // 22:30 UTC on the 8th is already the 9th in Europe/Zurich (summer, UTC+2):
-        // a second measuring at noon UTC on the 9th must update, not duplicate
-        await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id,
-            Dto(0.5m, new DateTime(2026, 7, 8, 22, 30, 0, DateTimeKind.Utc)));
-        await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id,
-            Dto(0.7m, new DateTime(2026, 7, 9, 12, 0, 0, DateTimeKind.Utc)));
-
-        var measuring = await _db.AssetMeasurings.SingleAsync();
-        Assert.That(measuring.Amount, Is.EqualTo(0.7m));
+        Assert.That(await _db.DailyHoldings.CountAsync(), Is.EqualTo(2));
     }
 
     [Test]
@@ -108,21 +98,20 @@ public class MeasuringServiceTest
     [Test]
     public async Task AddIntegrationMeasuring_UnknownAsset_ThrowsKeyNotFoundException()
     {
-        var dto = new AddMeasuringDto { Symbol = "UNKNOWN", Amount = 1m, Date = TestClock.Now.UtcDateTime };
+        var dto = new AddMeasuringDto { Symbol = "UNKNOWN", Amount = 1m, Date = _today };
 
         Assert.ThrowsAsync<KeyNotFoundException>(
             () => _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, dto));
     }
 
     [Test]
-    public async Task DeleteMeasuring_RemovesMeasuring()
+    public async Task DeleteMeasuring_RemovesHolding()
     {
         await _service.AddIntegrationMeasuringAsync(_manualIntegration.Id, Dto(0.5m));
-        var measuring = await _db.AssetMeasurings.SingleAsync();
 
-        await _service.DeleteMeasuringAsync(measuring.Id);
+        await _service.DeleteMeasuringAsync(_manualIntegration.Id, "BTC", _today);
 
-        Assert.That(await _db.AssetMeasurings.CountAsync(), Is.EqualTo(0));
+        Assert.That(await _db.DailyHoldings.CountAsync(), Is.EqualTo(0));
     }
 
     [Test]
@@ -130,18 +119,17 @@ public class MeasuringServiceTest
     {
         var apiIntegration = new ExchangeIntegration { Name = "Api", IsManual = false };
         _db.ExchangeIntegrations.Add(apiIntegration);
-        var measuring = new AssetMeasuring { Symbol = "BTC", IntegrationId = apiIntegration.Id, Timestamp = TestClock.Now.UtcDateTime, Amount = 1m };
-        _db.AssetMeasurings.Add(measuring);
+        _db.DailyHoldings.Add(new DailyHolding { Symbol = "BTC", IntegrationId = apiIntegration.Id, Date = _today, Amount = 1m, Source = HoldingSource.Sync });
         await _db.SaveChangesAsync();
 
-        Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteMeasuringAsync(measuring.Id));
-        Assert.That(await _db.AssetMeasurings.CountAsync(), Is.EqualTo(1));
+        Assert.ThrowsAsync<InvalidOperationException>(() => _service.DeleteMeasuringAsync(apiIntegration.Id, "BTC", _today));
+        Assert.That(await _db.DailyHoldings.CountAsync(), Is.EqualTo(1));
     }
 
     [Test]
-    public async Task DeleteMeasuring_UnknownId_ThrowsKeyNotFoundException()
+    public async Task DeleteMeasuring_UnknownKey_ThrowsKeyNotFoundException()
     {
-        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.DeleteMeasuringAsync(Guid.NewGuid()));
+        Assert.ThrowsAsync<KeyNotFoundException>(() => _service.DeleteMeasuringAsync(Guid.NewGuid(), "BTC", _today));
     }
 
     [Test]
@@ -149,8 +137,8 @@ public class MeasuringServiceTest
     {
         var other = new ExchangeIntegration { Name = "Other", IsManual = true };
         _db.ExchangeIntegrations.Add(other);
-        _db.AssetMeasurings.Add(new AssetMeasuring { Symbol = "BTC", IntegrationId = _manualIntegration.Id, Timestamp = TestClock.Now.UtcDateTime, Amount = 1m });
-        _db.AssetMeasurings.Add(new AssetMeasuring { Symbol = "BTC", IntegrationId = other.Id, Timestamp = TestClock.Now.UtcDateTime, Amount = 2m });
+        _db.DailyHoldings.Add(new DailyHolding { Symbol = "BTC", IntegrationId = _manualIntegration.Id, Date = _today, Amount = 1m, Source = HoldingSource.Manual });
+        _db.DailyHoldings.Add(new DailyHolding { Symbol = "BTC", IntegrationId = other.Id, Date = _today, Amount = 2m, Source = HoldingSource.Manual });
         await _db.SaveChangesAsync();
 
         var result = await _service.GetMeasuringsByIntegrationAsync(_manualIntegration.Id);

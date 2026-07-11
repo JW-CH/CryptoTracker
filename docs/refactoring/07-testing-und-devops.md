@@ -14,7 +14,7 @@
 
 - **Auth** ist ungetestet (Login/Lockout/First-User-Setup/JWT).
 - ~~Tagesgrenzen-Szenarien~~ ✅ 2026-07-11: Tests laufen auf gepinnter Fake-Zeit
-  (`TestClock`/`PortfolioClock`, [Bug 6](01-kritische-bugs.md#bug-6) Schritt 1)
+  (`TestClock`/`PortfolioClock`, [Bug 6](01-kritische-bugs.md))
   inkl. Mitternachts-Grenzfällen; keine Abhängigkeit von der Systemzeit mehr.
 
 ## T2 — InMemory-Provider verdeckt genau die vorhandenen Bugs 🟠

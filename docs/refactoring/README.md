@@ -35,32 +35,36 @@ Jedes Dokument ist so geschrieben, dass die Punkte später einzeln abgearbeitet 
 
 **Die fünf größten Baustellen der Bestandsaufnahme — alle behoben:**
 
-1. ~~Fiat-Bewertung invertiert~~ ✅ 2026-07-09 (Altdaten bewusst nicht migriert)
+1. ~~Fiat-Bewertung invertiert~~ ✅ 2026-07-09 (Altdaten 2026-07-11 mit dem
+   Snapshot-Umbau endgültig verworfen)
 2. ~~Verkaufte Assets zählen ewig weiter~~ ✅ 2026-07-09 (0-Messungen + `maxfilldays`)
 3. ~~Offene Registrierung auf gemeinsamem Portfolio~~ ✅ 2026-07-09 entschärft
    (First-User-Setup; Grundsatzfrage Single-/Multi-Tenant weiter offen, [02](02-sicherheit.md))
-4. ~~Aggregation lädt komplette Messhistorie~~ ✅ teilweise 2026-07-09
-   (Mess-Query datumsbegrenzt; Preiszeilen-Fenster noch offen, [03/D3](03-datenmodell-und-aggregation.md))
-5. ~~Fehlgeschlagene Abrufe löschen Tagesdaten~~ ✅ 2026-07-09 (fetch-before-delete, Fehler-Isolation)
+4. ~~Aggregation lädt komplette Messhistorie~~ ✅ 2026-07-09/11
+   (Holdings datumsbegrenzt + `AsNoTracking`; Preiszeilen-Fenster noch offen, [03/D3](03-datenmodell-und-aggregation.md))
+5. ~~Fehlgeschlagene Abrufe löschen Tagesdaten~~ ✅ 2026-07-09 (seit dem
+   Snapshot-Upsert wird strukturell nie gelöscht)
 
 ## Empfohlene Reihenfolge (Roadmap)
 
 Die Phasen sind so geschnitten, dass jede für sich mergebar ist und die späteren
 Phasen auf den früheren aufbauen. Grobe Aufwandsschätzung in Personentagen (PT).
 
-### Phase 1 — Korrektheit ✅ (bis auf Bug 6)
-- ~~Bugs 1–5~~ ✅ erledigt 2026-07-09/10
-- **Offen: UTC/Lokalzeit-Konsistenz (Bug 6)** — der letzte große Block,
-  zusammen mit Phase 3 angehen
+### Phase 1 — Korrektheit ✅
+- ~~Bugs 1–10~~ ✅ erledigt 2026-07-09/10/11 (Bug 6 via `PortfolioClock` +
+  Snapshot-Modell, [01](01-kritische-bugs.md))
 
 ### Phase 2 — Sicherheit ✅ (bis auf Grundsatzfrage)
 - ~~First-User-Setup, Lockout, Rate-Limiting~~ ✅ erledigt 2026-07-09/10
 - **Offen: Entscheidung dokumentieren** — Single-Tenant oder Multi-User ([02/S1](02-sicherheit.md))
 
-### Phase 3 — Datenmodell & Aggregation (≈ 5–8 PT) — OFFEN
-- `AssetMeasuring` auf Tages-Snapshot mit natürlichem Schlüssel `(IntegrationId, Symbol, Date)` umstellen
-- Preiszeilen-Abfrage datumsbegrenzen, Indexe ergänzen (Mess-Query ist schon begrenzt)
-- `TimeProvider` einführen (testbare Zeit, Bug 6); ~~Basiswährung konfigurierbar~~ ✅
+### Phase 3 — Datenmodell & Aggregation — WEITGEHEND ERLEDIGT
+- ~~`DailyHolding`-Tages-Snapshot mit PK `(IntegrationId, Symbol, Date)`~~ ✅ 2026-07-11
+  (Altdaten bewusst verworfen, [03/D2](03-datenmodell-und-aggregation.md))
+- ~~`TimeProvider`/`PortfolioClock` (testbare Zeit, konfigurierbare Zeitzone)~~ ✅ 2026-07-11
+- ~~Basiswährung konfigurierbar~~ ✅
+- **Offen:** Preiszeilen-Fenster + Preis-Index ([03/D3](03-datenmodell-und-aggregation.md));
+  größere Grundsatzfragen D1 (Asset-Surrogate-Key) und D5 (Integrationen in die DB)
 
 ### Phase 4 — Architektur ✅
 - ~~Integration-Provider-Pattern, Service-Schicht, DTO-Umzug, Preis-Provider,

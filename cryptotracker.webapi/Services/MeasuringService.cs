@@ -15,9 +15,9 @@ namespace cryptotracker.webapi.Services
             _clock = clock;
         }
 
-        public async Task<List<AssetMeasuringDto>> GetMeasuringsByIntegrationAsync(Guid integrationId)
+        public async Task<List<DailyHoldingDto>> GetMeasuringsByIntegrationAsync(Guid integrationId)
         {
-            return (await _db.AssetMeasurings.Where(x => x.IntegrationId == integrationId).ToListAsync()).Select(AssetMeasuringDto.FromModel).ToList();
+            return (await _db.DailyHoldings.AsNoTracking().Where(x => x.IntegrationId == integrationId).ToListAsync()).Select(DailyHoldingDto.FromModel).ToList();
         }
 
         public async Task AddIntegrationMeasuringAsync(Guid integrationId, AddMeasuringDto dto)
@@ -28,40 +28,35 @@ namespace cryptotracker.webapi.Services
 
             var asset = await _db.Assets.FindAsync(dto.Symbol) ?? throw new KeyNotFoundException("Asset not found");
 
-            var timestamp = PortfolioClock.NormalizeUtc(dto.Date);
-            var day = _clock.ToPortfolioDay(timestamp);
-            var dayStart = _clock.StartOfDayUtc(day);
-            var dayEnd = _clock.StartOfDayUtc(day.AddDays(1));
+            var holding = await _db.DailyHoldings.FindAsync(integration.Id, asset.Symbol, dto.Date);
 
-            AssetMeasuring? measuring = await _db.AssetMeasurings.FirstOrDefaultAsync(x => x.Symbol == dto.Symbol && x.IntegrationId == integration.Id && x.Timestamp >= dayStart && x.Timestamp < dayEnd);
-
-            if (measuring != null)
+            if (holding == null)
             {
-                measuring.Timestamp = timestamp;
-                measuring.Amount = dto.Amount;
-            }
-            else
-            {
-                measuring = new AssetMeasuring()
+                holding = new DailyHolding()
                 {
-                    Symbol = asset.Symbol,
                     IntegrationId = integration.Id,
-                    Timestamp = timestamp,
-                    Amount = dto.Amount
+                    Symbol = asset.Symbol,
+                    Date = dto.Date,
+                    Source = HoldingSource.Manual,
                 };
-                await _db.AssetMeasurings.AddAsync(measuring);
+                _db.DailyHoldings.Add(holding);
             }
+
+            holding.Amount = dto.Amount;
+            holding.RecordedAtUtc = _clock.UtcNow;
 
             await _db.SaveChangesAsync();
         }
 
-        public async Task DeleteMeasuringAsync(Guid id)
+        public async Task DeleteMeasuringAsync(Guid integrationId, string symbol, DateOnly date)
         {
-            var measuring = await _db.AssetMeasurings.Include(x => x.Integration).FirstOrDefaultAsync(x => x.Id == id) ?? throw new KeyNotFoundException("Measuring not found");
+            var holding = await _db.DailyHoldings.Include(x => x.Integration)
+                .FirstOrDefaultAsync(x => x.IntegrationId == integrationId && x.Symbol == symbol && x.Date == date)
+                ?? throw new KeyNotFoundException("Measuring not found");
 
-            if (!measuring.Integration.IsManual) throw new InvalidOperationException("Integration is not manual");
+            if (!holding.Integration.IsManual) throw new InvalidOperationException("Integration is not manual");
 
-            _db.AssetMeasurings.Remove(measuring);
+            _db.DailyHoldings.Remove(holding);
 
             await _db.SaveChangesAsync();
         }
@@ -69,7 +64,7 @@ namespace cryptotracker.webapi.Services
         public struct AddMeasuringDto
         {
             public string Symbol { get; set; }
-            public DateTime Date { get; set; }
+            public DateOnly Date { get; set; }
             public decimal Amount { get; set; }
         }
     }

@@ -73,7 +73,7 @@ CryptoTracker is a cryptocurrency portfolio tracker with exchange integrations. 
 ### Key Domain Concepts
 - **Asset**: Tracked asset (crypto, fiat, stock) identified by symbol
 - **ExchangeIntegration**: Connected exchange account (Coinbase, Bitpanda, etc.) or manual entry
-- **AssetMeasuring**: Time-series snapshot of holdings per asset/integration (created daily by UpdateService)
+- **DailyHolding**: One snapshot per (integration, asset, portfolio day), upserted by UpdateService; the portfolio day is derived from the configured timezone via PortfolioClock
 
 ### Configuration
 Runtime config is in `config/config.yml`:
@@ -82,6 +82,9 @@ Runtime config is in `config/config.yml`:
 - JWT secret (must be >32 bytes)
 - OIDC provider settings
 - Update interval (minutes between balance syncs)
+- Timezone defining the portfolio day (default Europe/Zurich)
+
+All keys can be overridden via `CRYPTOTRACKER_`-prefixed environment variables (`__` for nesting).
 
 ### Tech Stack Details
 - **Backend**: .NET 10.0, EF Core 10.0, CryptoClients.Net for exchange APIs

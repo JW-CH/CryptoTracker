@@ -7,6 +7,6 @@
         public string? Description { get; set; }
         public bool IsManual { get; set; }
         public bool IsHidden { get; set; }
-        public List<AssetMeasuring> AssetMeasurings { get; set; } = new();
+        public List<DailyHolding> DailyHoldings { get; set; } = new();
     }
 }

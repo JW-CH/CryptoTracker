@@ -4,17 +4,18 @@ Das ist das Kernstück des Refactorings. Die Grundidee des Modells ist richtig
 (Bestände und Preise getrennt, Wert zur Abfragezeit berechnet) — aber mehrere
 Design-Entscheidungen verdienen es, hinterfragt zu werden.
 
-## Ist-Zustand
+## Ist-Zustand (nach dem D2-Umbau 2026-07-11)
 
 ```
-Asset                    AssetMeasuring                AssetPriceHistory
-─────                    ──────────────                ─────────────────
-Symbol (PK)   ◄──────┐   Id (Guid, PK)                 (Symbol, Date, Currency) PK
-ExternalId           ├── Symbol (FK)                   Symbol (FK) ─────► Asset
+Asset                    DailyHolding                       AssetPriceHistory
+─────                    ────────────                       ─────────────────
+Symbol (PK)   ◄──────┐   (IntegrationId, Symbol, Date) PK   (Symbol, Date, Currency) PK
+ExternalId           ├── Symbol (FK)                        Symbol (FK) ─────► Asset
 Name                 │   IntegrationId (FK) ──► ExchangeIntegration
-Image                │   Timestamp (DateTime)          Date (DateOnly)
-AssetType            │   Amount                        Currency
-IsHidden             │                                 Price
+Image                │   Date (DateOnly, Portfolio-Tag)     Date (DateOnly)
+AssetType            │   Amount                             Currency
+IsHidden             │   Source (Sync | Manual)             Price
+                     │   RecordedAtUtc (Audit)
 
 ExchangeIntegration: Id (Guid PK), Name, Description, IsManual, IsHidden
 ```
@@ -22,15 +23,16 @@ ExchangeIntegration: Id (Guid PK), Name, Description, IsManual, IsHidden
 Datenfluss:
 
 1. `UpdateService` läuft alle `interval` Minuten, holt pro Config-Integration
-   die Balances (via `IIntegrationProvider`), löscht die heutigen Messungen und
-   schreibt die aktuellen Balances als neue Messungen mit `Timestamp = UtcNow`
-   (inkl. 0-Zeilen für verschwundene Assets, siehe Bug 2).
+   die Balances (via `IIntegrationProvider`) und **upsertet** pro
+   `(Integration, Symbol, Portfolio-Tag)` genau einen Snapshot (inkl. 0-Zeilen
+   für verschwundene Assets, siehe Bug 2). Der Portfolio-Tag kommt aus der
+   `PortfolioClock` (konfigurierbare Zeitzone, Bug 6).
 2. `AssetMetadataService` schreibt/aktualisiert pro Asset genau eine
    Preiszeile pro Tag (Basiswährung aus Config, lowercase-normalisiert).
-3. Lesend rekonstruiert `PortfolioQueryService.GetAssetDayMeasuringBatchAsync`
-   für beliebige Tage den Bestand: pro `(Symbol, Integration)` die letzte
-   Messung ≤ Stichtag, multipliziert mit dem letzten Preis ≤ Stichtag
-   (Forward-Fill, begrenzt auf `maxfilldays`).
+3. Lesend nimmt `PortfolioQueryService.GetAssetDayMeasuringBatchAsync` pro
+   `(Symbol, Integration)` den letzten Snapshot ≤ Stichtag, multipliziert mit
+   dem letzten Preis ≤ Stichtag (Forward-Fill, begrenzt auf `maxfilldays`) —
+   keine Tagesgrenzen-Rekonstruktion aus Timestamps mehr.
 
 ---
 
@@ -53,81 +55,36 @@ Datenfluss:
 
 **Empfehlung:** Surrogate Key (`Guid Id`), Unique-Index auf `(Symbol, AssetType)`,
 Symbol-Normalisierung (Uppercase) an genau einer Stelle beim Import. FKs in
-`AssetMeasuring`/`AssetPriceHistory` auf `AssetId` umstellen. Das ist eine
+`DailyHolding`/`AssetPriceHistory` auf `AssetId` umstellen. Das ist eine
 größere Migration — lohnt sich aber, bevor mehr Anlageklassen (Stock/ETF ist ja
 angelegt) ernsthaft genutzt werden.
 
-## D2 — Hinterfragt: Messungen als lose Zeitreihe mit Delete+Insert 🔴
+## D2 — ~~Messungen als lose Zeitreihe mit Delete+Insert~~ ✅ erledigt 2026-07-11
 
-**Ist:** Pro Import-Lauf werden die heutigen Messungen gelöscht und neu geschrieben
-(`UpdateService.cs:63–67`). Bei `interval < 1 Tag` gibt es trotzdem nie mehr als
-den letzten Lauf des Tages — die Intraday-Historie wird weggeworfen, aber die
-Tabelle tut so, als wäre sie eine Timestamp-genaue Zeitreihe.
+Umgesetzt wie empfohlen: `DailyHolding` mit PK `(IntegrationId, Symbol, Date)`,
+`Source {Sync, Manual}`, `RecordedAtUtc`; Import und manuelle Messungen nutzen
+denselben idempotenten Upsert (kein Löschen mehr), Delete läuft über den
+natürlichen Schlüssel. **Altdaten bewusst verworfen** statt migriert
+(Single-User-Entscheidung; Messungen + Preishistorie per Migration geleert).
+Bewusst offen gelassen: Intraday-Historie wäre ein eigenes Feature (separate
+Tabelle mit Retention), kein Nebeneffekt. Der Name-Join der Config-Integrationen
+existiert weiterhin → siehe D5 unten.
 
-**Probleme:**
+## D3 — Forward-Fill zur Abfragezeit, größtenteils gefixt 🟡
 
-- Das Modell lügt: `Timestamp` suggeriert Intraday-Auflösung, faktisch ist es
-  „ein Snapshot pro Tag, Uhrzeit = letzter Import". Die gesamte Leselogik
-  (`ApiHelper`) muss deshalb aufwendig „letzte Messung im Tag" rekonstruieren.
-- Delete+Insert erzeugt unnötige Write-Churn und instabile `Id`s.
-- Die Lösch-Query filtert auf `Integration.Name == config.Name`
-  (`UpdateService.cs:64`) — Name als Join-Kriterium, obwohl es eine Id gibt.
-  Umbenennung in der Config erzeugt stillschweigend eine zweite Integration.
-- Manuelle Messungen (`MeasuringController`) schreiben in dieselbe Tabelle mit
-  derselben Ein-Zeile-pro-Tag-Semantik, aber eigener Upsert-Logik — zwei
-  Implementierungen derselben Idee.
-
-**Empfehlung — Snapshot-Modell ehrlich machen:**
-
-```
-AssetMeasuring (neu: DailyHolding)
-────────────────────────────────
-PK (IntegrationId, AssetId, Date)     -- natürlicher Schlüssel, DateOnly
-Amount            decimal
-RecordedAtUtc     DateTime            -- wann der Snapshot entstand (Audit)
-Source            enum { Sync, Manual }
-```
-
-- Import macht ein **Upsert** pro `(Integration, Asset, Tag)` — idempotent,
-  kein Löschen, keine Transaktions-Akrobatik.
-- Der Import schreibt einen **vollständigen** Snapshot: Assets, die im letzten
-  Snapshot der Integration vorkamen und jetzt fehlen, bekommen `Amount = 0`
-  (hat [Bug 2](01-kritische-bugs.md) bereits gefixt; das Snapshot-Modell macht die 0-Zeilen-Logik strukturell überflüssig).
-- Manuelle Einträge nutzen dieselbe Upsert-Semantik mit `Source = Manual`.
-- Wer Intraday-Historie *will*, sollte das als bewusstes Feature bauen
-  (separate Tabelle mit Retention), nicht als Nebeneffekt.
-
-## D3 — Hinterfragt: Forward-Fill zur Abfragezeit, teils gefixt 🔴
-
-> **Teilstatus 2026-07-09:** Die Mess-Query hat seit dem Bug-2-Fix eine untere
-> Datumsgrenze und der Forward-Fill ist auf `maxfilldays` begrenzt (Punkt 2
-> erledigt). Offen: Preiszeilen-Fenster, Indexe, `AsNoTracking()`.
-
-**Ist:** `PortfolioQueryService.GetAssetDayMeasuringBatchAsync` lädt
-
-- alle (nicht versteckten) Assets,
-- alle Integrationen,
-- **alle Preiszeilen** ≤ maxDay,
-- Messungen im Fenster (seit Bug-2-Fix datumsbegrenzt) inkl. `Include(Integration)`
-
-in den Speicher und rechnet dort. Für die Preiszeilen gibt es weiterhin keine
-untere Datumsgrenze — die Grundlast wächst mit der Historie.
+> **Teilstatus 2026-07-11:** Mess-/Holding-Query datumsbegrenzt und auf dem
+> neuen PK unterwegs, Forward-Fill auf `maxfilldays` begrenzt, `AsNoTracking()`
+> überall in der Aggregation. **Offen ist nur noch das Preiszeilen-Fenster.**
 
 **Empfehlung (Rest):**
 
 1. **Datumsfenster auch für Preise:** Für einen Bereich `[from, to]` werden nur
-   benötigt: die Zeilen im Fenster **plus** je `(Integration, Asset)` die letzte
+   benötigt: die Zeilen im Fenster **plus** je Asset die letzte
    Zeile vor `from` (als Startwert für den Fill). Letzteres ist in SQL ein
    `DISTINCT ON`/`ROW_NUMBER()`-Query — mit EF machbar
    (`GroupBy` + `Max` oder Raw SQL), Npgsql unterstützt `DISTINCT ON` via
    `EF.Functions`. Damit skaliert die Abfrage mit dem Fenster, nicht mit der
-   Tabellengröße.
-2. **Indexe:** Es gibt nur die automatischen FK-Indexe. Für die Leselast fehlen
-   `AssetMeasuring (IntegrationId, Symbol, Timestamp DESC)` und
-   `AssetPriceHistory (Symbol, Currency, Date DESC)`. Beim Umbau auf D2 wird der
-   PK `(IntegrationId, AssetId, Date)` das größtenteils erledigen.
-3. **`AsNoTracking()`** für alle Lese-Queries (Aggregation trackt aktuell
-   tausende Entities völlig umsonst).
+   Tabellengröße. Dazu Index `AssetPriceHistory (Symbol, Currency, Date DESC)`.
 
 **Bewusst NICHT empfohlen:** Vorberechnete Tageswerte (Materialisierung von
 `TotalValue`) — solange die Abfragen wie oben gefenstert sind, ist die Berechnung
@@ -183,35 +140,31 @@ Aufwand ≈ 2–3 PT, große UX-Verbesserung.
 
 ## D6 — Kleinere Modell-Punkte 🟡
 
-- `AssetMeasuring.Integration` ist non-nullable, aber ohne `required`/Konstruktor
-  (`AssetMeasuring.cs:13`) — Compiler-Warnung wird unterdrückt statt modelliert.
+- ~~`AssetMeasuring.Integration` non-nullable ohne `required`~~ ✅ 2026-07-11:
+  `DailyHolding.Integration` nutzt das `= null!`-EF-Idiom, Warnung weg.
 - `ExchangeIntegration.IsHidden` wird nirgends ausgewertet (Assets haben ein
   funktionierendes `IsHidden`, Integrationen nicht) — implementieren oder entfernen.
-- `decimal(18,10)` global (`DatabaseContext.cs:23`): 8 Vorkommastellen reichen
+- `decimal(18,10)` global (`DatabaseContext.cs`): 8 Vorkommastellen reichen
   für BTC-Beträge, aber `TotalValue`-artige Summen in CHF können bei großen
   Portfolios knapp werden; für Preise von Micro-Cap-Coins sind 10 Nachkommastellen
   teils zu wenig (Preise < 1e-10 existieren). Pro Spalte entscheiden:
   Amounts `(38,18)`, Preise `(38,18)`, o. ä.
 - `AssetType` enthält `Commodity`/`RealEstate`, für die es keinerlei Preis-Provider
   gibt — entweder mit „manueller Preis"-Feature hinterlegen oder streichen.
-- Kein `CreatedAt`/`UpdatedAt` auf irgendeiner Tabelle — für Debugging von
-  Import-Problemen sehr hilfreich.
+- Kein `CreatedAt`/`UpdatedAt` auf Asset/Integration/Preis-Tabellen — für
+  Debugging von Import-Problemen hilfreich (`DailyHolding.RecordedAtUtc`
+  existiert seit D2).
 
 ## Zielbild (Kurzfassung)
 
 ```
-Asset:              Id (PK), Symbol, AssetType, UNIQUE(Symbol, AssetType), …
-Integration:        Id (PK), Name, Type, CredentialsEncrypted, …   (keine Config-Dualität)
-DailyHolding:       PK (IntegrationId, AssetId, Date), Amount, Source, RecordedAtUtc
-AssetPrice:         PK (AssetId, Date), Price (Basiswährung der Installation)
+Asset:              Id (PK), Symbol, AssetType, UNIQUE(Symbol, AssetType), …   ← OFFEN (D1)
+Integration:        Id (PK), Name, Type, CredentialsEncrypted, …               ← OFFEN (D5)
+DailyHolding:       PK (IntegrationId, Symbol, Date), Amount, Source, RecordedAtUtc   ✅
+AssetPrice:         PK (AssetId, Date), Price (Basiswährung)                   ← Currency-Spalte offen (D4)
 
-Import:   fetch → validate → upsert vollständiger Tages-Snapshot (inkl. 0-Zeilen)
-Lesen:    Fenster [from,to] + letzter Snapshot vor from, Fill max. N Tage, SQL-seitig
-Zeit:     Speicherung UTC, Portfolio-Tag aus konfigurierter Zeitzone, TimeProvider injiziert
-Währung:  baseCurrency aus Config, überall lowercase-normalisiert
+Import:   fetch → validate → upsert vollständiger Tages-Snapshot (inkl. 0-Zeilen)   ✅
+Lesen:    Fenster [from,to] + letzter Snapshot vor from, Fill max. N Tage   ✅ (Preis-Fenster offen, D3)
+Zeit:     Speicherung UTC, Portfolio-Tag aus konfigurierter Zeitzone (PortfolioClock)   ✅
+Währung:  baseCurrency aus Config, überall lowercase-normalisiert   ✅
 ```
-
-Migrationsstrategie: neue Tabellen parallel anlegen, Bestandsdaten per Skript
-überführen (letzte Messung pro Tag = Snapshot), Leselogik umstellen, alte
-Tabellen nach Verifikationsphase droppen. Die EF-Migrationshistorie ist mit zwei
-Migrationen jung genug, um das sauber zu machen.

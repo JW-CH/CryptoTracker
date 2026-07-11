@@ -1184,7 +1184,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AssetMeasuringDto"
+                    "$ref": "#/components/schemas/DailyHoldingDto"
                   }
                 }
               },
@@ -1192,7 +1192,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AssetMeasuringDto"
+                    "$ref": "#/components/schemas/DailyHoldingDto"
                   }
                 }
               },
@@ -1200,7 +1200,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AssetMeasuringDto"
+                    "$ref": "#/components/schemas/DailyHoldingDto"
                   }
                 }
               }
@@ -1265,14 +1265,12 @@
             }
           }
         }
-      }
-    },
-    "/api/Measuring/{id}": {
+      },
       "delete": {
         "tags": [
-          "Measuring"
+          "Integration"
         ],
-        "operationId": "DeleteMeasuringById",
+        "operationId": "DeleteIntegrationMeasuring",
         "parameters": [
           {
             "name": "id",
@@ -1281,6 +1279,23 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           }
         ],
@@ -1351,7 +1366,7 @@
           },
           "date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
           },
           "amount": {
             "type": "number",
@@ -1427,36 +1442,6 @@
         },
         "additionalProperties": false
       },
-      "AssetMeasuringDto": {
-        "required": [
-          "integrationId",
-          "symbol"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "symbol": {
-            "type": "string",
-            "nullable": true
-          },
-          "integrationId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "amount": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false
-      },
       "AssetType": {
         "enum": [
           "Fiat",
@@ -1494,6 +1479,42 @@
           }
         },
         "additionalProperties": false
+      },
+      "DailyHoldingDto": {
+        "required": [
+          "integrationId",
+          "symbol"
+        ],
+        "type": "object",
+        "properties": {
+          "integrationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "symbol": {
+            "type": "string",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "source": {
+            "$ref": "#/components/schemas/HoldingSource"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HoldingSource": {
+        "enum": [
+          "Sync",
+          "Manual"
+        ],
+        "type": "string"
       },
       "IntegrationAmount": {
         "required": [
@@ -1645,9 +1666,6 @@
     },
     {
       "name": "Integration"
-    },
-    {
-      "name": "Measuring"
     }
   ]
 }

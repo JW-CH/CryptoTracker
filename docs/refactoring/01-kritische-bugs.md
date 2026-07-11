@@ -1,54 +1,8 @@
 # Kritische Bugs
 
-Diese Punkte produzierten **falsche Zahlen oder Datenverlust**. Stand 2026-07-10
-ist davon nur noch **Bug 6** offen — die erledigten Punkte stehen unten als
-Kurzprotokoll (Details und ursprüngliche Befunde in der Git-Historie dieses
-Dokuments).
-
----
-
-<a id="bug-6"></a>
-## Bug 6 — UTC/Lokalzeit-Mischung verschiebt Tagesgrenzen 🟠 (teilweise)
-
-> **Teilstatus 2026-07-11 (Schritt 1 von 2):** `PortfolioClock` (TimeProvider +
-> konfigurierbare `timezone`, Default Europe/Zurich) ist die einzige Stelle, die
-> den Portfolio-Tag aus UTC ableitet; alle sechs Stellen unten nutzen sie,
-> `DateTime.Now` ist aus dem Backend verschwunden. Ungültige Zeitzone bricht den
-> Start ab; Client-`DateTime`s werden auf UTC normalisiert (Npgsql-Crash gefixt);
-> Tests laufen auf gepinnter Fake-Zeit inkl. Tagesgrenzen-Szenarien.
-> **Offen (Schritt 2):** D2-Snapshot-Modell — der Tag wird dann beim Schreiben
-> als `Date`-Spalte materialisiert statt lesend aus Timestamps gefenstert
-> ([03/D2](03-datenmodell-und-aggregation.md)).
-
-**Betroffen (Auswahl, Stand nach den Service-Umbauten):**
-
-| Stelle | Zeitbasis |
-|---|---|
-| `UpdateService.Import` (Tages-Löschung, Messung) | `DateTime.UtcNow` |
-| `CryptoTrackerController` („heute") | `DateTime.Now` (Serverzeit) |
-| `AssetMetadataService.ApplyMetadataAsync` (Preis-Datum) | `DateTime.Now` |
-| `IntegrationService.GetIntegrationDetailsAsync` („heute") | `DateTime.Now` |
-| `MeasuringService.AddIntegrationMeasuringAsync` (manuelle Messung) | `dto.Date.Date` (Client-Kind) |
-| `PortfolioQueryService` (Tagesgrenzen) | `DateOnly` → UTC-Mitternacht |
-
-Im Docker-Container läuft der Server auf UTC, lokal auf Europe/Zurich — dieselbe
-Abfrage liefert je nach Umgebung andere „Tage". Eine Messung um 23:30 UTC gehört
-lokal schon zum Folgetag; die Lösch-Logik des Imports (UTC-Tag) und die Anzeige-
-Logik (lokaler Tag) schneiden unterschiedlich.
-
-Zusätzlich ein Laufzeitrisiko: `MeasuringService.AddIntegrationMeasuringAsync`
-schreibt `dto.Date` direkt in eine `timestamptz`-Spalte. Npgsql wirft für
-`DateTimeKind.Local`/`Unspecified` eine `InvalidCastException` — ob der Client ein
-`Z`-Suffix schickt, entscheidet also über Erfolg oder 500er. **Verifizieren und
-normalisieren** (`DateTime.SpecifyKind(..., Utc)` bzw. `ToUniversalTime()`).
-
-**Fix-Prinzip:** Speicherung konsequent UTC; „Portfolio-Tag" ist eine fachliche
-Entscheidung (empfohlen: konfigurierbare Anzeige-Zeitzone, Default Europe/Zurich)
-und wird an genau einer Stelle aus UTC abgeleitet. `TimeProvider` injizieren statt
-statischer `DateTime.Now`-Aufrufe — macht das auch endlich testbar (die
-`AsyncCache`/`FakeTimeProvider`-Infrastruktur aus dem Bug-9-Fix ist ein Anfang).
-
----
+Diese Punkte produzierten **falsche Zahlen oder Datenverlust**. Stand 2026-07-11
+sind **alle behoben** — Details und ursprüngliche Befunde stehen in der
+Git-Historie dieses Dokuments.
 
 ## Erledigt (Kurzprotokoll)
 
@@ -58,7 +12,8 @@ statischer `DateTime.Now`-Aufrufe — macht das auch endlich testbar (die
 | **2** — Verkaufte Assets zählen ewig 🔴 | Import schreibt 0-Messungen für verschwundene Assets; Forward-Fill auf `maxfilldays` (Default 10) begrenzt | behoben 2026-07-09 |
 | **3** — Währungs-Casing chf/CHF 🟠 | `basecurrency` konfigurierbar, Setter normalisiert lowercase, Preis-Lookups filtern auf Currency | behoben 2026-07-09. Alte `CHF`-Zeilen bewusst nicht migriert (wie Bug 1) |
 | **4** — Auto-Assets immer Crypto 🟠 | `BalanceResult.AssetType?`-Hinweis von der Quelle (Bitpanda, Blockchains) + Frankfurter-Fallback für Misch-Exchanges | behoben 2026-07-10 |
-| **5** — Fehlabruf löscht Tagesdaten 🟠 | Provider werfen statt leere Listen; fetch-before-delete; Transaktion + Fehler-Isolation pro Integration | behoben 2026-07-09 |
+| **5** — Fehlabruf löscht Tagesdaten 🟠 | Provider werfen statt leere Listen; fetch-before-delete; Transaktion + Fehler-Isolation pro Integration | behoben 2026-07-09; seit dem Snapshot-Upsert (Bug 6/D2) wird strukturell nie gelöscht |
+| **6** — UTC/Lokalzeit-Mischung verschiebt Tagesgrenzen 🟠 | `PortfolioClock` (TimeProvider + konfigurierbare `timezone`, Default Europe/Zurich) als einzige Tages-Ableitung, kein `DateTime.Now` mehr; dann [D2-Snapshot-Modell](03-datenmodell-und-aggregation.md): `DailyHolding` mit PK `(IntegrationId, Symbol, Date)`, Tag wird beim Schreiben materialisiert. Tests auf gepinnter Fake-Zeit | behoben 2026-07-11. **Altdaten bewusst verworfen** (Single-User-Entscheidung): Messungen + Preishistorie per Migration geleert, Neuaufbau ab erstem Import |
 | **7** — Frankfurter-Host umgezogen 🟡 | Default-BaseUrl `api.frankfurter.dev/v1` | behoben 2026-07-09 |
 | **8** — `GetAsset` ohne Currency-Filter 🟡 | Preis-Lookups filtern auf `BaseCurrency` | behoben 2026-07-09 (mit Bug 3) |
 | **9** — Caches ohne TTL in Singletons 🟡 | `IMemoryCache` (24h TTL) in beiden Listen-Providern; Fehler werfen und werden nie gecacht | behoben 2026-07-10. Rest-Risiko Doppel-Fetch bei parallelem Erst-Aufruf bewusst akzeptiert |

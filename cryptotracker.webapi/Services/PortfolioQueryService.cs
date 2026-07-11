@@ -9,13 +9,11 @@ namespace cryptotracker.webapi.Services
     {
         private readonly DatabaseContext _db;
         private readonly ICryptoTrackerConfig _config;
-        private readonly PortfolioClock _clock;
 
-        public PortfolioQueryService(DatabaseContext db, ICryptoTrackerConfig config, PortfolioClock clock)
+        public PortfolioQueryService(DatabaseContext db, ICryptoTrackerConfig config)
         {
             _db = db;
             _config = config;
-            _clock = clock;
         }
 
         public async Task<List<AssetHoldingDto>> GetAssetDayMeasuringAsync(DateOnly day, string? symbol = null, Guid? integrationId = null)
@@ -42,8 +40,8 @@ namespace cryptotracker.webapi.Services
             if (integrationId.HasValue)
                 integrations = integrations.Where(x => x.Id == integrationId);
 
-            var assetList = await assets.ToListAsync();
-            var integrationList = await integrations.ToListAsync();
+            var assetList = await assets.AsNoTracking().ToListAsync();
+            var integrationList = await integrations.AsNoTracking().ToListAsync();
 
             var allSymbols = assetList.Select(x => x.Symbol).ToList();
             var allIntegrationIds = integrationList.Select(x => x.Id).ToList();
@@ -55,6 +53,7 @@ namespace cryptotracker.webapi.Services
             var currency = _config.BaseCurrency;
 
             var allPriceHistories = await _db.AssetPriceHistory
+                .AsNoTracking()
                 .Where(x => x.Date <= maxDay && x.Currency == currency)
                 .Where(x => allSymbols.Contains(x.Symbol))
                 .ToListAsync();
@@ -63,43 +62,41 @@ namespace cryptotracker.webapi.Services
                 .GroupBy(x => x.Symbol)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Date).ToList());
 
-            var maxDayPlusOne = _clock.StartOfDayUtc(maxDay.AddDays(1));
-            // measurings older than <oldest requested day> - maxFillDays can never be
+            // holdings older than <oldest requested day> - maxFillDays can never be
             // carried forward into the requested range, so don't even load them
-            var minDay = days.Min();
-            var minTimestamp = _clock.StartOfDayUtc(minDay.AddDays(-maxFillDays));
-            var allMeasurings = await _db.AssetMeasurings
+            var minDay = days.Min().AddDays(-maxFillDays);
+            var allHoldings = await _db.DailyHoldings
+                .AsNoTracking()
                 .Include(x => x.Integration)
-                .Where(x => x.Timestamp < maxDayPlusOne && x.Timestamp >= minTimestamp)
+                .Where(x => x.Date <= maxDay && x.Date >= minDay)
                 .Where(x => allSymbols.Contains(x.Symbol))
                 .Where(x => allIntegrationIds.Contains(x.IntegrationId))
                 .ToListAsync();
 
-            var measuringsByKey = allMeasurings
+            var holdingsByKey = allHoldings
                 .GroupBy(x => (x.Symbol, x.IntegrationId))
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Timestamp).ToList());
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Date).ToList());
 
             var result = new Dictionary<DateOnly, List<AssetHoldingDto>>();
             foreach (var day in days)
             {
-                result[day] = BuildDayResult(day, assetList, integrationList, pricesBySymbol, measuringsByKey, maxFillDays);
+                result[day] = BuildDayResult(day, assetList, integrationList, pricesBySymbol, holdingsByKey, maxFillDays);
             }
 
             return result;
         }
 
-        private List<AssetHoldingDto> BuildDayResult(
+        private static List<AssetHoldingDto> BuildDayResult(
             DateOnly day,
             List<Asset> assets,
             List<ExchangeIntegration> integrations,
             Dictionary<string, List<AssetPriceHistory>> pricesBySymbol,
-            Dictionary<(string Symbol, Guid IntegrationId), List<AssetMeasuring>> measuringsByKey,
+            Dictionary<(string Symbol, Guid IntegrationId), List<DailyHolding>> holdingsByKey,
             int maxFillDays)
         {
-            var dayPlusOne = _clock.StartOfDayUtc(day.AddDays(1));
-            // forward-fill limit: only carry a measuring into this day if it is at most
+            // forward-fill limit: only carry a holding into this day if it is at most
             // maxFillDays old; older data counts as missing instead of silently stale
-            var minTimestamp = _clock.StartOfDayUtc(day.AddDays(-maxFillDays));
+            var minDay = day.AddDays(-maxFillDays);
             var result = new List<AssetHoldingDto>();
 
             foreach (var asset in assets)
@@ -111,32 +108,26 @@ namespace cryptotracker.webapi.Services
                     if (ph != null) price = ph.Price;
                 }
 
-                var allMeasurings = new List<AssetMeasuring>();
+                var holdings = new List<DailyHolding>();
                 bool hasAnyData = false;
 
                 foreach (var integration in integrations)
                 {
-                    if (!measuringsByKey.TryGetValue((asset.Symbol, integration.Id), out var groupMeasurings))
+                    if (!holdingsByKey.TryGetValue((asset.Symbol, integration.Id), out var groupHoldings))
                         continue;
 
-                    var latest = groupMeasurings.FirstOrDefault(x => x.Timestamp < dayPlusOne && x.Timestamp >= minTimestamp);
+                    // exactly one snapshot per day — the newest one at or before the
+                    // requested day is the integration's holding for that day
+                    var latest = groupHoldings.FirstOrDefault(x => x.Date <= day && x.Date >= minDay);
                     if (latest == null) continue;
 
                     hasAnyData = true;
-                    var latestDay = _clock.ToPortfolioDay(latest.Timestamp);
-                    var latestDayStart = _clock.StartOfDayUtc(latestDay);
-                    var latestDayEnd = _clock.StartOfDayUtc(latestDay.AddDays(1));
-
-                    var measurings = groupMeasurings
-                        .Where(x => x.Timestamp >= latestDayStart && x.Timestamp < latestDayEnd)
-                        .ToList();
-
-                    allMeasurings.AddRange(measurings);
+                    holdings.Add(latest);
                 }
 
                 if (!hasAnyData) continue;
 
-                var dto = AssetHoldingDto.SumFromModels(asset, allMeasurings, price);
+                var dto = AssetHoldingDto.SumFromModels(asset, holdings, price);
 
                 // sold positions (explicit zero measurings) shouldn't show up as 0-rows;
                 // the total is summed across integrations, so partial holdings survive

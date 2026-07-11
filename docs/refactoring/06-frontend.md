@@ -30,10 +30,10 @@ Backend, aber einige betreffen Korrektheit.
 - `toFixed(2)`/`toFixed(8)` statt `Intl.NumberFormat('de-CH', { style: 'currency' })`
   — keine Tausendertrennung, hässliche Beträge bei großen Portfolios.
   → zentraler `formatCurrency`/`formatAmount`-Helper in `$lib`.
-- `report/+page.svelte:18` schickt `date.toISOString()` (UTC) an einen Endpoint,
-  der server-seitig `ToLocalTime()` macht — Teil des Zeitzonen-Themas
-  ([Bug 6](01-kritische-bugs.md#bug-6)); nach dem Backend-Fix hier auf
-  `DateOnly`-Strings (`yyyy-MM-dd`) umstellen.
+- `report/+page.svelte:18` schickt `date.toISOString()` an `GetMeasuringsByDate` —
+  das Backend leitet daraus inzwischen sauber den Portfolio-Tag ab
+  ([Bug 6](01-kritische-bugs.md) ist behoben), aber der Endpoint sollte trotzdem
+  auf `DateOnly`-Strings (`yyyy-MM-dd`) umgestellt werden statt `DateTime` zu raten.
 
 ## F3 — Auth-Handling 🟡
 

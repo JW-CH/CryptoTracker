@@ -13,7 +13,6 @@ public class PortfolioQueryServiceTest
 
     private DatabaseContext _db;
     private PortfolioQueryService _service;
-    private PortfolioClock _clock;
     private ExchangeIntegration _integrationA;
     private ExchangeIntegration _integrationB;
     private DateOnly _today;
@@ -27,9 +26,8 @@ public class PortfolioQueryServiceTest
             .Options;
 
         _db = new DatabaseContext(options);
-        _clock = TestClock.Create();
-        _service = new PortfolioQueryService(_db, new CryptoTrackerConfig { MaxFillDays = MaxFillDays }, _clock);
-        _today = _clock.Today;
+        _service = new PortfolioQueryService(_db, new CryptoTrackerConfig { MaxFillDays = MaxFillDays });
+        _today = TestClock.Create().Today;
 
         _integrationA = new ExchangeIntegration { Name = "Exchange A" };
         _integrationB = new ExchangeIntegration { Name = "Exchange B" };
@@ -56,35 +54,15 @@ public class PortfolioQueryServiceTest
 
     private async Task AddMeasuring(DateOnly day, decimal amount, ExchangeIntegration? integration = null)
     {
-        _db.AssetMeasurings.Add(new AssetMeasuring
+        _db.DailyHoldings.Add(new DailyHolding
         {
             Symbol = "BTC",
             IntegrationId = (integration ?? _integrationA).Id,
-            // noon keeps the measuring safely inside the day regardless of test runtime
-            Timestamp = day.ToDateTime(new TimeOnly(12, 0), DateTimeKind.Utc),
-            Amount = amount
+            Date = day,
+            Amount = amount,
+            Source = HoldingSource.Sync
         });
         await _db.SaveChangesAsync();
-    }
-
-    [Test]
-    public async Task MeasuringLateEveningUtc_CountsTowardsNextPortfolioDay()
-    {
-        // 22:30 UTC on day-1 is already "today" in Europe/Zurich (summer, UTC+2)
-        _db.AssetMeasurings.Add(new AssetMeasuring
-        {
-            Symbol = "BTC",
-            IntegrationId = _integrationA.Id,
-            Timestamp = _clock.StartOfDayUtc(_today).AddMinutes(30),
-            Amount = 0.5m
-        });
-        await _db.SaveChangesAsync();
-
-        var yesterday = await _service.GetAssetDayMeasuringAsync(_today.AddDays(-1));
-        var today = await _service.GetAssetDayMeasuringAsync(_today);
-
-        Assert.That(yesterday, Is.Empty);
-        Assert.That(today, Has.Count.EqualTo(1));
     }
 
     [Test]
