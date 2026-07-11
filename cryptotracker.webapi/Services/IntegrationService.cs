@@ -8,11 +8,13 @@ namespace cryptotracker.webapi.Services
     {
         private readonly DatabaseContext _db;
         private readonly PortfolioQueryService _portfolioQueryService;
+        private readonly PortfolioClock _clock;
 
-        public IntegrationService(DatabaseContext db, PortfolioQueryService portfolioQueryService)
+        public IntegrationService(DatabaseContext db, PortfolioQueryService portfolioQueryService, PortfolioClock clock)
         {
             _db = db;
             _portfolioQueryService = portfolioQueryService;
+            _clock = clock;
         }
 
         public async Task<List<IntegrationDto>> GetIntegrationsAsync()
@@ -26,7 +28,7 @@ namespace cryptotracker.webapi.Services
 
             if (integration == null) return null;
 
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = _clock.Today;
 
             var measurings = await _portfolioQueryService.GetAssetDayMeasuringAsync(today, integrationId: integration.Id);
 

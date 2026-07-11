@@ -48,7 +48,8 @@ public class AssetServiceTest
             Mock.Of<ILogger<AssetMetadataService>>(),
             _dbContext,
             priceProviders,
-            config
+            config,
+            TestClock.Create()
         );
 
         _service = new AssetService(

@@ -9,11 +9,13 @@ namespace cryptotracker.webapi.Services
     {
         private readonly DatabaseContext _db;
         private readonly ICryptoTrackerConfig _config;
+        private readonly PortfolioClock _clock;
 
-        public PortfolioQueryService(DatabaseContext db, ICryptoTrackerConfig config)
+        public PortfolioQueryService(DatabaseContext db, ICryptoTrackerConfig config, PortfolioClock clock)
         {
             _db = db;
             _config = config;
+            _clock = clock;
         }
 
         public async Task<List<AssetHoldingDto>> GetAssetDayMeasuringAsync(DateOnly day, string? symbol = null, Guid? integrationId = null)
@@ -61,11 +63,11 @@ namespace cryptotracker.webapi.Services
                 .GroupBy(x => x.Symbol)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Date).ToList());
 
-            var maxDayPlusOne = maxDay.AddDays(1).ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+            var maxDayPlusOne = _clock.StartOfDayUtc(maxDay.AddDays(1));
             // measurings older than <oldest requested day> - maxFillDays can never be
             // carried forward into the requested range, so don't even load them
             var minDay = days.Min();
-            var minTimestamp = minDay.AddDays(-maxFillDays).ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+            var minTimestamp = _clock.StartOfDayUtc(minDay.AddDays(-maxFillDays));
             var allMeasurings = await _db.AssetMeasurings
                 .Include(x => x.Integration)
                 .Where(x => x.Timestamp < maxDayPlusOne && x.Timestamp >= minTimestamp)
@@ -86,7 +88,7 @@ namespace cryptotracker.webapi.Services
             return result;
         }
 
-        private static List<AssetHoldingDto> BuildDayResult(
+        private List<AssetHoldingDto> BuildDayResult(
             DateOnly day,
             List<Asset> assets,
             List<ExchangeIntegration> integrations,
@@ -94,10 +96,10 @@ namespace cryptotracker.webapi.Services
             Dictionary<(string Symbol, Guid IntegrationId), List<AssetMeasuring>> measuringsByKey,
             int maxFillDays)
         {
-            var dayPlusOne = day.AddDays(1).ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+            var dayPlusOne = _clock.StartOfDayUtc(day.AddDays(1));
             // forward-fill limit: only carry a measuring into this day if it is at most
             // maxFillDays old; older data counts as missing instead of silently stale
-            var minTimestamp = day.AddDays(-maxFillDays).ToDateTime(new TimeOnly(0, 0, 0), DateTimeKind.Utc);
+            var minTimestamp = _clock.StartOfDayUtc(day.AddDays(-maxFillDays));
             var result = new List<AssetHoldingDto>();
 
             foreach (var asset in assets)
@@ -121,11 +123,12 @@ namespace cryptotracker.webapi.Services
                     if (latest == null) continue;
 
                     hasAnyData = true;
-                    var latestDate = latest.Timestamp.ToUniversalTime().Date;
-                    var tomorrow = latestDate.AddDays(1);
+                    var latestDay = _clock.ToPortfolioDay(latest.Timestamp);
+                    var latestDayStart = _clock.StartOfDayUtc(latestDay);
+                    var latestDayEnd = _clock.StartOfDayUtc(latestDay.AddDays(1));
 
                     var measurings = groupMeasurings
-                        .Where(x => x.Timestamp >= latestDate && x.Timestamp < tomorrow)
+                        .Where(x => x.Timestamp >= latestDayStart && x.Timestamp < latestDayEnd)
                         .ToList();
 
                     allMeasurings.AddRange(measurings);

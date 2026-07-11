@@ -12,6 +12,7 @@ namespace cryptotracker.core.Models
         public string LogLevel { get; set; } = "Information";
         public StockApi? StockApi { get; set; } = null;
         public int MaxFillDays { get; set; } = 10;
+        public string Timezone { get; set; } = "Europe/Zurich";
 
         private string _baseCurrency = "chf";
         public string BaseCurrency

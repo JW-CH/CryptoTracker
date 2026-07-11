@@ -11,13 +11,15 @@ namespace cryptotracker.webapi.Services
         private readonly DatabaseContext _db;
         private readonly IEnumerable<IPriceProvider> _priceProviders;
         private readonly ICryptoTrackerConfig _config;
+        private readonly PortfolioClock _clock;
 
-        public AssetMetadataService(ILogger<AssetMetadataService> logger, DatabaseContext db, IEnumerable<IPriceProvider> priceProviders, ICryptoTrackerConfig config)
+        public AssetMetadataService(ILogger<AssetMetadataService> logger, DatabaseContext db, IEnumerable<IPriceProvider> priceProviders, ICryptoTrackerConfig config, PortfolioClock clock)
         {
             _logger = logger;
             _db = db;
             _priceProviders = priceProviders;
             _config = config;
+            _clock = clock;
         }
 
         /// <summary>
@@ -55,14 +57,15 @@ namespace cryptotracker.webapi.Services
                 asset.Image = metadata.Image;
 
             var currency = _config.BaseCurrency;
-            var price = await _db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Currency == currency && p.Date == DateOnly.FromDateTime(DateTime.Now.Date));
+            var today = _clock.Today;
+            var price = await _db.AssetPriceHistory.FirstOrDefaultAsync(p => p.Symbol == asset.Symbol && p.Currency == currency && p.Date == today);
 
             if (price == null)
             {
                 price = new AssetPriceHistory()
                 {
                     Symbol = asset.Symbol,
-                    Date = DateOnly.FromDateTime(DateTime.Now),
+                    Date = today,
                     Currency = currency,
                     Price = metadata.Price,
                 };

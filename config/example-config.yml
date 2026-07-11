@@ -1,6 +1,7 @@
 maxfilldays: 10
 basecurrency: chf
-# stockapi: yahoofinance
+timezone: Europe/Zurich
+stockapi: yahoofinance
 auth:
   secret: <min 32 characters>
   allowregistration: false

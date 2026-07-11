@@ -11,13 +11,15 @@ public class UpdateService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<UpdateService> _logger;
     private readonly ICryptoTrackerConfig _config;
+    private readonly PortfolioClock _clock;
     private readonly TimeSpan _delay;
 
-    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, ICryptoTrackerConfig config)
+    public UpdateService(IServiceScopeFactory scopeFactory, ILogger<UpdateService> logger, ICryptoTrackerConfig config, PortfolioClock clock)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _config = config;
+        _clock = clock;
         _delay = TimeSpan.FromMinutes(_config.Interval);
     }
 
@@ -59,8 +61,9 @@ public class UpdateService : BackgroundService
     {
         _logger.LogInformation("Starting Integration-Import");
 
-        var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
+        var today = _clock.Today;
+        var todayStart = _clock.StartOfDayUtc(today);
+        var tomorrowStart = _clock.StartOfDayUtc(today.AddDays(1));
         foreach (var integration in _config.Integrations)
         {
             _logger.LogTrace("Starting DB-Transaction");
@@ -78,10 +81,10 @@ public class UpdateService : BackgroundService
 
                 // symbols the last snapshot still had but the exchange no longer reports:
                 // their balance dropped to 0 (exchanges omit empty positions)
-                var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
+                var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, todayStart);
 
                 _logger.LogTrace("Clearing today's AssetMeasurings entries for integration {Name}", integration.Name);
-                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= today && x.Timestamp < tomorrow && x.IntegrationId == exchangeIntegration.Id);
+                var entries = db.AssetMeasurings.Where(x => x.Timestamp >= todayStart && x.Timestamp < tomorrowStart && x.IntegrationId == exchangeIntegration.Id);
                 var count = entries.Count();
                 db.AssetMeasurings.RemoveRange(entries);
                 _logger.LogTrace("Removed {Count} AssetMeasurings for integration {Name}", count, integration.Name);
@@ -146,25 +149,26 @@ public class UpdateService : BackgroundService
 
     /// <summary>
     /// Returns the symbols that had a non-zero balance in the integration's most recent
-    /// snapshot before <paramref name="today"/> but are missing from the freshly fetched
-    /// balances — i.e. positions that were emptied since the last import.
+    /// snapshot before <paramref name="todayStartUtc"/> but are missing from the freshly
+    /// fetched balances — i.e. positions that were emptied since the last import.
     /// </summary>
-    async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateTime today)
+    async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateTime todayStartUtc)
     {
         var lastTimestamp = await db.AssetMeasurings
-            .Where(m => m.IntegrationId == integrationId && m.Timestamp < today)
+            .Where(m => m.IntegrationId == integrationId && m.Timestamp < todayStartUtc)
             .MaxAsync(m => (DateTime?)m.Timestamp);
 
         if (lastTimestamp == null) return new();
 
-        var lastDay = lastTimestamp.Value.Date;
-        var lastDayEnd = lastDay.AddDays(1);
+        var lastDay = _clock.ToPortfolioDay(lastTimestamp.Value);
+        var lastDayStart = _clock.StartOfDayUtc(lastDay);
+        var lastDayEnd = _clock.StartOfDayUtc(lastDay.AddDays(1));
 
         // Amount != 0 keeps the zero-markers self-terminating: an asset recorded as 0
         // is no longer part of the previous snapshot and won't get another 0 tomorrow
         var previousSymbols = await db.AssetMeasurings
             .Where(m => m.IntegrationId == integrationId
-                     && m.Timestamp >= lastDay && m.Timestamp < lastDayEnd
+                     && m.Timestamp >= lastDayStart && m.Timestamp < lastDayEnd
                      && m.Amount != 0)
             .Select(m => m.Symbol)
             .Distinct()
@@ -195,7 +199,7 @@ public class UpdateService : BackgroundService
         {
             Symbol = asset.Symbol,
             IntegrationId = exchangeIntegration.Id,
-            Timestamp = DateTime.UtcNow,
+            Timestamp = _clock.UtcNow,
             Amount = balance
         };
 

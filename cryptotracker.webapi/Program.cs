@@ -78,6 +78,10 @@ builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
     return config;
 });
 
+builder.Services.AddSingleton(TimeProvider.System);
+// constructed eagerly so an invalid timezone fails at startup, not on first request
+builder.Services.AddSingleton(new PortfolioClock(TimeProvider.System, config));
+
 builder.Services.AddSingleton<IEnumerable<IIntegrationProvider>>(srv =>
 {
     var httpClientFactory = srv.GetRequiredService<IHttpClientFactory>();

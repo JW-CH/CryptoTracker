@@ -12,6 +12,7 @@ public class IntegrationServiceTest
 {
     private DatabaseContext _db;
     private IntegrationService _service;
+    private PortfolioClock _clock;
 
     [SetUp]
     public async Task Setup()
@@ -24,7 +25,8 @@ public class IntegrationServiceTest
         _db = new DatabaseContext(options);
 
         var config = new CryptoTrackerConfig();
-        _service = new IntegrationService(_db, new PortfolioQueryService(_db, config));
+        _clock = TestClock.Create();
+        _service = new IntegrationService(_db, new PortfolioQueryService(_db, config, _clock), _clock);
 
         await _db.SaveChangesAsync();
     }
@@ -84,8 +86,8 @@ public class IntegrationServiceTest
         _db.ExchangeIntegrations.Add(integration);
         _db.Assets.Add(new Asset { Symbol = "BTC", AssetType = AssetType.Crypto, IsHidden = false });
 
-        // noon UTC of the local "today" is inside the day window regardless of timezone
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        // noon UTC of the clock's "today" is inside the Zurich day window
+        var today = _clock.Today;
         _db.AssetMeasurings.Add(new AssetMeasuring
         {
             Symbol = "BTC",

@@ -15,6 +15,7 @@ namespace cryptotracker.core.Interfaces
         public StockApi? StockApi { get; set; }
         public int MaxFillDays { get; set; }
         public string BaseCurrency { get; set; }
+        public string Timezone { get; set; }
     }
 
     public enum StockApi

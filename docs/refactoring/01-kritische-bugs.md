@@ -8,7 +8,17 @@ Dokuments).
 ---
 
 <a id="bug-6"></a>
-## Bug 6 — UTC/Lokalzeit-Mischung verschiebt Tagesgrenzen 🟠 (offen)
+## Bug 6 — UTC/Lokalzeit-Mischung verschiebt Tagesgrenzen 🟠 (teilweise)
+
+> **Teilstatus 2026-07-11 (Schritt 1 von 2):** `PortfolioClock` (TimeProvider +
+> konfigurierbare `timezone`, Default Europe/Zurich) ist die einzige Stelle, die
+> den Portfolio-Tag aus UTC ableitet; alle sechs Stellen unten nutzen sie,
+> `DateTime.Now` ist aus dem Backend verschwunden. Ungültige Zeitzone bricht den
+> Start ab; Client-`DateTime`s werden auf UTC normalisiert (Npgsql-Crash gefixt);
+> Tests laufen auf gepinnter Fake-Zeit inkl. Tagesgrenzen-Szenarien.
+> **Offen (Schritt 2):** D2-Snapshot-Modell — der Tag wird dann beim Schreiben
+> als `Date`-Spalte materialisiert statt lesend aus Timestamps gefenstert
+> ([03/D2](03-datenmodell-und-aggregation.md)).
 
 **Betroffen (Auswahl, Stand nach den Service-Umbauten):**
 

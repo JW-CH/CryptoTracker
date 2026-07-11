@@ -20,6 +20,7 @@ public class UpdateServiceTest
     private Mock<IPriceProvider> _currencyProviderMock;
     private AssetMetadataService _metadataService;
     private CryptoTrackerConfig _config;
+    private PortfolioClock _clock;
     private UpdateService _service;
 
     [SetUp]
@@ -47,13 +48,15 @@ public class UpdateServiceTest
         _currencyProviderMock.Setup(x => x.GetQuotesAsync(It.IsAny<string>(), It.IsAny<IEnumerable<string>>())).ReturnsAsync(new List<AssetMetadata>());
 
         _config = new CryptoTrackerConfig { Interval = 60 };
+        _clock = TestClock.Create();
 
         _metadataService = new AssetMetadataService(
             Mock.Of<ILogger<AssetMetadataService>>(),
             _db,
             new[] { _cryptoProviderMock.Object, _currencyProviderMock.Object },
-            _config);
-        _service = new UpdateService(Mock.Of<IServiceScopeFactory>(), Mock.Of<ILogger<UpdateService>>(), _config);
+            _config,
+            _clock);
+        _service = new UpdateService(Mock.Of<IServiceScopeFactory>(), Mock.Of<ILogger<UpdateService>>(), _config, _clock);
 
         await _db.SaveChangesAsync();
     }
@@ -115,7 +118,7 @@ public class UpdateServiceTest
     private Task Import() => _service.Import(_db, new[] { _integrationProviderMock.Object }, _currencyProviderMock.Object, _metadataService);
 
     private Task<List<AssetMeasuring>> TodaysMeasurings() =>
-        _db.AssetMeasurings.Where(m => m.Timestamp >= DateTime.UtcNow.Date).ToListAsync();
+        _db.AssetMeasurings.Where(m => m.Timestamp >= _clock.StartOfDayUtc(_clock.Today)).ToListAsync();
 
     [Test]
     public async Task Import_WritesMeasuringsAndCreatesAssetsAndIntegration()
@@ -136,7 +139,7 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_DisappearedAsset_GetsSingleZeroMeasuring()
     {
-        await SeedIntegrationWithMeasurings("A", DateTime.UtcNow.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
+        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.6m)); // ETH no longer reported -> sold
 
@@ -151,7 +154,7 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_AssetAlreadyZeroInLastSnapshot_GetsNoFurtherZero()
     {
-        await SeedIntegrationWithMeasurings("A", DateTime.UtcNow.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
+        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
 
@@ -167,8 +170,8 @@ public class UpdateServiceTest
     {
         // day -2 still had ETH, day -1 recorded the sale as 0; only the most
         // recent snapshot may be used as reference, so no new zero today
-        await SeedIntegrationWithMeasurings("A", DateTime.UtcNow.AddDays(-2), ("BTC", 0.5m), ("ETH", 2m));
-        await SeedIntegrationWithMeasurings("A", DateTime.UtcNow.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
+        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-2), ("BTC", 0.5m), ("ETH", 2m));
+        await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime.AddDays(-1), ("BTC", 0.5m), ("ETH", 0m));
         AddConfigIntegration("A");
         SetupBalances("A", ("BTC", 0.5m));
 
@@ -182,7 +185,7 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_FailingIntegration_KeepsTodaysDataAndOthersContinue()
     {
-        var seeded = await SeedIntegrationWithMeasurings("A", DateTime.UtcNow, ("BTC", 0.7m));
+        var seeded = await SeedIntegrationWithMeasurings("A", TestClock.Now.UtcDateTime, ("BTC", 0.7m));
         AddConfigIntegration("A");
         AddConfigIntegration("B");
         _integrationProviderMock

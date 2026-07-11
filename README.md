@@ -63,6 +63,9 @@ interval: 120
 # Log level: debug, info, warning, error
 loglevel: info
 
+# Timezone that defines the portfolio day (daily snapshot boundary), IANA id
+timezone: Europe/Zurich
+
 # Optional: stock price provider (enables price lookups for assets of type Stock)
 stockapi: yahoofinance
 

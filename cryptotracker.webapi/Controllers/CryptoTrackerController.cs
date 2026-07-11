@@ -14,24 +14,26 @@ namespace cryptotracker.webapi.Controllers
     {
         private readonly ILogger<CryptoTrackerController> _logger;
         private readonly PortfolioQueryService _portfolioQueryService;
+        private readonly PortfolioClock _clock;
 
-        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, PortfolioQueryService portfolioQueryService)
+        public CryptoTrackerController(ILogger<CryptoTrackerController> logger, PortfolioQueryService portfolioQueryService, PortfolioClock clock)
         {
             _logger = logger;
             _portfolioQueryService = portfolioQueryService;
+            _clock = clock;
         }
 
         [HttpGet("measuring/date/{date}", Name = "GetMeasuringsByDate")]
         public async Task<List<AssetHoldingDto>> GetMeasuringsByDate([Required] DateTime date, string? symbol = null)
         {
-            return await _portfolioQueryService.GetAssetDayMeasuringAsync(DateOnly.FromDateTime(date.ToLocalTime()), symbol);
+            return await _portfolioQueryService.GetAssetDayMeasuringAsync(_clock.ToPortfolioDay(date), symbol);
         }
 
         [HttpGet("measuring/days/{days}", Name = "GetMeasuringsByDays")]
         public async Task<Dictionary<DateOnly, List<AssetHoldingDto>>> GetMeasuringsByDays([Required] int days = 7, string? symbol = null)
         {
             var dayList = new List<DateOnly>();
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = _clock.Today;
             for (int i = 0; i < days; i++)
             {
                 dayList.Add(today.AddDays(-i));
@@ -45,7 +47,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("standing/days/{days}", Name = "GetStandingsByDay")]
         public async Task<Dictionary<DateOnly, decimal>> GetStandingByDay([Required] int days = 7)
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = _clock.Today;
             var dayList = new List<DateOnly>();
             for (int i = 0; i < days; i++)
             {
@@ -62,7 +64,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("measuring", Name = "GetLatestMeasurings")]
         public async Task<List<AssetHoldingDto>> GetLatestMeasurings()
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = _clock.Today;
 
             return await _portfolioQueryService.GetAssetDayMeasuringAsync(today);
         }
@@ -70,7 +72,7 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet("standing", Name = "GetLatestStanding")]
         public async Task<decimal> GetLatestStanding()
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = _clock.Today;
 
             return (await _portfolioQueryService.GetAssetDayMeasuringAsync(today)).Sum(x => x.TotalValue);
         }
