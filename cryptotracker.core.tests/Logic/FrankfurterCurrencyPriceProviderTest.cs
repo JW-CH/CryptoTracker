@@ -59,6 +59,19 @@ public class FrankfurterCurrencyPriceProviderTest
     }
 
     [Test]
+    public async Task GetQuotesAsync_BaseCurrencyRequestedUppercase_KeepsRequestedCasingInAssetId()
+    {
+        // Asset.ExternalId is "CHF" (uppercase, from the frankfurter currency list) while
+        // the configured base currency is lowercase "chf"; the returned AssetId must match
+        // the requested casing or the price write silently finds no asset
+        var result = (await _provider.GetQuotesAsync("chf", new List<string> { "CHF" })).ToList();
+
+        Assert.That(result, Has.Count.EqualTo(1));
+        Assert.That(result[0].AssetId, Is.EqualTo("CHF"));
+        Assert.That(result[0].Price, Is.EqualTo(1m));
+    }
+
+    [Test]
     public async Task GetQuotesAsync_MixedCurrencies_ReturnsBaseAndConvertedPrices()
     {
         var result = (await _provider.GetQuotesAsync("chf", new List<string> { "chf", "eur", "usd" })).ToList();

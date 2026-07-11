@@ -58,7 +58,8 @@ public class FrankfurterCurrencyPriceProvider : IPriceProvider
     {
         _logger.LogTrace($"{nameof(GetQuotesAsync)}: {baseCurrency} - {string.Join(",", externalIds)}");
 
-        externalIds = externalIds.Distinct().Select(x => x.ToLower()).ToList();
+        var requestedIds = externalIds.Distinct().ToList();
+        externalIds = requestedIds.Select(x => x.ToLower()).ToList();
 
         var result = new List<AssetMetadata>();
 
@@ -69,10 +70,11 @@ public class FrankfurterCurrencyPriceProvider : IPriceProvider
 
         if (externalIds.Contains(baseCurrency.ToLower()))
         {
+            var requestedBase = requestedIds.First(x => x.ToLower() == baseCurrency.ToLower());
             result.Add(new AssetMetadata()
             {
-                AssetId = baseCurrency,
-                Symbol = baseCurrency,
+                AssetId = requestedBase,
+                Symbol = requestedBase,
                 Image = "",
                 Currency = baseCurrency,
                 Name = currencyList.FirstOrDefault(x => x.Symbol.ToLower() == baseCurrency.ToLower()).Name ?? baseCurrency,
