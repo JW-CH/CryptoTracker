@@ -1,0 +1,15 @@
+.git
+.github
+.vscode
+.claude
+config/
+docs/
+**/bin/
+**/obj/
+**/node_modules/
+cryptotracker.web/build/
+cryptotracker.web/.svelte-kit/
+Dockerfile
+.dockerignore
+Makefile
+*.md

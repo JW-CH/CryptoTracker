@@ -1,25 +1,41 @@
+connectionstring: Host=localhost;Port=5432;Database=cryptotracker;Username=cryptotracker;Password=your-db-password
+interval: 120
+loglevel: information
 maxfilldays: 10
 basecurrency: chf
 timezone: Europe/Zurich
 stockapi: yahoofinance
 auth:
-  secret: <min 32 characters>
+  secret: your-jwt-secret-with-at-least-32-characters
+  issuer: https://your-domain.com
+  audience: cryptotracker
+  expiryminutes: 60
   allowregistration: false
 oidc:
+  clientid: cryptotracker
+  clientsecret: your-oidc-client-secret
+  authority: https://your-oidc-provider.com
   autoprovision: true
 integrations:
-  - name: Coinbase
-    description: description
+  - name: My Coinbase
+    description: Main Coinbase account
     sources:
       - type: coinbase
-        key: key
-        secret: secret
-  - name: Ledger
-    description: hardware wallet with several chains
+        key: your-api-key
+        secret: your-api-secret
+  - name: My Kucoin
+    description: Kucoin account
+    sources:
+      - type: kucoin
+        key: your-api-key
+        secret: your-api-secret
+        passphrase: your-api-passphrase
+  - name: My Ledger
+    description: Hardware wallet with several chains
     sources:
       - type: bitcoin
-        key: zpub...
+        key: zpub6abc...
       - type: ethereum
-        key: 0x...
+        key: 0xabc...
       - type: ripple
-        key: r...
+        key: rabc...
