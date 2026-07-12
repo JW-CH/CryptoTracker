@@ -16,9 +16,9 @@ public class EthereumIntegrationProvider : IIntegrationProvider
 
     public CryptoTrackerIntegrationType Type => CryptoTrackerIntegrationType.Ethereum;
 
-    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration)
+    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source)
     {
-        var address = integration.Key;
+        var address = source.Key;
 
         using var client = _httpClientFactory.CreateClient();
 

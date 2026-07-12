@@ -81,19 +81,24 @@ oidc:
   clientsecret: your-client-secret
   authority: https://your-oidc-provider.com
 
-# Exchange integrations
+# Exchange integrations. Each integration is one account/wallet (names must be
+# unique) and can have several sources, e.g. one hardware wallet holding coins
+# on multiple chains. Balances of all sources are combined per day.
 integrations:
   - name: My Coinbase
-    type: coinbase
-    key: your-api-key
-    secret: your-api-secret
     description: Main Coinbase account
+    sources:
+      - type: coinbase
+        key: your-api-key
+        secret: your-api-secret
 
-  - name: My Bitcoin Wallet
-    type: bitcoin
-    key: zpub6abc...  # Your XPUB or ZPUB
-    secret: unused
+  - name: My Ledger
     description: Hardware wallet
+    sources:
+      - type: bitcoin
+        key: zpub6abc...  # Your XPUB or ZPUB
+      - type: ethereum
+        key: 0xabc...     # Your address
 ```
 
 > **Note:** Run only a single instance of the container. The background import

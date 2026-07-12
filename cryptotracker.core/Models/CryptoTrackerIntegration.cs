@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace cryptotracker.core.Models
 {
@@ -18,22 +18,17 @@ namespace cryptotracker.core.Models
 
     public class CryptoTrackerIntegration
     {
-        public string Name { get; set; }
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public CryptoTrackerIntegrationType Type { get; set; }
-        public string Key { get; set; }
-        public string Secret { get; set; }
-        public string Passphrase { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<CryptoTrackerIntegrationSource> Sources { get; set; } = new();
+    }
 
-        public CryptoTrackerIntegration()
-        {
-            Name = string.Empty;
-            Type = CryptoTrackerIntegrationType.Unknown;
-            Key = string.Empty;
-            Secret = string.Empty;
-            Passphrase = string.Empty;
-            Description = string.Empty;
-        }
+    public class CryptoTrackerIntegrationSource
+    {
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public CryptoTrackerIntegrationType Type { get; set; } = CryptoTrackerIntegrationType.Unknown;
+        public string Key { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
+        public string Passphrase { get; set; } = string.Empty;
     }
 }

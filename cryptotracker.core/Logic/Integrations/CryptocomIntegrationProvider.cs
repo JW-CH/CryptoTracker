@@ -12,11 +12,11 @@ public class CryptocomIntegrationProvider : IIntegrationProvider
 {
     public CryptoTrackerIntegrationType Type => CryptoTrackerIntegrationType.Cryptocom;
 
-    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration)
+    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source)
     {
         using var client = new CryptoComRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret);
+            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret);
         });
 
         var accounts = await GetCryptoComAvailableAccounts(client);

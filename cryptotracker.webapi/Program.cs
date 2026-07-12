@@ -46,6 +46,7 @@ else if (File.Exists(jsonConfigPath))
 builder.Configuration.AddEnvironmentVariables("CRYPTOTRACKER_");
 
 var config = builder.Configuration.Get<CryptoTrackerConfig>() ?? new CryptoTrackerConfig();
+CryptoTrackerConfigValidator.Validate(config);
 
 LogLevel level = LogLevel.Information;
 if (!string.IsNullOrWhiteSpace(config.LogLevel))

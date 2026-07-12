@@ -12,11 +12,11 @@ public class KucoinIntegrationProvider : IIntegrationProvider
 {
     public CryptoTrackerIntegrationType Type => CryptoTrackerIntegrationType.Kucoin;
 
-    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration)
+    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source)
     {
         using var client = new KucoinRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(integration.Key, integration.Secret, integration.Passphrase);
+            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret, source.Passphrase);
         });
 
         var accounts = await GetKucoinAvailableAccounts(client);

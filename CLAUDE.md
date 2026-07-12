@@ -72,13 +72,13 @@ CryptoTracker is a cryptocurrency portfolio tracker with exchange integrations. 
 
 ### Key Domain Concepts
 - **Asset**: Tracked asset (crypto, fiat, stock) identified by symbol
-- **ExchangeIntegration**: Connected exchange account (Coinbase, Bitpanda, etc.) or manual entry
+- **ExchangeIntegration**: Connected exchange account (Coinbase, Bitpanda, etc.) or manual entry. Config integrations have unique names and one or more sources (e.g. one hardware wallet with several chains); balances of all sources are merged per symbol before the daily upsert
 - **DailyHolding**: One snapshot per (integration, asset, portfolio day), upserted by UpdateService; the portfolio day is derived from the configured timezone via PortfolioClock
 
 ### Configuration
 Runtime config is in `config/config.yml`:
 - Database connection (PostgreSQL required)
-- Exchange API credentials
+- Exchange integrations (`integrations[].sources[]` with type/key/secret; validated at startup)
 - JWT secret (must be >32 bytes)
 - OIDC provider settings
 - Update interval (minutes between balance syncs)

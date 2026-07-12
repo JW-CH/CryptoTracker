@@ -6,7 +6,7 @@ namespace cryptotracker.core.Interfaces;
 public interface IIntegrationProvider
 {
     CryptoTrackerIntegrationType Type { get; }
-    Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration);
+    Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source);
 }
 
 public struct BalanceResult

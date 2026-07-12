@@ -17,10 +17,10 @@ public class BitpandaIntegrationProvider : IIntegrationProvider
 
     public CryptoTrackerIntegrationType Type => CryptoTrackerIntegrationType.Bitpanda;
 
-    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration)
+    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source)
     {
         using var client = _httpClientFactory.CreateClient();
-        client.UseApiKey(integration.Secret);
+        client.UseApiKey(source.Secret);
 
         var result = new List<BalanceResult>();
 

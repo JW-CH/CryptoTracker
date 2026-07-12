@@ -64,20 +64,16 @@ public class UpdateService : BackgroundService
         var today = _clock.Today;
         foreach (var integration in _config.Integrations)
         {
-            _logger.LogTrace("Starting DB-Transaction");
-            using var tx = await db.Database.BeginTransactionAsync();
-
             try
             {
-                var provider = integrationProviders.FirstOrDefault(p => p.Type == integration.Type)
-                    ?? throw new InvalidOperationException($"No integration provider found for type {integration.Type}");
+                var balances = await FetchBalancesAsync(integrationProviders, integration);
 
-                var balances = await provider.GetBalancesAsync(integration);
-                _logger.LogTrace("Fetched {Count} balances for {Name}", balances.Count(), integration.Name);
+                _logger.LogTrace("Starting DB-Transaction");
+                using var tx = await db.Database.BeginTransactionAsync();
 
                 var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);
 
-                // symbols the last snapshot still had but the exchange no longer reports:
+                // symbols the last snapshot still had but no source reports anymore:
                 // their balance dropped to 0 (exchanges omit empty positions)
                 var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
 
@@ -96,8 +92,6 @@ public class UpdateService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while processing integration {Name}, skipping", integration.Name);
-                _logger.LogTrace("Rolling back transaction");
-                await tx.RollbackAsync();
                 db.ChangeTracker.Clear();
             }
         }
@@ -118,6 +112,31 @@ public class UpdateService : BackgroundService
         }
 
         _logger.LogInformation("Finished Import");
+    }
+
+    async Task<List<BalanceResult>> FetchBalancesAsync(IEnumerable<IIntegrationProvider> integrationProviders, CryptoTrackerIntegration integration)
+    {
+        var balances = new List<BalanceResult>();
+
+        foreach (var source in integration.Sources)
+        {
+            var provider = integrationProviders.FirstOrDefault(p => p.Type == source.Type)
+                ?? throw new InvalidOperationException($"No integration provider found for type {source.Type}");
+
+            var sourceBalances = await provider.GetBalancesAsync(source);
+            _logger.LogTrace("Fetched {Count} balances for {Name}/{Type}", sourceBalances.Count(), integration.Name, source.Type);
+            balances.AddRange(sourceBalances);
+        }
+
+        return balances
+            .GroupBy(b => b.Symbol)
+            .Select(g => new BalanceResult
+            {
+                Symbol = g.Key,
+                Balance = g.Sum(b => b.Balance),
+                AssetType = g.Select(b => b.AssetType).FirstOrDefault(t => t != null)
+            })
+            .ToList();
     }
 
     async Task<ExchangeIntegration> GetOrCreateExchangeIntegration(DatabaseContext db, CryptoTrackerIntegration integration)

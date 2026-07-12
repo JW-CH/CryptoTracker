@@ -9,12 +9,17 @@ oidc:
   autoprovision: true
 integrations:
   - name: Coinbase
-    type: coinbase
-    key: key
-    secret: secret
     description: description
-  - name: Bitpanda
-    type: bitpanda
-    key: key
-    secret: secret
-    description: description
+    sources:
+      - type: coinbase
+        key: key
+        secret: secret
+  - name: Ledger
+    description: hardware wallet with several chains
+    sources:
+      - type: bitcoin
+        key: zpub...
+      - type: ethereum
+        key: 0x...
+      - type: ripple
+        key: r...

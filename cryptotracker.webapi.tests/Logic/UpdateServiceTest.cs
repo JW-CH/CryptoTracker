@@ -69,22 +69,32 @@ public class UpdateServiceTest
         _db?.Dispose();
     }
 
-    private CryptoTrackerIntegration AddConfigIntegration(string name)
+    /// <summary>
+    /// Adds a config integration with one source per key (default: one source whose
+    /// key equals the integration name). Balances are mocked per source key.
+    /// </summary>
+    private CryptoTrackerIntegration AddConfigIntegration(string name, params string[] sourceKeys)
     {
-        var integration = new CryptoTrackerIntegration { Name = name, Type = CryptoTrackerIntegrationType.Coinbase };
+        if (sourceKeys.Length == 0) sourceKeys = new[] { name };
+
+        var integration = new CryptoTrackerIntegration
+        {
+            Name = name,
+            Sources = sourceKeys.Select(key => new CryptoTrackerIntegrationSource { Type = CryptoTrackerIntegrationType.Coinbase, Key = key }).ToList()
+        };
         _config.Integrations.Add(integration);
         return integration;
     }
 
-    private void SetupBalances(string integrationName, params (string Symbol, decimal Balance)[] balances)
+    private void SetupBalances(string sourceKey, params (string Symbol, decimal Balance)[] balances)
     {
-        SetupBalanceResults(integrationName, balances.Select(b => new BalanceResult { Symbol = b.Symbol, Balance = b.Balance }).ToArray());
+        SetupBalanceResults(sourceKey, balances.Select(b => new BalanceResult { Symbol = b.Symbol, Balance = b.Balance }).ToArray());
     }
 
-    private void SetupBalanceResults(string integrationName, params BalanceResult[] balances)
+    private void SetupBalanceResults(string sourceKey, params BalanceResult[] balances)
     {
         _integrationProviderMock
-            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegration>(i => i.Name == integrationName)))
+            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegrationSource>(s => s.Key == sourceKey)))
             .ReturnsAsync(balances.ToList());
     }
 
@@ -191,7 +201,7 @@ public class UpdateServiceTest
         AddConfigIntegration("A");
         AddConfigIntegration("B");
         _integrationProviderMock
-            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegration>(i => i.Name == "A")))
+            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegrationSource>(s => s.Key == "A")))
             .ThrowsAsync(new InvalidOperationException("exchange down"));
         SetupBalances("B", ("XRP", 3m));
 
@@ -282,7 +292,11 @@ public class UpdateServiceTest
     [Test]
     public async Task Import_IntegrationTypeWithoutProvider_IsSkippedAndOthersContinue()
     {
-        _config.Integrations.Add(new CryptoTrackerIntegration { Name = "A", Type = CryptoTrackerIntegrationType.Cardano });
+        _config.Integrations.Add(new CryptoTrackerIntegration
+        {
+            Name = "A",
+            Sources = { new CryptoTrackerIntegrationSource { Type = CryptoTrackerIntegrationType.Cardano } }
+        });
         AddConfigIntegration("B");
         SetupBalances("B", ("XRP", 3m));
 
@@ -291,6 +305,74 @@ public class UpdateServiceTest
         var today = await TodaysHoldings();
         Assert.That(today, Has.Count.EqualTo(1));
         Assert.That(today.Single().Symbol, Is.EqualTo("XRP"));
+    }
+
+    [Test]
+    public async Task Import_MultipleSources_DoNotZeroEachOthersAssets()
+    {
+        // one wallet, several chains: the btc source not reporting eth (and vice versa)
+        // must not mark the other source's assets as disappeared
+        await SeedIntegrationWithHoldings("Ledger", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
+        AddConfigIntegration("Ledger", "btc-source", "eth-source");
+        SetupBalances("btc-source", ("BTC", 0.5m));
+        SetupBalances("eth-source", ("ETH", 2m));
+
+        await Import();
+
+        var today = await TodaysHoldings();
+        Assert.That(today, Has.Count.EqualTo(2));
+        Assert.That(today.Single(m => m.Symbol == "BTC").Amount, Is.EqualTo(0.5m));
+        Assert.That(today.Single(m => m.Symbol == "ETH").Amount, Is.EqualTo(2m));
+        Assert.That(await _db.ExchangeIntegrations.CountAsync(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Import_MultipleSources_DisappearedFromUnion_GetsZeroMeasuring()
+    {
+        await SeedIntegrationWithHoldings("Ledger", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m), ("XRP", 3m));
+        AddConfigIntegration("Ledger", "btc-source", "eth-source");
+        SetupBalances("btc-source", ("BTC", 0.5m));
+        SetupBalances("eth-source", ("ETH", 2m));
+
+        await Import();
+
+        var today = await TodaysHoldings();
+        Assert.That(today.Single(m => m.Symbol == "XRP").Amount, Is.EqualTo(0m));
+    }
+
+    [Test]
+    public async Task Import_MultipleSources_SameSymbol_AmountsAreSummed()
+    {
+        // e.g. two ethereum addresses under the same integration name
+        AddConfigIntegration("Ledger", "address-1", "address-2");
+        SetupBalances("address-1", ("ETH", 1m));
+        SetupBalances("address-2", ("ETH", 2m));
+
+        await Import();
+
+        var today = await TodaysHoldings();
+        Assert.That(today, Has.Count.EqualTo(1));
+        Assert.That(today.Single().Amount, Is.EqualTo(3m));
+    }
+
+    [Test]
+    public async Task Import_OneSourceFails_WholeIntegrationIsSkipped()
+    {
+        // writing only the successful source would zero-mark the failed source's assets
+        await SeedIntegrationWithHoldings("Ledger", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));
+        AddConfigIntegration("Ledger", "btc-source", "eth-source");
+        SetupBalances("btc-source", ("BTC", 0.5m));
+        _integrationProviderMock
+            .Setup(x => x.GetBalancesAsync(It.Is<CryptoTrackerIntegrationSource>(s => s.Key == "eth-source")))
+            .ThrowsAsync(new InvalidOperationException("chain down"));
+        AddConfigIntegration("B");
+        SetupBalances("B", ("XRP", 3m));
+
+        await Import(); // must not throw
+
+        var today = await TodaysHoldings();
+        Assert.That(today.Count(m => m.Symbol == "BTC" || m.Symbol == "ETH"), Is.EqualTo(0), "no partial import for Ledger");
+        Assert.That(today.Count(m => m.Symbol == "XRP"), Is.EqualTo(1), "other integrations still imported");
     }
 
     [Test]

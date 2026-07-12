@@ -46,12 +46,16 @@ public class YamlConfigurationTest
               secret: some-secret
             integrations:
               - name: My Coinbase
-                type: coinbase
-                key: k
-                secret: s
-              - name: Wallet
-                type: bitcoin
-                key: zpub123
+                sources:
+                  - type: coinbase
+                    key: k
+                    secret: s
+              - name: Ledger
+                sources:
+                  - type: bitcoin
+                    key: zpub123
+                  - type: ethereum
+                    key: 0xabc
             """);
 
         Assert.That(config.ConnectionString, Is.EqualTo("Host=localhost;Database=test"));
@@ -61,9 +65,11 @@ public class YamlConfigurationTest
         Assert.That(config.StockApi, Is.EqualTo(StockApi.YahooFinance));
         Assert.That(config.Auth.Secret, Is.EqualTo("some-secret"));
         Assert.That(config.Integrations, Has.Count.EqualTo(2));
-        Assert.That(config.Integrations[0].Type, Is.EqualTo(CryptoTrackerIntegrationType.Coinbase));
-        Assert.That(config.Integrations[1].Type, Is.EqualTo(CryptoTrackerIntegrationType.Bitcoin));
-        Assert.That(config.Integrations[1].Key, Is.EqualTo("zpub123"));
+        Assert.That(config.Integrations[0].Sources.Single().Type, Is.EqualTo(CryptoTrackerIntegrationType.Coinbase));
+        Assert.That(config.Integrations[1].Sources, Has.Count.EqualTo(2));
+        Assert.That(config.Integrations[1].Sources[0].Type, Is.EqualTo(CryptoTrackerIntegrationType.Bitcoin));
+        Assert.That(config.Integrations[1].Sources[0].Key, Is.EqualTo("zpub123"));
+        Assert.That(config.Integrations[1].Sources[1].Type, Is.EqualTo(CryptoTrackerIntegrationType.Ethereum));
     }
 
     [Test]

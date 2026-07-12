@@ -18,9 +18,9 @@ public class BitcoinIntegrationProvider : IIntegrationProvider
 
     public CryptoTrackerIntegrationType Type => CryptoTrackerIntegrationType.Bitcoin;
 
-    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegration integration)
+    public async Task<IEnumerable<BalanceResult>> GetBalancesAsync(CryptoTrackerIntegrationSource source)
     {
-        var input = integration.Key;
+        var input = source.Key;
 
         if (input.StartsWith("xpub", StringComparison.OrdinalIgnoreCase) || input.StartsWith("zpub", StringComparison.OrdinalIgnoreCase))
         {
