@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import * as api from '$lib/cryptotrackerApi';
 	import * as Card from '$lib/components/ui/card';
@@ -29,6 +29,8 @@
 
 		try {
 			await api.updateAssetMetadata(symbol, { name: assetName, image: imageError ? '' : assetImage });
+			
+			await invalidateAll();
 			await goto(`/assets/${encodeURIComponent(symbol)}`);
 		} finally {
 			saving = false;
