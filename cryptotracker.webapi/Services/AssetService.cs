@@ -153,7 +153,7 @@ namespace cryptotracker.webapi.Services
 
         private async Task<Asset> GetAssetOrThrowAsync(string symbol)
         {
-            return await _db.Assets.FirstOrDefaultAsync(x => x.Symbol == symbol) ?? throw new KeyNotFoundException("Asset not found");
+            return await _db.Assets.FirstOrDefaultAsync(x => x.Symbol.ToLower() == symbol.ToLower()) ?? throw new KeyNotFoundException("Asset not found");
         }
 
         private async Task<decimal> GetLatestPriceAsync(string symbol)
