@@ -1,7 +1,7 @@
-using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
+using Kucoin.Net;
 using Kucoin.Net.Clients;
 using Kucoin.Net.Interfaces.Clients;
 using Kucoin.Net.Objects.Models.Spot;
@@ -16,7 +16,7 @@ public class KucoinIntegrationProvider : IIntegrationProvider
     {
         using var client = new KucoinRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret, source.Passphrase);
+            xy.ApiCredentials = new KucoinCredentials(source.Key, source.Secret, source.Passphrase);
         });
 
         var accounts = await GetKucoinAvailableAccounts(client);
@@ -26,7 +26,7 @@ public class KucoinIntegrationProvider : IIntegrationProvider
 
     private async Task<List<KucoinAccount>> GetKucoinAvailableAccounts(IKucoinRestClient client)
     {
-        WebCallResult<KucoinAccount[]>? result;
+        HttpResult<KucoinAccount[]>? result;
         List<KucoinAccount> accounts = new();
 
         result = await client.SpotApi.Account.GetAccountsAsync();

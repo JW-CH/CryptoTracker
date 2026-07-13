@@ -1,7 +1,7 @@
+using Coinbase.Net;
 using Coinbase.Net.Clients;
 using Coinbase.Net.Interfaces.Clients;
 using Coinbase.Net.Objects.Models;
-using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
@@ -16,7 +16,7 @@ public class CoinbaseIntegrationProvider : IIntegrationProvider
     {
         using var client = new CoinbaseRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret);
+            xy.ApiCredentials = new CoinbaseCredentials(source.Key, source.Secret);
         });
 
         var accounts = await GetCoinbaseAvailableAccounts(client);
@@ -26,7 +26,7 @@ public class CoinbaseIntegrationProvider : IIntegrationProvider
 
     private async Task<IEnumerable<CoinbaseAccount>> GetCoinbaseAvailableAccounts(ICoinbaseRestClient client)
     {
-        WebCallResult<CoinbaseAccountPage>? result = null;
+        HttpResult<CoinbaseAccountPage>? result = null;
         List<CoinbaseAccount> accounts = new();
         var cursor = "";
         do

@@ -1,7 +1,7 @@
+using CryptoCom.Net;
 using CryptoCom.Net.Clients;
 using CryptoCom.Net.Interfaces.Clients;
 using CryptoCom.Net.Objects.Models;
-using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
@@ -16,7 +16,7 @@ public class CryptocomIntegrationProvider : IIntegrationProvider
     {
         using var client = new CryptoComRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret);
+            xy.ApiCredentials = new CryptoComCredentials(source.Key, source.Secret);
         });
 
         var accounts = await GetCryptoComAvailableAccounts(client);
@@ -26,7 +26,7 @@ public class CryptocomIntegrationProvider : IIntegrationProvider
 
     private async Task<IEnumerable<CryptoComBalance>> GetCryptoComAvailableAccounts(ICryptoComRestClient client)
     {
-        WebCallResult<CryptoComBalances[]>? result = null;
+        HttpResult<CryptoComBalances[]>? result = null;
         List<CryptoComBalance> accounts = new();
 
         result = await client.ExchangeApi.Account.GetBalancesAsync();

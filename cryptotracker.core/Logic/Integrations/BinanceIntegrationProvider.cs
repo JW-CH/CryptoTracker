@@ -1,6 +1,6 @@
+using Binance.Net;
 using Binance.Net.Clients;
 using Binance.Net.Objects.Models.Spot;
-using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using cryptotracker.core.Interfaces;
 using cryptotracker.core.Models;
@@ -15,7 +15,7 @@ public class BinanceIntegrationProvider : IIntegrationProvider
     {
         using var client = new BinanceRestClient(xy =>
         {
-            xy.ApiCredentials = new ApiCredentials(source.Key, source.Secret);
+            xy.ApiCredentials = new BinanceCredentials(source.Key, source.Secret);
         });
 
         var accounts = await GetBinanceAvailableAccounts(client);
@@ -25,7 +25,7 @@ public class BinanceIntegrationProvider : IIntegrationProvider
 
     private async Task<IEnumerable<BinanceBalance>> GetBinanceAvailableAccounts(BinanceRestClient client)
     {
-        WebCallResult<BinanceAccountInfo>? result = null;
+        HttpResult<BinanceAccountInfo>? result = null;
         List<BinanceBalance> accounts = new();
 
         result = await client.SpotApi.Account.GetAccountInfoAsync();
