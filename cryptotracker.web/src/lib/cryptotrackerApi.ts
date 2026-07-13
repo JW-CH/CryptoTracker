@@ -35,6 +35,10 @@ export type ProviderAsset = {
     "symbol"?: string | null;
     name?: string | null;
 };
+export type UpdateAssetMetadataDto = {
+    image?: string | null;
+    name?: string | null;
+};
 export type MeResponse = {
     userName?: string | null;
     email?: string | null;
@@ -196,6 +200,16 @@ export function resetAsset($symbol: string, opts?: Oazapfts.RequestOpts) {
         ...opts,
         method: "POST"
     });
+}
+export function updateAssetMetadata($symbol: string, updateAssetMetadataDto?: UpdateAssetMetadataDto, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.fetchJson<{
+        status: 200;
+        data: boolean;
+    }>(`/api/Asset/${encodeURIComponent($symbol)}/update`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: updateAssetMetadataDto
+    }));
 }
 export function getMe(opts?: Oazapfts.RequestOpts) {
     return oazapfts.fetchJson<{

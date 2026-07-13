@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card';
 	import * as api from '$lib/cryptotrackerApi';
 	import { baseCurrency } from '$lib/stores/config';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
@@ -14,18 +14,21 @@
 		measurings: api.AssetHoldingDto[];
 	}
 
-	let assetInitialized = $state<boolean>(false);
-	let assetData = $state<api.AssetWithPriceDto>();
+	let { data } = $props();
+
+	const initial = untrack(() => data.asset);
+
+	let assetData = $state<api.AssetWithPriceDto>(initial);
 
 	let range = $state<number>(7);
 
 	let measuringsInitialized = $state<boolean>(false);
 	let dailyMeasurings = $state<DailyMeasurings[]>([]);
 
-	let selectedCoin = $state<string>('');
-	let selectedAssetType = $state<api.AssetType>('Fiat');
-	let assetType = $state<api.AssetType>('Fiat');
-	let hidden = $state<boolean>(false);
+	let selectedCoin = $state<string>(initial.asset.externalId ?? '');
+	let selectedAssetType = $state<api.AssetType>(initial.asset.assetType ?? 'Fiat');
+	let assetType = $state<api.AssetType>(initial.asset.assetType ?? 'Fiat');
+	let hidden = $state<boolean>(initial.asset.isHidden ?? false);
 
 	function StringKeysToDates(arr: string[]) {
 		return arr.map((x) =>
@@ -57,8 +60,13 @@
 		let request = await api.resetAsset(assetData.asset.symbol);
 
 		if (request.data) {
-			assetData = await LoadAssetData();
+			const fresh = await LoadAssetData();
+			if (fresh) assetData = fresh;
 		}
+	}
+
+	function EditAsset() {
+		goto(`${page.url.pathname}/edit`);
 	}
 
 	async function DeleteAsset() {
@@ -132,14 +140,11 @@
 
 	onMount(async () => {
 		lastRange = range;
-		assetData = await LoadAssetData();
 
 		if (!assetData?.asset?.symbol) {
 			console.error('Asset or symbol is missing');
 			return;
 		}
-
-		assetInitialized = true;
 
 		await LoadMessungen(range, assetData.asset.symbol);
 	});
@@ -149,42 +154,38 @@
 	<!-- Header -->
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<div class="flex items-center gap-4">
-			{#if assetInitialized && assetData?.asset?.image}
+			{#if assetData?.asset?.image}
 				<img
 					class="size-12 rounded-full object-contain"
 					src={assetData.asset.image}
 					alt={assetData?.asset.name}
 				/>
-			{:else if assetInitialized}
+			{:else}
 				<div
 					class="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full text-lg font-bold"
 				>
 					{(assetData?.asset.symbol ?? '?').slice(0, 2).toUpperCase()}
 				</div>
-			{:else}
-				<Skeleton class="bg-muted size-12 rounded-full" />
 			{/if}
 			<div>
-				{#if assetInitialized}
-					<div class="flex items-center gap-3">
-						<h1 class="text-2xl font-bold tracking-tight">
-							{assetData?.asset.name ?? assetData?.asset.symbol}
-						</h1>
-						<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
-							{assetData?.price}
-							{$baseCurrency}
-						</span>
-					</div>
-					{#if assetData?.asset.name}
-						<p class="text-muted-foreground text-sm">{assetData?.asset.symbol}</p>
-					{/if}
-				{:else}
-					<Skeleton class="bg-muted mb-1 h-7 w-40" />
-					<Skeleton class="bg-muted h-4 w-20" />
+				<div class="flex items-center gap-3">
+					<h1 class="text-2xl font-bold tracking-tight">
+						{assetData?.asset.name ?? assetData?.asset.symbol}
+					</h1>
+					<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
+						{assetData?.price}
+						{$baseCurrency}
+					</span>
+				</div>
+				{#if assetData?.asset.name}
+					<p class="text-muted-foreground text-sm">{assetData?.asset.symbol}</p>
 				{/if}
 			</div>
 		</div>
 		<div class="flex gap-2">
+			{#if assetData?.asset.externalId}
+        		<Button variant="outline" size="sm" onclick={EditAsset}>Bearbeiten</Button>
+  			{/if}
 			<Button variant="outline" size="sm" onclick={SetVisibility}>
 				{hidden ? 'Anzeigen' : 'Verstecken'}
 			</Button>
@@ -193,7 +194,7 @@
 		</div>
 	</div>
 
-	{#if assetInitialized && assetData?.asset.symbol && !assetData?.asset.name}
+	{#if assetData?.asset.symbol && !assetData?.asset.name}
 		<!-- Unlinked asset: show linking UI -->
 		{#if !selectedCoin}
 			<Card.Root>
@@ -208,7 +209,6 @@
 						<option value="Fiat">Fiat</option>
 						<option value="Crypto">Crypto</option>
 						<option value="Stock">Stock</option>
-						<option value="ETF">ETF</option>
 					</select>
 					<Button size="sm" onclick={setSelectedAssetType}>Setzen</Button>
 				</Card.Content>

@@ -97,5 +97,12 @@ namespace cryptotracker.webapi.Controllers
             await _assetService.ResetAssetAsync(symbol);
             return true;
         }
+
+        [HttpPost("{symbol}/update", Name = "UpdateAssetMetadata")]
+        public async Task<bool> UpdateAssetMetadata([Required] string symbol, [FromBody] UpdateAssetMetadataDto metadataDto)
+        {
+            await _assetService.UpdateAssetMetadataAsync(symbol, metadataDto);
+            return true;
+        }
     }
 }

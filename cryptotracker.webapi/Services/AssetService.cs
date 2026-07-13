@@ -151,6 +151,17 @@ namespace cryptotracker.webapi.Services
             await _db.SaveChangesAsync();
         }
 
+        public async Task UpdateAssetMetadataAsync(string symbol, UpdateAssetMetadataDto metadataDto)
+        {
+            var asset = await GetAssetOrThrowAsync(symbol);
+
+            if (string.IsNullOrEmpty(asset.ExternalId)) throw new InvalidOperationException("Asset has no external id and cannot update metadata");
+
+            asset.Image = metadataDto.Image;
+            asset.Name = metadataDto.Name;
+            await _db.SaveChangesAsync();
+        }
+
         private async Task<Asset> GetAssetOrThrowAsync(string symbol)
         {
             return await _db.Assets.FirstOrDefaultAsync(x => x.Symbol.ToLower() == symbol.ToLower()) ?? throw new KeyNotFoundException("Asset not found");
@@ -171,6 +182,12 @@ namespace cryptotracker.webapi.Services
             public string Symbol { get; set; }
             public AssetType AssetType { get; set; }
             public string ExternalId { get; set; }
+        }
+
+        public struct UpdateAssetMetadataDto
+        {
+            public string Image { get; set; }
+            public string Name { get; set; }
         }
 
         public struct AssetWithPriceDto
