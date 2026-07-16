@@ -290,10 +290,14 @@ builder.Services.AddHostedService<UpdateService>();
 
 var app = builder.Build();
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto
-});
+};
+
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 using (var scope = app.Services.CreateScope())
 {
@@ -308,11 +312,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-if (app.Environment.IsProduction())
-{
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-}
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.UseRateLimiter();
 
@@ -321,6 +322,16 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapFallbackToFile("{*path}", "/index.html");
+app.MapFallback(async context =>
+{
+    if (!context.Request.Headers.Accept.ToString().Contains("text/html"))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    context.Response.ContentType = "text/html";
+    await context.Response.SendFileAsync(Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html"));
+});
 
 app.Run();
