@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { mutate } from '$lib/api/mutate';
-	import { untrack } from 'svelte';
-	import * as api from '$lib/cryptotrackerApi';
-	import * as Card from '$lib/components/ui/card';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import { goto, invalidateAll } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import { mutate } from "$lib/api/mutate";
+	import { untrack } from "svelte";
+	import * as api from "$lib/cryptotrackerApi";
+	import * as Card from "$lib/components/ui/card";
+	import Button from "$lib/components/ui/button/button.svelte";
 
 	// provided by [slug]/+layout.ts – reused without an extra fetch
 	let { data } = $props();
@@ -13,18 +13,18 @@
 	const asset = untrack(() => data.asset.asset);
 	const symbol = asset.symbol!;
 
-	let assetName = $state<string>(asset.name ?? '');
-	let assetImage = $state<string>(asset.image ?? '');
+	let assetName = $state<string>(asset.name ?? "");
+	let assetImage = $state<string>(asset.image ?? "");
 	let saving = $state<boolean>(false);
 
 	let imageError = $state<boolean>(false);
 	$effect(() => {
 		// reading assetImage makes this rerun whenever the URL changes
-		if (typeof assetImage === 'string') imageError = false;
+		if (typeof assetImage === "string") imageError = false;
 	});
 
 	const inputClass =
-		'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-ring focus:ring-1 focus:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+		"w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-ring focus:ring-1 focus:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
 
 	async function Save() {
 		saving = true;
@@ -34,13 +34,13 @@
 				() =>
 					api.updateAssetMetadata(symbol, {
 						name: assetName,
-						image: imageError ? '' : assetImage
+						image: imageError ? "" : assetImage
 					}),
 				{
-					success: 'Changes saved.',
+					success: "Changes saved.",
 					onSuccess: async () => {
 						await invalidateAll();
-						await goto(resolve('/assets/[slug]', { slug: symbol }));
+						await goto(resolve("/assets/[slug]", { slug: symbol }));
 					}
 				}
 			);
@@ -50,7 +50,7 @@
 	}
 
 	function Cancel() {
-		goto(resolve('/assets/[slug]', { slug: symbol }));
+		goto(resolve("/assets/[slug]", { slug: symbol }));
 	}
 </script>
 

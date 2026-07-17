@@ -1,19 +1,20 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
-	import * as api from '$lib/cryptotrackerApi';
-	import { onMount } from 'svelte';
-	import AssetMeasuringTiles from './AssetMeasuringTiles.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import PageHeader from '$lib/components/page-header.svelte';
+	import { page } from "$app/state";
+	import { resolve } from "$app/paths";
+	import * as api from "$lib/cryptotrackerApi";
+	import { onMount } from "svelte";
+	import AssetMeasuringTiles from "./AssetMeasuringTiles.svelte";
+	import Button from "$lib/components/ui/button/button.svelte";
+	import { Badge } from "$lib/components/ui/badge";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import PageHeader from "$lib/components/page-header.svelte";
+	import IntegrationAvatar from "$lib/components/integration-avatar.svelte";
 
 	let isLoading: boolean = true;
 	let details: api.IntegrationDetails;
 
 	onMount(async () => {
-		let request = await api.getIntegrationDetails(page.params.slug ?? '');
+		let request = await api.getIntegrationDetails(page.params.slug ?? "");
 		details = request.data;
 		isLoading = false;
 	});
@@ -42,22 +43,19 @@
 	{:else}
 		<!-- Header -->
 		<PageHeader
-			title={details.integration.name ?? ''}
+			title={details.integration.name ?? ""}
 			subtitle={details.integration.description ?? undefined}
 		>
 			{#snippet media()}
-				<div
-					class="flex size-12 items-center justify-center rounded-full text-lg font-bold {details
-						.integration.isManual
-						? 'bg-secondary text-secondary-foreground'
-						: 'bg-primary/10 text-primary'}"
-				>
-					{details.integration.name ? details.integration.name.slice(0, 2).toUpperCase() : '??'}
-				</div>
+				<IntegrationAvatar
+					name={details.integration.name}
+					isManual={details.integration.isManual}
+					class="size-12 text-lg"
+				/>
 			{/snippet}
 			{#snippet meta()}
-				<Badge variant={details.integration.isManual ? 'secondary' : 'default'}>
-					{details.integration.isManual ? 'Manual' : 'Automatic'}
+				<Badge variant={details.integration.isManual ? "secondary" : "default"}>
+					{details.integration.isManual ? "Manual" : "Automatic"}
 				</Badge>
 			{/snippet}
 			{#snippet actions()}
@@ -65,8 +63,8 @@
 					<Button
 						variant="outline"
 						size="sm"
-						href={resolve('/integrations/[slug]/measurings', {
-							slug: details.integration.id ?? ''
+						href={resolve("/integrations/[slug]/measurings", {
+							slug: details.integration.id ?? ""
 						})}
 					>
 						Measurements
