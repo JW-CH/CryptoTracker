@@ -7,7 +7,6 @@
 	import PieChart from '$lib/components/charts/PieChart.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
-	let summarize: boolean = true;
 	let selectedRange = $state<number>(14);
 
 	function UniqueSymbols(data: { [key: string]: api.AssetHoldingDto[] }) {
@@ -20,24 +19,17 @@
 		];
 	}
 
-	function StringKeysToDates(arr: string[]) {
-		return arr.map((x) =>
-			new Date(x).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
-		);
-	}
-
 	function TrimMeasurings(data: api.AssetHoldingDto[]) {
-		let sortedMeasuring = data.sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
-		if (!summarize || sortedMeasuring.length <= 7) {
-			return sortedMeasuring;
+		const sorted = [...data].sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
+		if (sorted.length <= 7) {
+			return sorted;
 		}
 
-		let topMeasuring = sortedMeasuring.slice(0, 7);
-		let otherMeasuring = sortedMeasuring.slice(7);
-		let otherFiatValue = otherMeasuring.reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
-		return topMeasuring.concat({
+		const top = sorted.slice(0, 7);
+		const otherValue = sorted.slice(7).reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
+		return top.concat({
 			asset: { symbol: 'Other', assetType: 'Crypto' },
-			totalValue: otherFiatValue,
+			totalValue: otherValue,
 			price: 0,
 			totalAmount: 0,
 			integrationValues: []
@@ -72,9 +64,10 @@
 				{#await api.getLatestMeasurings()}
 					<PieChart skeleton={true} />
 				{:then measuring}
+					{@const trimmed = TrimMeasurings(measuring.data)}
 					<PieChart
-						labels={TrimMeasurings(measuring.data).map((x) => x.asset.symbol ?? '')}
-						values={TrimMeasurings(measuring.data).map((x) => x.totalValue ?? 0)}
+						labels={trimmed.map((x) => x.asset.symbol ?? '')}
+						values={trimmed.map((x) => x.totalValue ?? 0)}
 					/>
 				{:catch error}
 					<p>{error.message}</p>
@@ -87,7 +80,7 @@
 			{:then standings}
 				<LineChart
 					fill={true}
-					labels={StringKeysToDates(Object.keys(standings.data))}
+					labels={Object.keys(standings.data)}
 					datasets={[{ name: $baseCurrency, data: Object.values(standings.data) }]}
 				/>
 			{:catch error}
@@ -99,7 +92,7 @@
 				<LineChart skeleton={true} />
 			{:then stats}
 				<LineChart
-					labels={StringKeysToDates(Object.keys(stats.data))}
+					labels={Object.keys(stats.data)}
 					datasets={UniqueSymbols(stats.data).map((assetId) => ({
 						name: assetId,
 						data: Object.values(stats.data).map(

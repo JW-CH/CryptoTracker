@@ -1,52 +1,49 @@
 <script lang="ts">
+	import { PieChart } from 'layerchart';
+	import * as Chart from '$lib/components/ui/chart';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { generateGUID } from '$lib/helpers';
-	import { baseCurrency } from '$lib/stores/config';
+	import { colorForSymbol, OTHER_SYMBOL } from '$lib/charts/palette';
 	import { goto } from '$app/navigation';
-	import { Chart } from 'chart.js/auto';
-	import { onMount } from 'svelte';
-	import { get } from 'svelte/store';
+	import { resolve } from '$app/paths';
 
-	export let values: number[] = [];
-	export let labels: string[] = [];
-	export let skeleton: boolean = false;
+	let {
+		labels = [],
+		values = [],
+		skeleton = false
+	}: { labels?: string[]; values?: number[]; skeleton?: boolean } = $props();
 
-	let id = 'chart_' + generateGUID();
-
-	onMount(() => {
-		if (skeleton) return;
-
-		let ctx: any = document.getElementById(id);
-		let myChart = new Chart(ctx, {
-			type: 'pie',
-			data: data,
-			options: {
-				onClick: (event, elements) => {
-					if (elements.length > 0) {
-						let index = elements[0].index;
-						const label = labels[index];
-						if (label == 'Other') return;
-						goto(`/assets/${label}`);
-					}
-				}
-			}
-		});
-	});
-
-	let data = {
-		labels: labels,
-		datasets: [
-			{
-				label: get(baseCurrency),
-				data: values,
-				hoverOffset: 8
-			}
-		]
-	};
+	const data = $derived(
+		labels.map((label, i) => ({
+			label,
+			value: values[i] ?? 0,
+			color: colorForSymbol(label, labels)
+		}))
+	);
+	const config: Chart.ChartConfig = $derived(
+		Object.fromEntries(data.map((d) => [d.label, { label: d.label, color: d.color }]))
+	);
 </script>
 
 {#if skeleton}
-	<Skeleton class="aspect-square w-full bg-gray-200"></Skeleton>
+	<Skeleton class="aspect-square w-full" />
 {:else}
-	<canvas {id}></canvas>
+	<Chart.Container {config} class="mx-auto aspect-square w-full">
+		<PieChart
+			{data}
+			key="label"
+			value="value"
+			c="color"
+			padAngle={0.01}
+			cornerRadius={4}
+			props={{ pie: { motion: 'tween' }, arc: { class: 'cursor-pointer' } }}
+			onArcClick={(_, detail) => {
+				const label = detail.data?.label;
+				if (label && label !== OTHER_SYMBOL) goto(resolve('/assets/[slug]', { slug: label }));
+			}}
+		>
+			{#snippet tooltip()}
+				<Chart.Tooltip hideLabel />
+			{/snippet}
+		</PieChart>
+	</Chart.Container>
 {/if}
