@@ -8,6 +8,7 @@
 	import { onMount, untrack } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import CardWithDays from '$lib/components/ui/card/card-with-days.svelte';
 
 	interface DailyMeasurings {
@@ -142,8 +143,11 @@
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-		<div class="flex items-center gap-4">
+	<PageHeader
+		title={assetData?.asset.name ?? assetData?.asset.symbol ?? ''}
+		subtitle={assetData?.asset.name ? (assetData?.asset.symbol ?? undefined) : undefined}
+	>
+		{#snippet media()}
 			{#if assetData?.asset?.image}
 				<img
 					class="size-12 rounded-full object-contain"
@@ -157,32 +161,24 @@
 					{(assetData?.asset.symbol ?? '?').slice(0, 2).toUpperCase()}
 				</div>
 			{/if}
-			<div>
-				<div class="flex items-center gap-3">
-					<h1 class="text-2xl font-bold tracking-tight">
-						{assetData?.asset.name ?? assetData?.asset.symbol}
-					</h1>
-					<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
-						{assetData?.price}
-						{$baseCurrency}
-					</span>
-				</div>
-				{#if assetData?.asset.name}
-					<p class="text-muted-foreground text-sm">{assetData?.asset.symbol}</p>
-				{/if}
-			</div>
-		</div>
-		<div class="flex gap-2">
+		{/snippet}
+		{#snippet meta()}
+			<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
+				{assetData?.price}
+				{$baseCurrency}
+			</span>
+		{/snippet}
+		{#snippet actions()}
 			{#if assetData?.asset.externalId}
-				<Button variant="outline" size="sm" onclick={EditAsset}>Bearbeiten</Button>
+				<Button variant="outline" size="sm" onclick={EditAsset}>Edit</Button>
 			{/if}
 			<Button variant="outline" size="sm" onclick={SetVisibility}>
-				{hidden ? 'Anzeigen' : 'Verstecken'}
+				{hidden ? 'Show' : 'Hide'}
 			</Button>
 			<Button variant="outline" size="sm" onclick={ResetAsset}>Reset</Button>
-			<Button variant="destructive" size="sm" onclick={DeleteAsset}>Löschen</Button>
-		</div>
-	</div>
+			<Button variant="destructive" size="sm" onclick={DeleteAsset}>Delete</Button>
+		{/snippet}
+	</PageHeader>
 
 	{#if assetData?.asset.symbol && !assetData?.asset.name}
 		<!-- Unlinked asset: show linking UI -->

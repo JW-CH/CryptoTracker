@@ -2,30 +2,32 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { page } from '$app/state';
 
-	let list = page.url.pathname == '/' ? [''] : page.url.pathname.toLowerCase().split('/');
-
-	function getUrl(index: number) {
-		let url = ['/'];
-		for (let i = 1; i <= index; i++) {
-			url.push(list[i] + '/');
-		}
-		return url.join('');
-	}
+	const segments = $derived(page.url.pathname.toLowerCase().split('/').filter(Boolean));
+	const crumbs = $derived([
+		{ label: 'Home', href: '/' },
+		...segments.map((segment, i) => ({
+			label: segment,
+			href: '/' + segments.slice(0, i + 1).join('/')
+		}))
+	]);
 </script>
 
-<Breadcrumb.Root class="my-4">
-	<Breadcrumb.List>
-		{#each list as item, index}
-			{#if index == 0}
+<!-- On the top-level pages the breadcrumb adds nothing — only show from depth 2 -->
+{#if segments.length >= 2}
+	<Breadcrumb.Root>
+		<Breadcrumb.List>
+			{#each crumbs as crumb, index (crumb.href)}
+				{#if index > 0}
+					<Breadcrumb.Separator />
+				{/if}
 				<Breadcrumb.Item>
-					<Breadcrumb.Link href={getUrl(index)}>home</Breadcrumb.Link>
+					{#if index === crumbs.length - 1}
+						<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
+					{:else}
+						<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+					{/if}
 				</Breadcrumb.Item>
-			{:else}
-				<Breadcrumb.Separator />
-				<Breadcrumb.Item>
-					<Breadcrumb.Link href={getUrl(index)}>{item}</Breadcrumb.Link>
-				</Breadcrumb.Item>
-			{/if}
-		{/each}
-	</Breadcrumb.List>
-</Breadcrumb.Root>
+			{/each}
+		</Breadcrumb.List>
+	</Breadcrumb.Root>
+{/if}

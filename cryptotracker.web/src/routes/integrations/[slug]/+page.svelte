@@ -4,7 +4,9 @@
 	import { onMount } from 'svelte';
 	import AssetMeasuringTiles from './AssetMeasuringTiles.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import PageHeader from '$lib/components/page-header.svelte';
 
 	let isLoading: boolean = true;
 	let details: api.IntegrationDetails;
@@ -38,8 +40,11 @@
 		</div>
 	{:else}
 		<!-- Header -->
-		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-			<div class="flex items-center gap-4">
+		<PageHeader
+			title={details.integration.name ?? ''}
+			subtitle={details.integration.description ?? undefined}
+		>
+			{#snippet media()}
 				<div
 					class="flex size-12 items-center justify-center rounded-full text-lg font-bold {details
 						.integration.isManual
@@ -48,37 +53,27 @@
 				>
 					{details.integration.name ? details.integration.name.slice(0, 2).toUpperCase() : '??'}
 				</div>
-				<div>
-					<div class="flex items-center gap-3">
-						<h1 class="text-2xl font-bold tracking-tight">{details.integration.name}</h1>
-						<span
-							class="rounded-full px-2 py-0.5 text-xs font-medium {details.integration.isManual
-								? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
-								: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}"
-						>
-							{details.integration.isManual ? 'Manuell' : 'Automatisch'}
-						</span>
-					</div>
-					{#if details.integration.description}
-						<p class="text-muted-foreground text-sm">{details.integration.description}</p>
-					{/if}
-				</div>
-			</div>
-			{#if details.integration.isManual}
-				<div class="flex gap-2">
+			{/snippet}
+			{#snippet meta()}
+				<Badge variant={details.integration.isManual ? 'secondary' : 'default'}>
+					{details.integration.isManual ? 'Manual' : 'Automatic'}
+				</Badge>
+			{/snippet}
+			{#snippet actions()}
+				{#if details.integration.isManual}
 					<Button variant="outline" size="sm" href="/integrations/{details.integration.id}/add">
-						+ Messung
+						+ Measurement
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						href="/integrations/{details.integration.id}/measurings"
 					>
-						Verwalten
+						Manage
 					</Button>
-				</div>
-			{/if}
-		</div>
+				{/if}
+			{/snippet}
+		</PageHeader>
 
 		<!-- Assets -->
 		<div class="space-y-6">

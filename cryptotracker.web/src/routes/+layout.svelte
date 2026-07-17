@@ -25,10 +25,8 @@
 	<title>CryptoTracker</title>
 </svelte:head>
 <Navbar />
-<div class="container mx-auto px-6 pb-8">
-	{#key page.url.pathname}
-		<NavBreadcrumb />
-	{/key}
+<div class="container mx-auto space-y-6 px-6 py-8">
+	<NavBreadcrumb />
 	{@render children()}
 </div>
 <Toaster theme={theme.resolved} />
