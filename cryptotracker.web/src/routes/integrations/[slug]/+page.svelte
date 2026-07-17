@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import * as api from '$lib/cryptotrackerApi';
 	import { onMount } from 'svelte';
 	import AssetMeasuringTiles from './AssetMeasuringTiles.svelte';
@@ -61,15 +62,14 @@
 			{/snippet}
 			{#snippet actions()}
 				{#if details.integration.isManual}
-					<Button variant="outline" size="sm" href="/integrations/{details.integration.id}/add">
-						+ Measurement
-					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						href="/integrations/{details.integration.id}/measurings"
+						href={resolve('/integrations/[slug]/measurings', {
+							slug: details.integration.id ?? ''
+						})}
 					>
-						Manage
+						Measurements
 					</Button>
 				{/if}
 			{/snippet}
