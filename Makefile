@@ -1,4 +1,4 @@
-web:
+dev:
 	dotnet run --project ./cryptotracker.webapi
 
 test-webapi:

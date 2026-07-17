@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from '$lib/utils.js';
-	import type { HTMLAttributes } from 'svelte/elements';
+	import { cn, type WithElementRef } from "$lib/utils.js";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	let {
 		ref = $bindable(null),
@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="card-header"
 	class={cn(
-		'@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6',
+		"gap-1.5 rounded-t-4xl px-(--card-spacing) [.border-b]:pb-(--card-spacing) group/card-header @container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]",
 		className
 	)}
 	{...restProps}
