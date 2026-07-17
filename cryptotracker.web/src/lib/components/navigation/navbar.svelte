@@ -1,5 +1,6 @@
 <script lang="ts">
 	import NavItem from './nav-item.svelte';
+	import ThemeToggle from './theme-toggle.svelte';
 	import { cn } from '$lib/utils.js';
 	import { user } from '$lib/stores/user';
 
@@ -22,5 +23,8 @@
 				<NavItem path="/auth/login" text="Login" />
 			{/if}
 		</nav>
+		<div class="ml-auto flex items-center">
+			<ThemeToggle />
+		</div>
 	</div>
 </div>
