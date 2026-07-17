@@ -19,7 +19,19 @@ namespace cryptotracker.webapi.Services
 
         public async Task<List<IntegrationDto>> GetIntegrationsAsync()
         {
-            return (await _db.ExchangeIntegrations.ToListAsync()).Select(IntegrationDto.FromModel).ToList();
+            var integrations = await _db.ExchangeIntegrations.ToListAsync();
+
+            var lastSynced = await _db.DailyHoldings
+                .GroupBy(x => x.IntegrationId)
+                .Select(g => new { g.Key, Last = g.Max(x => x.RecordedAtUtc) })
+                .ToDictionaryAsync(x => x.Key, x => x.Last);
+
+            return integrations.Select(integration =>
+            {
+                var dto = IntegrationDto.FromModel(integration);
+                dto.LastSyncedAtUtc = lastSynced.TryGetValue(integration.Id, out var last) ? last : null;
+                return dto;
+            }).ToList();
         }
 
         public async Task<IntegrationDetails?> GetIntegrationDetailsAsync(Guid id)
@@ -32,7 +44,12 @@ namespace cryptotracker.webapi.Services
 
             var measurings = await _portfolioQueryService.GetAssetDayMeasuringAsync(today, integrationId: integration.Id);
 
-            return IntegrationDetails.FromIntegration(integration, measurings);
+            var details = IntegrationDetails.FromIntegration(integration, measurings);
+            details.Integration.LastSyncedAtUtc = await _db.DailyHoldings
+                .Where(x => x.IntegrationId == id)
+                .MaxAsync(x => (DateTime?)x.RecordedAtUtc);
+
+            return details;
         }
 
         public async Task AddIntegrationAsync(AddIntegrationDto dto)

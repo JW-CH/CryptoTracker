@@ -10,6 +10,7 @@ namespace cryptotracker.webapi.Dtos
         public string? Description { get; set; }
         public bool IsHidden { get; set; }
         public bool IsManual { get; set; }
+        public DateTime? LastSyncedAtUtc { get; set; }
 
         public static IntegrationDto FromModel(ExchangeIntegration integration)
         {

@@ -1636,6 +1636,11 @@
           },
           "isManual": {
             "type": "boolean"
+          },
+          "lastSyncedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "additionalProperties": false

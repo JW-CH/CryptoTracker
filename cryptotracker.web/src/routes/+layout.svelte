@@ -1,58 +1,32 @@
 <script lang="ts">
-	import { user } from '$lib/stores/user';
-	import { loadConfig } from '$lib/stores/config';
-	import * as api from '$lib/cryptotrackerApi';
-	import { afterNavigate, goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { page } from '$app/state';
-	import Navbar from '$lib/components/navigation/navbar.svelte';
-	import NavBreadcrumb from '$lib/components/navigation/NavBreadcrumb.svelte';
-	import '../app.css';
+	import { onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import { page } from "$app/state";
+	import { installAuthInterceptor, loginPath, refreshUser } from "$lib/api/client";
+	import { theme } from "$lib/stores/theme.svelte";
+	import Navbar from "$lib/components/navigation/navbar.svelte";
+	import NavBreadcrumb from "$lib/components/navigation/NavBreadcrumb.svelte";
+	import { Toaster } from "$lib/components/ui/sonner";
+	import "../app.css";
+
 	let { children } = $props();
 
-	async function checkAuth() {
-		try {
-			const currentPath = page.url.pathname;
+	installAuthInterceptor();
 
-			if (currentPath.startsWith('/auth/')) {
-				return;
-			}
-
-			const res = await api.getMe();
-
-			if (res.status === 200) {
-				const data = await res.data;
-				user.set(data);
-				loadConfig();
-				return;
-			}
-		} catch (err) {
-			// Authentication check failed, redirecting to login
-			console.error('Authentication check failed', err);
-		}
-
-		user.set(null);
-		goto('/auth/login');
-	}
-
-	onMount(() => {
-		checkAuth();
-	});
-
-	afterNavigate(() => {
-		checkAuth();
+	onMount(async () => {
+		if (page.url.pathname.startsWith("/auth/")) return;
+		const signedIn = await refreshUser();
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- loginPath builds on resolve()
+		if (!signedIn) goto(loginPath(page.url.pathname + page.url.search));
 	});
 </script>
 
 <svelte:head>
-	<title>cryptotracker</title>
+	<title>CryptoTracker</title>
 </svelte:head>
 <Navbar />
-<div class="container mx-auto px-6 pb-8">
-	{#key page.url.pathname}
-		<NavBreadcrumb />
-	{/key}
+<div class="container mx-auto space-y-6 px-6 py-8">
+	<NavBreadcrumb />
 	{@render children()}
 </div>
-
-<!-- <Footer /> -->
+<Toaster theme={theme.resolved} />
