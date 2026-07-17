@@ -1,8 +1,8 @@
-import * as api from '$lib/cryptotrackerApi';
-import { writable } from 'svelte/store';
+import * as api from "$lib/cryptotrackerApi";
+import { writable } from "svelte/store";
 
 // display form of the backend's base currency (e.g. "CHF"), default until loaded
-export const baseCurrency = writable<string>('CHF');
+export const baseCurrency = writable<string>("CHF");
 
 export async function loadConfig() {
 	try {

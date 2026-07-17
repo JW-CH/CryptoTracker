@@ -1,6 +1,6 @@
 export const CHART_SLOTS = 7;
-export const OTHER_SYMBOL = 'Other';
-export const OTHER_COLOR = 'var(--chart-other)';
+export const OTHER_SYMBOL = "Other";
+export const OTHER_COLOR = "var(--chart-other)";
 
 /**
  * Stable color assignment: the slot is derived from the alphabetical position

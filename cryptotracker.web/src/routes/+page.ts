@@ -1,10 +1,10 @@
-import * as api from '$lib/cryptotrackerApi';
-import type { PageLoad } from './$types';
+import * as api from "$lib/cryptotrackerApi";
+import type { PageLoad } from "./$types";
 
 const RANGES = [7, 30, 90, 365];
 
 export const load: PageLoad = ({ url }) => {
-	const requested = Number(url.searchParams.get('range'));
+	const requested = Number(url.searchParams.get("range"));
 	const range = RANGES.includes(requested) ? requested : 30;
 	return {
 		range,

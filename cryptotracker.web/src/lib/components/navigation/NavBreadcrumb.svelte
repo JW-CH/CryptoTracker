@@ -1,13 +1,13 @@
 <script lang="ts">
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
-	import { page } from '$app/state';
+	import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+	import { page } from "$app/state";
 
-	const segments = $derived(page.url.pathname.toLowerCase().split('/').filter(Boolean));
+	const segments = $derived(page.url.pathname.toLowerCase().split("/").filter(Boolean));
 	const crumbs = $derived([
-		{ label: 'Home', href: '/' },
+		{ label: "Home", href: "/" },
 		...segments.map((segment, i) => ({
 			label: segment,
-			href: '/' + segments.slice(0, i + 1).join('/')
+			href: "/" + segments.slice(0, i + 1).join("/")
 		}))
 	]);
 </script>

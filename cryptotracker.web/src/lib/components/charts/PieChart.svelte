@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { PieChart } from 'layerchart';
-	import * as Chart from '$lib/components/ui/chart';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { colorForSymbol, OTHER_SYMBOL } from '$lib/charts/palette';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { prefersReducedMotion } from 'svelte/motion';
+	import { PieChart } from "layerchart";
+	import * as Chart from "$lib/components/ui/chart";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { colorForSymbol, OTHER_SYMBOL } from "$lib/charts/palette";
+	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import { prefersReducedMotion } from "svelte/motion";
 
 	let {
 		labels = [],
@@ -38,13 +38,13 @@
 			cornerRadius={4}
 			props={{
 				pie: {
-					motion: prefersReducedMotion.current ? 'none' : { type: 'tween', duration: 300 }
+					motion: prefersReducedMotion.current ? "none" : { type: "tween", duration: 300 }
 				},
-				arc: { class: 'cursor-pointer' }
+				arc: { class: "cursor-pointer" }
 			}}
 			onArcClick={(_, detail) => {
 				const label = detail.data?.label;
-				if (label && label !== OTHER_SYMBOL) goto(resolve('/assets/[slug]', { slug: label }));
+				if (label && label !== OTHER_SYMBOL) goto(resolve("/assets/[slug]", { slug: label }));
 			}}
 		>
 			{#snippet tooltip()}

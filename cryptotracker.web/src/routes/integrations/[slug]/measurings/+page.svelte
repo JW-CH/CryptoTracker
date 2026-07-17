@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { page } from '$app/state';
-	import * as api from '$lib/cryptotrackerApi';
-	import { mutate } from '$lib/api/mutate';
-	import { formatDate } from '$lib/format';
-	import PageHeader from '$lib/components/page-header.svelte';
-	import SearchCombobox from '$lib/components/search-combobox.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import * as Table from '$lib/components/ui/table';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import PencilIcon from '@lucide/svelte/icons/pencil';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import { onMount } from "svelte";
+	import { page } from "$app/state";
+	import * as api from "$lib/cryptotrackerApi";
+	import { mutate } from "$lib/api/mutate";
+	import { formatDate } from "$lib/format";
+	import PageHeader from "$lib/components/page-header.svelte";
+	import SearchCombobox from "$lib/components/search-combobox.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { Label } from "$lib/components/ui/label";
+	import * as Table from "$lib/components/ui/table";
+	import * as Dialog from "$lib/components/ui/dialog";
+	import * as AlertDialog from "$lib/components/ui/alert-dialog";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import Loader2Icon from "@lucide/svelte/icons/loader-2";
+	import PencilIcon from "@lucide/svelte/icons/pencil";
+	import Trash2Icon from "@lucide/svelte/icons/trash-2";
 
-	const slug = $derived(page.params.slug ?? '');
+	const slug = $derived(page.params.slug ?? "");
 
 	let measurings = $state<api.DailyHoldingDto[] | null>(null);
 
@@ -35,7 +35,7 @@
 	const sorted = $derived(
 		[...(measurings ?? [])].sort(
 			(a, b) =>
-				(b.date ?? '').localeCompare(a.date ?? '') || (a.symbol ?? '').localeCompare(b.symbol ?? '')
+				(b.date ?? "").localeCompare(a.date ?? "") || (a.symbol ?? "").localeCompare(b.symbol ?? "")
 		)
 	);
 
@@ -43,7 +43,7 @@
 
 	// ── Inline edit: same endpoint, upsert on (integration, symbol, date) ──
 	let editKey = $state<string | null>(null);
-	let editValue = $state('');
+	let editValue = $state("");
 	let savingEdit = $state(false);
 
 	function startEdit(m: api.DailyHoldingDto) {
@@ -57,7 +57,7 @@
 		savingEdit = true;
 		const result = await mutate(
 			() => api.addIntegrationMeasuring(slug, { symbol: m.symbol, date: m.date, amount }),
-			{ success: `${m.symbol} on ${formatDate(m.date ?? '')} updated.` }
+			{ success: `${m.symbol} on ${formatDate(m.date ?? "")} updated.` }
 		);
 		savingEdit = false;
 		if (result !== null) {
@@ -73,8 +73,8 @@
 		const m = deleteTarget;
 		if (!m) return;
 		const result = await mutate(
-			() => api.deleteIntegrationMeasuring(m.integrationId, m.symbol ?? '', m.date ?? ''),
-			{ success: `${m.symbol} on ${formatDate(m.date ?? '')} deleted.` }
+			() => api.deleteIntegrationMeasuring(m.integrationId, m.symbol ?? "", m.date ?? ""),
+			{ success: `${m.symbol} on ${formatDate(m.date ?? "")} deleted.` }
 		);
 		if (result !== null) await load();
 	}
@@ -82,8 +82,8 @@
 	// ── Add as dialog: stay on the page, see the new row ──
 	let addOpen = $state(false);
 	let assets = $state<api.AssetDto[] | null>(null);
-	let addSymbol = $state('');
-	let addDate = $state(new Date().toISOString().split('T')[0]);
+	let addSymbol = $state("");
+	let addDate = $state(new Date().toISOString().split("T")[0]);
 	let addAmount = $state(0);
 	let savingAdd = $state(false);
 
@@ -98,8 +98,8 @@
 
 	const assetOptions = $derived(
 		(assets ?? []).map((a) => ({
-			value: a.symbol ?? '',
-			label: a.name ? `${a.name} (${(a.symbol ?? '').toUpperCase()})` : (a.symbol ?? '')
+			value: a.symbol ?? "",
+			label: a.name ? `${a.name} (${(a.symbol ?? "").toUpperCase()})` : (a.symbol ?? "")
 		}))
 	);
 
@@ -148,7 +148,7 @@
 			<Table.Body>
 				{#each sorted as m (keyOf(m))}
 					<Table.Row>
-						<Table.Cell>{formatDate(m.date ?? '')}</Table.Cell>
+						<Table.Cell>{formatDate(m.date ?? "")}</Table.Cell>
 						<Table.Cell class="font-medium">{m.symbol}</Table.Cell>
 						<Table.Cell class="text-right tabular-nums">
 							{#if editKey === keyOf(m)}
@@ -159,8 +159,8 @@
 									bind:value={editValue}
 									disabled={savingEdit}
 									onkeydown={(e) => {
-										if (e.key === 'Enter') saveEdit(m);
-										if (e.key === 'Escape') editKey = null;
+										if (e.key === "Enter") saveEdit(m);
+										if (e.key === "Escape") editKey = null;
 									}}
 								/>
 							{:else}
@@ -240,7 +240,7 @@
 					items={assetOptions}
 					bind:value={addSymbol}
 					disabled={assets === null}
-					placeholder={assets === null ? 'Loading…' : 'Select asset'}
+					placeholder={assets === null ? "Loading…" : "Select asset"}
 					searchPlaceholder="Search by name or symbol…"
 				/>
 			</div>
@@ -270,7 +270,7 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Delete measurement?</AlertDialog.Title>
 			<AlertDialog.Description>
-				{deleteTarget?.symbol} on {deleteTarget ? formatDate(deleteTarget.date ?? '') : ''} will be removed.
+				{deleteTarget?.symbol} on {deleteTarget ? formatDate(deleteTarget.date ?? "") : ""} will be removed.
 				This cannot be undone.
 			</AlertDialog.Description>
 		</AlertDialog.Header>

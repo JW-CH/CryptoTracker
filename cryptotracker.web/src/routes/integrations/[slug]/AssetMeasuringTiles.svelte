@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as api from '$lib/cryptotrackerApi';
-	import { formatAmount } from '$lib/format';
+	import * as Card from "$lib/components/ui/card";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import * as api from "$lib/cryptotrackerApi";
+	import { formatAmount } from "$lib/format";
 
 	let {
 		measurings = [],
@@ -40,7 +40,7 @@
 						<div
 							class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-bold"
 						>
-							{(measuring.asset.symbol ?? '?').slice(0, 2).toUpperCase()}
+							{(measuring.asset.symbol ?? "?").slice(0, 2).toUpperCase()}
 						</div>
 					{/if}
 					<div class="min-w-0 flex-1">
@@ -50,7 +50,7 @@
 						<p class="text-muted-foreground text-sm">
 							{measuring.totalAmount != null
 								? formatAmount(measuring.totalAmount, measuring.asset.assetType)
-								: ''}
+								: ""}
 							{measuring.asset.symbol}
 						</p>
 					</div>

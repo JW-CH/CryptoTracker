@@ -6,12 +6,12 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<script>
 			// Must run before first paint (FOUC) and stay in sync with $lib/stores/theme.svelte.ts
-			const theme = localStorage.getItem('theme');
+			const theme = localStorage.getItem("theme");
 			const dark =
-				theme === 'dark' ||
-				((!theme || theme === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
-			document.documentElement.classList.toggle('dark', dark);
-			document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+				theme === "dark" ||
+				((!theme || theme === "system") && matchMedia("(prefers-color-scheme: dark)").matches);
+			document.documentElement.classList.toggle("dark", dark);
+			document.documentElement.style.colorScheme = dark ? "dark" : "light";
 		</script>
 		%sveltekit.head%
 	</head>

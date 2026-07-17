@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import * as api from '$lib/cryptotrackerApi';
+	import { goto } from "$app/navigation";
+	import * as api from "$lib/cryptotrackerApi";
 
-	let email: string = '';
-	let password: string = '';
-	let confirmPassword: string = '';
+	let email: string = "";
+	let password: string = "";
+	let confirmPassword: string = "";
 	let error: string | null = null;
 </script>
 
@@ -16,18 +16,18 @@
 		on:submit|preventDefault={async () => {
 			try {
 				if (password !== confirmPassword) {
-					error = 'Passwords do not match.';
+					error = "Passwords do not match.";
 					return;
 				}
 
 				const response = await api.register({ email, username: email, password });
 				if (response.status === 200) {
-					goto('/');
+					goto("/");
 				} else {
-					error = 'Registration failed. Please try again.';
+					error = "Registration failed. Please try again.";
 				}
 			} catch (err) {
-				error = 'An error occurred during registration. Please try again.';
+				error = "An error occurred during registration. Please try again.";
 			}
 		}}
 		class="space-y-4"

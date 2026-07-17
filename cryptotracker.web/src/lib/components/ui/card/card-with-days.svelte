@@ -1,17 +1,17 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card';
-	import type { HTMLAttributes } from 'svelte/elements';
+	import * as Card from "$lib/components/ui/card";
+	import type { HTMLAttributes } from "svelte/elements";
 
 	interface Props {
 		title?: string;
-		class?: $$Props['class'];
+		class?: $$Props["class"];
 		selectedRange?: number;
 	}
 
 	type $$Props = HTMLAttributes<HTMLDivElement>;
 
 	let {
-		title = 'Card Title',
+		title = "Card Title",
 		class: className = undefined,
 		selectedRange = $bindable(7)
 	}: Props = $props();

@@ -1,14 +1,14 @@
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-import * as api from '$lib/cryptotrackerApi';
-import { defaults } from '$lib/cryptotrackerApi';
-import { loadConfig } from '$lib/stores/config';
-import { user } from '$lib/stores/user';
-import { get } from 'svelte/store';
-import { toast } from 'svelte-sonner';
+import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import * as api from "$lib/cryptotrackerApi";
+import { defaults } from "$lib/cryptotrackerApi";
+import { loadConfig } from "$lib/stores/config";
+import { user } from "$lib/stores/user";
+import { get } from "svelte/store";
+import { toast } from "svelte-sonner";
 
 export function loginPath(returnUrl?: string): string {
-	const base = resolve('/auth/login');
+	const base = resolve("/auth/login");
 	return returnUrl ? `${base}?returnUrl=${encodeURIComponent(returnUrl)}` : base;
 }
 
@@ -44,16 +44,16 @@ export function installAuthInterceptor() {
 	const baseFetch = globalThis.fetch.bind(globalThis);
 	defaults.fetch = async (input, init) => {
 		const res = await baseFetch(input, init);
-		const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-		if (res.status === 401 && !url.includes('/api/Auth/') && !redirectingToLogin) {
+		const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+		if (res.status === 401 && !url.includes("/api/Auth/") && !redirectingToLogin) {
 			redirectingToLogin = true;
 			const wasSignedIn = get(user) !== null;
 			user.set(null);
 			if (wasSignedIn) {
-				toast.info('Your session has expired — please sign in again.');
+				toast.info("Your session has expired — please sign in again.");
 			}
 			const path = window.location.pathname;
-			const returnUrl = path.startsWith('/auth/') ? undefined : path + window.location.search;
+			const returnUrl = path.startsWith("/auth/") ? undefined : path + window.location.search;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- loginPath builds on resolve()
 			goto(loginPath(returnUrl)).finally(() => {
 				redirectingToLogin = false;

@@ -8,12 +8,13 @@
 				"inline-end": "pr-3 has-[>button]:-mr-1 has-[>kbd]:-mr-1 order-last",
 				"block-start":
 					"px-3 pt-3 group-has-[>input]/input-group:pt-3.5 [.border-b]:pb-3.5 order-first w-full justify-start",
-				"block-end": "px-3 pb-3 group-has-[>input]/input-group:pb-3.5 [.border-t]:pt-3.5 order-last w-full justify-start",
-			},
+				"block-end":
+					"px-3 pb-3 group-has-[>input]/input-group:pb-3.5 [.border-t]:pt-3.5 order-last w-full justify-start"
+			}
 		},
 		defaultVariants: {
-			align: "inline-start",
-		},
+			align: "inline-start"
+		}
 	});
 
 	export type InputGroupAddonAlign = VariantProps<typeof inputGroupAddonVariants>["align"];

@@ -1,12 +1,12 @@
-import { toast } from 'svelte-sonner';
+import { toast } from "svelte-sonner";
 
 const statusMessages: Record<number, string> = {
-	400: 'Invalid input.',
-	401: 'You are not signed in.',
-	403: 'You are not allowed to do that.',
-	404: 'Not found.',
-	409: 'This entry already exists.',
-	500: 'Server error — please try again.'
+	400: "Invalid input.",
+	401: "You are not signed in.",
+	403: "You are not allowed to do that.",
+	404: "Not found.",
+	409: "This entry already exists.",
+	500: "Server error — please try again."
 };
 
 /**
@@ -24,11 +24,11 @@ export async function mutate<T>(
 			await opts.onSuccess?.(res.data);
 			return res.data;
 		}
-		const detail = typeof res.data === 'string' && res.data ? res.data : undefined;
+		const detail = typeof res.data === "string" && res.data ? res.data : undefined;
 		toast.error(detail ?? statusMessages[res.status] ?? `Request failed (${res.status}).`);
 		return null;
 	} catch {
-		toast.error('Network error — check your connection.');
+		toast.error("Network error — check your connection.");
 		return null;
 	}
 }

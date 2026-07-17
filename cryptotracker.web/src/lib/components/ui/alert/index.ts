@@ -13,5 +13,5 @@ export {
 	Root as Alert,
 	Description as AlertDescription,
 	Title as AlertTitle,
-	Action as AlertAction,
+	Action as AlertAction
 };

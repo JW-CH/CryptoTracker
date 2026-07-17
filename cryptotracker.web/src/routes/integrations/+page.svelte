@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import * as api from '$lib/cryptotrackerApi';
-	import { onMount } from 'svelte';
-	import IntegrationTiles from './IntegrationTiles.svelte';
-	import PageHeader from '$lib/components/page-header.svelte';
+	import { resolve } from "$app/paths";
+	import Button from "$lib/components/ui/button/button.svelte";
+	import * as api from "$lib/cryptotrackerApi";
+	import { onMount } from "svelte";
+	import IntegrationTiles from "./IntegrationTiles.svelte";
+	import PageHeader from "$lib/components/page-header.svelte";
 
 	let integrations: api.IntegrationDto[] | null = null;
 
@@ -24,7 +24,7 @@
 <div class="space-y-6">
 	<PageHeader title="Integrations">
 		{#snippet actions()}
-			<Button variant="outline" size="sm" href={resolve('/integrations/add')}>+ Add</Button>
+			<Button variant="outline" size="sm" href={resolve("/integrations/add")}>+ Add</Button>
 		{/snippet}
 	</PageHeader>
 

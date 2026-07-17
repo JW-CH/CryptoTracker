@@ -1,24 +1,24 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import * as Card from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as api from '$lib/cryptotrackerApi';
-	import { baseCurrency } from '$lib/stores/config';
-	import { formatCurrency, formatPercent } from '$lib/format';
-	import LineChart from '$lib/components/charts/LineChart.svelte';
-	import PieChart from '$lib/components/charts/PieChart.svelte';
-	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import TrendingDownIcon from '@lucide/svelte/icons/trending-down';
+	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import * as Card from "$lib/components/ui/card";
+	import { Button } from "$lib/components/ui/button";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import * as ToggleGroup from "$lib/components/ui/toggle-group";
+	import * as api from "$lib/cryptotrackerApi";
+	import { baseCurrency } from "$lib/stores/config";
+	import { formatCurrency, formatPercent } from "$lib/format";
+	import LineChart from "$lib/components/charts/LineChart.svelte";
+	import PieChart from "$lib/components/charts/PieChart.svelte";
+	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
+	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 
 	let { data } = $props();
 
 	function setRange(value: string) {
 		if (!value || Number(value) === data.range) return;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve('/')}?range=${value}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("/")}?range=${value}`, { keepFocus: true, noScroll: true });
 	}
 
 	function TrimMeasurings(holdings: api.AssetHoldingDto[]) {
@@ -30,7 +30,7 @@
 		const top = sorted.slice(0, 7);
 		const otherValue = sorted.slice(7).reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
 		return top.concat({
-			asset: { symbol: 'Other', assetType: 'Crypto' },
+			asset: { symbol: "Other", assetType: "Crypto" },
 			totalValue: otherValue,
 			price: 0,
 			totalAmount: 0,
@@ -48,18 +48,18 @@
 
 		const latest = days.length ? measurings[days.at(-1)!] : [];
 		const trimmedLatest = TrimMeasurings(latest);
-		const topSymbols = trimmedLatest.map((x) => x.asset.symbol ?? '').filter((s) => s !== 'Other');
+		const topSymbols = trimmedLatest.map((x) => x.asset.symbol ?? "").filter((s) => s !== "Other");
 
 		// Same top-7 + "Other" trim as the pie — keeps colors consistent between
 		// both charts and stops the palette from running out (R3.3)
 		const composition = trimmedLatest.map((entry) => {
-			const symbol = entry.asset.symbol ?? '';
+			const symbol = entry.asset.symbol ?? "";
 			return {
 				name: symbol,
 				data: days.map((d) =>
-					symbol === 'Other'
+					symbol === "Other"
 						? measurings[d]
-								.filter((m) => !topSymbols.includes(m.asset.symbol ?? ''))
+								.filter((m) => !topSymbols.includes(m.asset.symbol ?? ""))
 								.reduce((acc, m) => acc + (m.totalValue ?? 0), 0)
 						: (measurings[d].find((m) => m.asset.symbol === symbol)?.totalValue ?? 0)
 				)
@@ -97,7 +97,7 @@
 					Connect an exchange or add a manual integration with your first measurement — the
 					dashboard fills up from there.
 				</p>
-				<Button href={resolve('/integrations')}>Go to integrations</Button>
+				<Button href={resolve("/integrations")}>Go to integrations</Button>
 			</Card.Content>
 		</Card.Root>
 	{:else}
@@ -133,7 +133,7 @@
 										<TrendingDownIcon class="size-4" />
 									{/if}
 									<span class="font-medium">
-										{d.delta >= 0 ? '+' : ''}{formatCurrency(d.delta, $baseCurrency)}
+										{d.delta >= 0 ? "+" : ""}{formatCurrency(d.delta, $baseCurrency)}
 										({formatPercent(d.deltaPct)})
 									</span>
 									<span class="text-primary-foreground/70">last {data.range} days</span>
@@ -168,7 +168,7 @@
 					</Card.Header>
 					<Card.Content>
 						<PieChart
-							labels={d.trimmedLatest.map((x) => x.asset.symbol ?? '')}
+							labels={d.trimmedLatest.map((x) => x.asset.symbol ?? "")}
 							values={d.trimmedLatest.map((x) => x.totalValue ?? 0)}
 						/>
 					</Card.Content>

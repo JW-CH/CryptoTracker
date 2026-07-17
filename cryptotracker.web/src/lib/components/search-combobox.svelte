@@ -1,18 +1,18 @@
 <script lang="ts">
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
-	import * as Command from '$lib/components/ui/command';
-	import * as Popover from '$lib/components/ui/popover';
-	import { Button } from '$lib/components/ui/button';
-	import { cn } from '$lib/utils';
+	import CheckIcon from "@lucide/svelte/icons/check";
+	import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
+	import * as Command from "$lib/components/ui/command";
+	import * as Popover from "$lib/components/ui/popover";
+	import { Button } from "$lib/components/ui/button";
+	import { cn } from "$lib/utils";
 
 	type Item = { value: string; label: string };
 
 	let {
 		items = [],
-		value = $bindable(''),
-		placeholder = 'Select…',
-		searchPlaceholder = 'Search…',
+		value = $bindable(""),
+		placeholder = "Select…",
+		searchPlaceholder = "Search…",
 		id,
 		disabled = false
 	}: {
@@ -25,7 +25,7 @@
 	} = $props();
 
 	let open = $state(false);
-	let search = $state('');
+	let search = $state("");
 
 	// The full list can be thousands of entries (CoinGecko) — filter manually
 	// and cap the rendered results instead of mounting every item.
@@ -50,7 +50,7 @@
 				aria-expanded={open}
 				class="w-full justify-between font-normal"
 			>
-				<span class={cn('truncate', !selectedLabel && 'text-muted-foreground')}>
+				<span class={cn("truncate", !selectedLabel && "text-muted-foreground")}>
 					{selectedLabel ?? placeholder}
 				</span>
 				<ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
@@ -70,7 +70,7 @@
 							open = false;
 						}}
 					>
-						<CheckIcon class={cn('size-4', value !== item.value && 'text-transparent')} />
+						<CheckIcon class={cn("size-4", value !== item.value && "text-transparent")} />
 						{item.label}
 					</Command.Item>
 				{/each}

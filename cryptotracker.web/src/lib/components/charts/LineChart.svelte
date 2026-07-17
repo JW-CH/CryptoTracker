@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { AreaChart, LineChart } from 'layerchart';
-	import { curveMonotoneX } from 'd3-shape';
-	import * as Chart from '$lib/components/ui/chart';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { colorForSymbol } from '$lib/charts/palette';
-	import { LOCALE, formatDate } from '$lib/format';
-	import { prefersReducedMotion } from 'svelte/motion';
-	import { cn } from '$lib/utils';
+	import { AreaChart, LineChart } from "layerchart";
+	import { curveMonotoneX } from "d3-shape";
+	import * as Chart from "$lib/components/ui/chart";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { colorForSymbol } from "$lib/charts/palette";
+	import { LOCALE, formatDate } from "$lib/format";
+	import { prefersReducedMotion } from "svelte/motion";
+	import { cn } from "$lib/utils";
 
 	type Dataset = { name: string; data: number[] };
 
@@ -28,7 +28,7 @@
 		skeleton?: boolean;
 		/** Overrides the single-series color, e.g. for the hero gradient */
 		color?: string;
-		axis?: boolean | 'x' | 'y';
+		axis?: boolean | "x" | "y";
 		grid?: boolean;
 		/** Monotone curve instead of straight segments */
 		smooth?: boolean;
@@ -38,7 +38,7 @@
 	} = $props();
 
 	const uid = $props.id();
-	const singleColor = $derived(color ?? 'var(--chart-1)');
+	const singleColor = $derived(color ?? "var(--chart-1)");
 
 	const rows = $derived(
 		labels.map((label, i) => ({
@@ -51,7 +51,7 @@
 		datasets.map((d) => ({
 			key: d.name,
 			label: d.name,
-			color: datasets.length === 1 ? (color ?? 'var(--chart-1)') : colorForSymbol(d.name, allNames)
+			color: datasets.length === 1 ? (color ?? "var(--chart-1)") : colorForSymbol(d.name, allNames)
 		}))
 	);
 	const config: Chart.ChartConfig = $derived(
@@ -59,12 +59,12 @@
 	);
 	const Component = $derived(fill ? AreaChart : LineChart);
 	const motion = $derived(
-		prefersReducedMotion.current ? ('none' as const) : { type: 'tween' as const, duration: 400 }
+		prefersReducedMotion.current ? ("none" as const) : { type: "tween" as const, duration: 400 }
 	);
 </script>
 
 {#if skeleton}
-	<Skeleton class={cn('aspect-video w-full', className)} />
+	<Skeleton class={cn("aspect-video w-full", className)} />
 {:else}
 	{#if gradientFill}
 		<!-- Same-document SVG paint server for the area fill -->
@@ -77,7 +77,7 @@
 			</defs>
 		</svg>
 	{/if}
-	<Chart.Container {config} class={cn('aspect-video w-full', className)}>
+	<Chart.Container {config} class={cn("aspect-video w-full", className)}>
 		<Component
 			data={rows}
 			x="date"
@@ -93,7 +93,7 @@
 					...(gradientFill ? { fill: `url(#lc-fill-${uid})`, fillOpacity: 1 } : {})
 				},
 				xAxis: {
-					format: (d: Date) => d.toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit' })
+					format: (d: Date) => d.toLocaleDateString(LOCALE, { day: "2-digit", month: "2-digit" })
 				}
 			}}
 		>
