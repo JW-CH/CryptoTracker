@@ -205,13 +205,12 @@ formatDate(date)                 // ersetzt das inline toLocaleDateString im Das
 ```
 
 **Sprache ≠ Zahlenformat.** Englische UI ([E6](README.md#e6-im-detail--sprache))
-heisst *nicht* automatisch `en-US`. Bei CHF als Basiswährung ist Schweizer
-Formatierung (`42'318.55`, `16.07.2026`) sachlich richtig und `en-US`
-(`42,318.55`, `7/16/2026`) schlicht falsch — der Apostroph als Tausendertrenner
-ist hier Konvention. **Empfehlung: `de-CH` als Format-Locale behalten**, auch bei
-englischer UI. Das ist kein Widerspruch, sondern der Normalfall. Als **eine
-Konstante** in `format.ts`, nicht 20× verstreut — dann ist es eine
-Ein-Zeilen-Änderung, falls es je anders sein soll.
+heisst *nicht* automatisch `en-US`-Formate. **Entschieden 2026-07-17: fixe
+Locale `de-CH`.** `navigator.language` wurde erwogen und verworfen — die meisten
+unkonfigurierten Browser melden `en-US`, dann kippen Daten auf `mm/dd/yyyy` und
+Beträge auf Komma-Trennung, obwohl das Publikum Schweizer Format erwartet. Als
+**eine** `LOCALE`-Konstante in `format.ts`, nicht 20× verstreut — falls je eine
+Nutzer-Einstellung kommt, ist das eine Ein-Zeilen-Änderung an dieser Stelle.
 `toFixed(8)` für **jedes** Asset (Report) ist ohnehin falsch — `1'250.00000000 EUR`
 ist Unsinn. Nachkommastellen gehören an den `assetType`.
 

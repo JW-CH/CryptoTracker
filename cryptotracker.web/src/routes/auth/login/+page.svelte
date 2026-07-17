@@ -1,11 +1,22 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import * as api from '$lib/cryptotrackerApi';
+	import { refreshUser } from '$lib/api/client';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import * as Alert from '$lib/components/ui/alert';
+	import { Separator } from '$lib/components/ui/separator';
+	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 
-	let email: string = '';
-	let password: string = '';
-	let error: string | null = null;
-	let oidcEnabled: boolean = false;
+	let email = $state('');
+	let password = $state('');
+	let error = $state<string | null>(null);
+	let oidcEnabled = $state(false);
+	let submitting = $state(false);
 
 	async function checkOidc() {
 		try {
@@ -22,25 +33,35 @@
 
 	async function handleLogin() {
 		error = null;
-
+		submitting = true;
 		try {
 			const response = await api.login({ username: email, password });
-
 			if (response.status === 200) {
-				goto('/');
+				await refreshUser();
+				const returnUrl = page.url.searchParams.get('returnUrl');
+				// eslint-disable-next-line svelte/no-navigation-without-resolve -- returnUrl is an app-internal path, guarded below
+				await goto(returnUrl?.startsWith('/') ? returnUrl : resolve('/'));
 			} else {
 				error = 'Login failed. Please check your credentials.';
 			}
-		} catch (err) {
+		} catch {
 			error = 'An error occurred during login. Please try again.';
-			console.error(err);
+		} finally {
+			submitting = false;
 		}
 	}
 </script>
 
+<svelte:head>
+	<title>Login · CryptoTracker</title>
+</svelte:head>
+
 <div class="container mx-auto max-w-md pt-10">
 	{#if error}
-		<div class="mb-4 rounded bg-red-100 p-4 text-red-700">{error}</div>
+		<Alert.Root variant="destructive" class="mb-4">
+			<CircleAlertIcon class="size-4" />
+			<Alert.Title>{error}</Alert.Title>
+		</Alert.Root>
 	{/if}
 	<form
 		onsubmit={async (event) => {
@@ -49,48 +70,37 @@
 		}}
 		class="space-y-4"
 	>
-		<div>
-			<label for="email" class="mb-2 block font-medium">Email</label>
-			<input
-				type="email"
-				id="email"
-				bind:value={email}
-				required
-				class="w-full rounded border border-gray-300 p-2"
-			/>
+		<div class="space-y-2">
+			<Label for="email">Email</Label>
+			<Input type="email" id="email" bind:value={email} required />
 		</div>
-		<div>
-			<label for="password" class="mb-2 block font-medium">Password</label>
-			<input
-				type="password"
-				id="password"
-				bind:value={password}
-				required
-				class="w-full rounded border border-gray-300 p-2"
-			/>
+		<div class="space-y-2">
+			<Label for="password">Password</Label>
+			<Input type="password" id="password" bind:value={password} required />
 		</div>
-		<button
-			type="submit"
-			class="w-full rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700"
-		>
+		<Button type="submit" class="w-full" disabled={submitting}>
+			{#if submitting}
+				<Loader2Icon class="size-4 animate-spin" />
+			{/if}
 			Login
-		</button>
+		</Button>
 		{#if oidcEnabled}
-			<hr />
-			<button
+			<Separator />
+			<Button
 				type="button"
-				class="w-full rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
+				variant="secondary"
+				class="w-full"
 				onclick={() => {
 					window.location.href = '/api/auth/oidc-login';
 				}}
 			>
 				Login with OIDC
-			</button>
+			</Button>
 		{/if}
-		<hr />
-		<p class="text-center text-sm text-gray-600">
+		<Separator />
+		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
-			<a href="/auth/register" class="text-blue-600 hover:underline">Register here</a>.
+			<a href={resolve('/auth/register')} class="text-primary hover:underline">Register here</a>.
 		</p>
 	</form>
 </div>

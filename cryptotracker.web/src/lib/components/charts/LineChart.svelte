@@ -3,6 +3,7 @@
 	import * as Chart from '$lib/components/ui/chart';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { colorForSymbol } from '$lib/charts/palette';
+	import { formatDate } from '$lib/format';
 	import { prefersReducedMotion } from 'svelte/motion';
 
 	type Dataset = { name: string; data: number[] };
@@ -50,12 +51,12 @@
 				spline: { motion },
 				area: { motion },
 				xAxis: {
-					format: (d: Date) => d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' })
+					format: (d: Date) => formatDate(d)
 				}
 			}}
 		>
 			{#snippet tooltip()}
-				<Chart.Tooltip labelFormatter={(d: Date) => d.toLocaleDateString('de-CH')} />
+				<Chart.Tooltip labelFormatter={(d: Date) => formatDate(d)} />
 			{/snippet}
 		</Component>
 	</Chart.Container>

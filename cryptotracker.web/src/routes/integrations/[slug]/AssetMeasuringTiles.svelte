@@ -2,10 +2,13 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as api from '$lib/cryptotrackerApi';
+	import { formatAmount } from '$lib/format';
 
-	export let measurings: api.AssetHoldingDto[] = [];
-	export let hidden: boolean = false;
-	export let skeleton: boolean = false;
+	let {
+		measurings = [],
+		hidden = false,
+		skeleton = false
+	}: { measurings?: api.AssetHoldingDto[]; hidden?: boolean; skeleton?: boolean } = $props();
 </script>
 
 {#if skeleton}
@@ -45,7 +48,9 @@
 							{measuring.asset.name ? measuring.asset.name : measuring.asset.symbol}
 						</p>
 						<p class="text-muted-foreground text-sm">
-							{measuring.totalAmount?.toFixed(2)}
+							{measuring.totalAmount != null
+								? formatAmount(measuring.totalAmount, measuring.asset.assetType)
+								: ''}
 							{measuring.asset.symbol}
 						</p>
 					</div>

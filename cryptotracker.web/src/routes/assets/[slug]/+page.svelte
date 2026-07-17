@@ -4,6 +4,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as api from '$lib/cryptotrackerApi';
 	import { baseCurrency } from '$lib/stores/config';
+	import { formatAmount } from '$lib/format';
 	import { onMount, untrack } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
@@ -29,12 +30,6 @@
 	let selectedAssetType = $state<api.AssetType>(initial.asset.assetType ?? 'Fiat');
 	let assetType = $state<api.AssetType>(initial.asset.assetType ?? 'Fiat');
 	let hidden = $state<boolean>(initial.asset.isHidden ?? false);
-
-	function StringKeysToDates(arr: string[]) {
-		return arr.map((x) =>
-			new Date(x).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
-		);
-	}
 
 	async function SetVisibility() {
 		let request = await api.setVisibilityForSymbol(assetData?.asset.symbol ?? '', !hidden);
@@ -115,16 +110,11 @@
 		measuringsInitialized = false;
 		let request = await api.getMeasuringsByDays(days, { $symbol: symbol });
 
-		var dates = StringKeysToDates(Object.keys(request.data));
-		var values = Object.values(request.data);
-
-		dailyMeasurings = [];
-
-		for (let key in Object.keys(request.data)) {
-			let date = dates[key];
-			let val = values[key];
-			dailyMeasurings.push({ date: date, measurings: val });
-		}
+		// Keep the raw ISO date keys — LineChart parses them into a real time axis
+		dailyMeasurings = Object.entries(request.data).map(([date, measurings]) => ({
+			date,
+			measurings
+		}));
 		measuringsInitialized = true;
 	}
 
@@ -292,7 +282,9 @@
 											{integrationItem.integration.name}
 										</p>
 										<p class="mt-1 text-xl font-semibold">
-											{integrationItem.amount?.toFixed(2)}
+											{integrationItem.amount != null
+												? formatAmount(integrationItem.amount, assetData?.asset.assetType)
+												: ''}
 										</p>
 									</Card.Content>
 								</Card.Root>

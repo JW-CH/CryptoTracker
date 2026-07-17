@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { mutate } from '$lib/api/mutate';
 	import { untrack } from 'svelte';
 	import * as api from '$lib/cryptotrackerApi';
 	import * as Card from '$lib/components/ui/card';
@@ -17,8 +19,8 @@
 
 	let imageError = $state<boolean>(false);
 	$effect(() => {
-		assetImage;
-		imageError = false;
+		// reading assetImage makes this rerun whenever the URL changes
+		if (typeof assetImage === 'string') imageError = false;
 	});
 
 	const inputClass =
@@ -28,20 +30,27 @@
 		saving = true;
 
 		try {
-			await api.updateAssetMetadata(symbol, {
-				name: assetName,
-				image: imageError ? '' : assetImage
-			});
-
-			await invalidateAll();
-			await goto(`/assets/${encodeURIComponent(symbol)}`);
+			await mutate(
+				() =>
+					api.updateAssetMetadata(symbol, {
+						name: assetName,
+						image: imageError ? '' : assetImage
+					}),
+				{
+					success: 'Changes saved.',
+					onSuccess: async () => {
+						await invalidateAll();
+						await goto(resolve('/assets/[slug]', { slug: symbol }));
+					}
+				}
+			);
 		} finally {
 			saving = false;
 		}
 	}
 
 	function Cancel() {
-		goto(`/assets/${encodeURIComponent(symbol)}`);
+		goto(resolve('/assets/[slug]', { slug: symbol }));
 	}
 </script>
 

@@ -18,6 +18,9 @@ prefersDark.addEventListener('change', () => {
 });
 
 export const theme = {
+	get resolved(): 'light' | 'dark' {
+		return current === 'system' ? (prefersDark.matches ? 'dark' : 'light') : current;
+	},
 	get value() {
 		return current;
 	},

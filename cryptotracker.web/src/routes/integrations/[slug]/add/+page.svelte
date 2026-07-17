@@ -1,59 +1,100 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import SearchCombobox from '$lib/components/search-combobox.svelte';
 	import * as api from '$lib/cryptotrackerApi';
-	import { onMount } from 'svelte';
+	import { mutate } from '$lib/api/mutate';
+	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 
-	let assets: api.AssetDto[];
-	let selectedAsset: string;
-	let amount: number = 0;
-	let date: string = new Date().toISOString().split('T')[0];
+	let assets = $state<api.AssetDto[] | null>(null);
+	let selectedAsset = $state('');
+	let amount = $state(0);
+	let date = $state(new Date().toISOString().split('T')[0]);
+	let saving = $state(false);
+	let validationError = $state<string | null>(null);
 
 	onMount(async () => {
-		var request = await api.getAssets();
-
-		assets = request.data;
+		try {
+			const request = await api.getAssets();
+			assets = request.status === 200 ? request.data : [];
+		} catch {
+			assets = [];
+		}
 	});
 
-	async function AddMeasuring() {
-		if (!date || !selectedAsset || (!amount && amount != 0)) return;
+	const options = $derived(
+		(assets ?? []).map((a) => ({
+			value: a.symbol ?? '',
+			label: a.name ? `${a.name} (${(a.symbol ?? '').toUpperCase()})` : (a.symbol ?? '')
+		}))
+	);
 
-		let request = await api.addIntegrationMeasuring(page.params.slug ?? '', {
-			symbol: selectedAsset,
-			date: date,
-			amount: amount
-		});
-
-		if (request.data) {
-			window.location.href = '/integrations/' + page.params.slug;
+	async function save() {
+		validationError = null;
+		if (!date || !selectedAsset) {
+			validationError = 'Please pick a date and an asset.';
+			return;
 		}
+		const slug = page.params.slug ?? '';
+		saving = true;
+		await mutate(() => api.addIntegrationMeasuring(slug, { symbol: selectedAsset, date, amount }), {
+			success: `Measurement for ${selectedAsset.toUpperCase()} saved.`,
+			onSuccess: () => goto(resolve('/integrations/[slug]', { slug }))
+		});
+		saving = false;
 	}
 </script>
 
-<Card.Root class="col-span-4">
+<svelte:head>
+	<title>Add measurement · CryptoTracker</title>
+</svelte:head>
+
+<Card.Root class="max-w-lg">
 	<Card.Header>
-		<Card.Title>Messung hinzufügen</Card.Title>
+		<Card.Title>Add measurement</Card.Title>
 	</Card.Header>
 	<Card.Content>
-		<input
-			bind:value={date}
-			type="date"
-			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-		/>
-		<select
-			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 pe-9 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-			bind:value={selectedAsset}
+		<form
+			class="space-y-4"
+			onsubmit={async (event) => {
+				event.preventDefault();
+				await save();
+			}}
 		>
-			{#each assets as asset}
-				<option value={asset.symbol}>{asset.name ? asset.name : asset.symbol}</option>
-			{/each}
-		</select>
-		<input
-			bind:value={amount}
-			type="number"
-			class="rounded-lg border-2 border-solid border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-		/>
-		<Button onclick={AddMeasuring}>Speichern</Button>
+			<div class="space-y-2">
+				<Label for="date">Date</Label>
+				<Input id="date" type="date" bind:value={date} />
+			</div>
+			<div class="space-y-2">
+				<Label for="asset">Asset</Label>
+				<SearchCombobox
+					id="asset"
+					items={options}
+					bind:value={selectedAsset}
+					disabled={assets === null}
+					placeholder={assets === null ? 'Loading…' : 'Select asset'}
+					searchPlaceholder="Search by name or symbol…"
+				/>
+				{#if validationError}
+					<p class="text-destructive text-sm">{validationError}</p>
+				{/if}
+			</div>
+			<div class="space-y-2">
+				<Label for="amount">Amount</Label>
+				<Input id="amount" type="number" step="any" bind:value={amount} />
+			</div>
+			<Button type="submit" disabled={saving}>
+				{#if saving}
+					<Loader2Icon class="size-4 animate-spin" />
+				{/if}
+				Save
+			</Button>
+		</form>
 	</Card.Content>
 </Card.Root>
