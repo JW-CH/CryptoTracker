@@ -181,15 +181,31 @@ wären Orange und Rot benachbart geworden (ΔE 7.1 normal — unter dem harten
 Floor von 15); ein Brute-Force über alle 720 Ordnungen ergab, dass nur **6**
 davon beide Modi bestehen. Das ist die beste:
 
-| Slot | Hue | Light | Dark |
-|---|---|---|---|
-| 1 | blau | `#2a78d6` | `#3987e5` |
-| 2 | orange | `#eb6834` | `#d95926` |
-| 3 | aqua | `#1baf7a` | `#199e70` |
-| 4 | gelb | `#eda100` | `#c98500` |
-| 5 | magenta | `#e87ba4` | `#d55181` |
-| 6 | grün | `#008300` | `#008300` |
-| 7 | rot | `#e34948` | `#e66767` |
+> **Revidiert 2026-07-17:** Der Brand-Hue ist inzwischen **Teal** (Preset
+> `b5dx81JH0`, siehe R2) statt Violett. Konsequenz für die Palette: **Aqua fällt
+> raus** (zu nah am Teal-Umfeld ist er nicht — aber Violett ist wieder frei und
+> hebt die schwächste Nachbartrennung von ΔE 7.2 auf **13.0**, aus dem Floor-Band
+> in einen sauberen Pass). Neu geordnet und gegen die Stone-Flächen
+> (`#ffffff`/`#1c1917`) revalidiert:
+
+> **Revidiert 2026-07-17 (final):** Mit dem Teal/Stone-Preset (R2) wirkte jede
+> bunte Kategorial-Palette wie ein Fremdkörper. Entscheidung: Es gilt der
+> **Preset-Standard — die monochrome Teal-Skala** (Slots 1–5 = Preset, 6/7 =
+> Teal-200/900 als Erweiterung), identisch in Light und Dark. **Bewusster
+> Trade-off:** Nachbarn unterscheiden sich nur über Helligkeit, nicht über den
+> Farbton — Identität tragen deshalb Legende, Tooltips und Direktlabels, die
+> ohnehin Pflicht sind. Die formale CVD-Validierung wurde dafür bewusst
+> ausgesetzt.
+
+| Slot | Teal-Stufe | Wert (beide Modi) |
+|---|---|---|
+| 1 | 300 | `oklch(0.855 0.138 181.071)` |
+| 2 | 500 | `oklch(0.704 0.14 182.503)` |
+| 3 | 600 | `oklch(0.6 0.118 184.704)` |
+| 4 | 700 | `oklch(0.511 0.096 186.391)` |
+| 5 | 800 | `oklch(0.437 0.078 188.216)` |
+| 6 | 200 | `oklch(0.91 0.096 180.426)` |
+| 7 | 900 | `oklch(0.386 0.063 188.416)` |
 
 Geprüft gegen die **tatsächlichen** Kartenflächen des Projekts (Light `#ffffff`
 = `--card`, Dark `#1d283a` = `--card` dark): Lightness-Band, Chroma-Floor und

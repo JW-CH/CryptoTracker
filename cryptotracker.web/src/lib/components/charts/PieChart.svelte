@@ -5,6 +5,7 @@
 	import { colorForSymbol, OTHER_SYMBOL } from '$lib/charts/palette';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { prefersReducedMotion } from 'svelte/motion';
 
 	let {
 		labels = [],
@@ -35,7 +36,12 @@
 			c="color"
 			padAngle={0.01}
 			cornerRadius={4}
-			props={{ pie: { motion: 'tween' }, arc: { class: 'cursor-pointer' } }}
+			props={{
+				pie: {
+					motion: prefersReducedMotion.current ? 'none' : { type: 'tween', duration: 300 }
+				},
+				arc: { class: 'cursor-pointer' }
+			}}
 			onArcClick={(_, detail) => {
 				const label = detail.data?.label;
 				if (label && label !== OTHER_SYMBOL) goto(resolve('/assets/[slug]', { slug: label }));

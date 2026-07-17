@@ -3,6 +3,7 @@
 	import * as Chart from '$lib/components/ui/chart';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { colorForSymbol } from '$lib/charts/palette';
+	import { prefersReducedMotion } from 'svelte/motion';
 
 	type Dataset = { name: string; data: number[] };
 
@@ -31,6 +32,9 @@
 		Object.fromEntries(series.map((s) => [s.key, { label: s.label, color: s.color }]))
 	);
 	const Component = $derived(fill ? AreaChart : LineChart);
+	const motion = $derived(
+		prefersReducedMotion.current ? ('none' as const) : { type: 'tween' as const, duration: 400 }
+	);
 </script>
 
 {#if skeleton}
@@ -43,6 +47,8 @@
 			{series}
 			legend={series.length > 1}
 			props={{
+				spline: { motion },
+				area: { motion },
 				xAxis: {
 					format: (d: Date) => d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' })
 				}

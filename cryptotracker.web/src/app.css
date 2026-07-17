@@ -26,14 +26,14 @@
 	--border: oklch(0.923 0.003 48.717);
 	--input: oklch(0.923 0.003 48.717);
 	--ring: oklch(0.709 0.01 56.259);
+	/* Series palette: the preset's teal scale (chart-6/7 extend it with teal-200/900) */
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
 	--chart-4: oklch(0.511 0.096 186.391);
 	--chart-5: oklch(0.437 0.078 188.216);
-	/* chart-6/7 and chart-other are placeholders until the palette decision (R3.2) */
-	--chart-6: #eb6834;
-	--chart-7: #4a3aa7;
+	--chart-6: oklch(0.91 0.096 180.426);
+	--chart-7: oklch(0.386 0.063 188.416);
 	--chart-other: oklch(0.709 0.01 56.259);
 	--sidebar: oklch(0.985 0.001 106.423);
 	--sidebar-foreground: oklch(0.147 0.004 49.25);
@@ -64,14 +64,14 @@
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.553 0.013 58.071);
+	/* Series palette: the preset's teal scale (chart-6/7 extend it with teal-200/900) */
 	--chart-1: oklch(0.855 0.138 181.071);
 	--chart-2: oklch(0.704 0.14 182.503);
 	--chart-3: oklch(0.6 0.118 184.704);
 	--chart-4: oklch(0.511 0.096 186.391);
 	--chart-5: oklch(0.437 0.078 188.216);
-	/* chart-6/7 and chart-other are placeholders until the palette decision (R3.2) */
-	--chart-6: #d95926;
-	--chart-7: #9085e9;
+	--chart-6: oklch(0.91 0.096 180.426);
+	--chart-7: oklch(0.386 0.063 188.416);
 	--chart-other: oklch(0.553 0.013 58.071);
 	--sidebar: oklch(0.216 0.006 56.043);
 	--sidebar-foreground: oklch(0.985 0.001 106.423);
@@ -137,5 +137,16 @@
 	}
 	html {
 		@apply font-sans;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		::before,
+		::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
 	}
 }
