@@ -21,17 +21,17 @@
 		<!-- Header Skeleton -->
 		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 			<div class="flex items-center gap-4">
-				<Skeleton class="size-12 rounded-full bg-muted" />
+				<Skeleton class="bg-muted size-12 rounded-full" />
 				<div>
-					<Skeleton class="mb-1 h-7 w-40 bg-muted" />
-					<Skeleton class="h-4 w-24 bg-muted" />
+					<Skeleton class="bg-muted mb-1 h-7 w-40" />
+					<Skeleton class="bg-muted h-4 w-24" />
 				</div>
 			</div>
 		</div>
 
 		<!-- Content Skeleton -->
 		<div>
-			<Skeleton class="mb-3 h-6 w-32 bg-muted" />
+			<Skeleton class="bg-muted mb-3 h-6 w-32" />
 			<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
 				<AssetMeasuringTiles skeleton={true} />
 			</div>
@@ -41,13 +41,12 @@
 		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 			<div class="flex items-center gap-4">
 				<div
-					class="flex size-12 items-center justify-center rounded-full text-lg font-bold {details.integration.isManual
+					class="flex size-12 items-center justify-center rounded-full text-lg font-bold {details
+						.integration.isManual
 						? 'bg-secondary text-secondary-foreground'
 						: 'bg-primary/10 text-primary'}"
 				>
-					{details.integration.name
-						? details.integration.name.slice(0, 2).toUpperCase()
-						: '??'}
+					{details.integration.name ? details.integration.name.slice(0, 2).toUpperCase() : '??'}
 				</div>
 				<div>
 					<div class="flex items-center gap-3">
@@ -61,7 +60,7 @@
 						</span>
 					</div>
 					{#if details.integration.description}
-						<p class="text-sm text-muted-foreground">{details.integration.description}</p>
+						<p class="text-muted-foreground text-sm">{details.integration.description}</p>
 					{/if}
 				</div>
 			</div>
@@ -93,9 +92,9 @@
 			{#if details.measurings && details.measurings.filter((x) => x.asset.isHidden).length > 0}
 				<div class="space-y-3">
 					<div class="flex items-center gap-3">
-						<div class="h-px grow bg-border"></div>
-						<span class="text-sm font-medium text-muted-foreground">Versteckte Vermögenswerte</span>
-						<div class="h-px grow bg-border"></div>
+						<div class="bg-border h-px grow"></div>
+						<span class="text-muted-foreground text-sm font-medium">Versteckte Vermögenswerte</span>
+						<div class="bg-border h-px grow"></div>
 					</div>
 					<div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
 						<AssetMeasuringTiles measurings={details.measurings!} hidden={true} />

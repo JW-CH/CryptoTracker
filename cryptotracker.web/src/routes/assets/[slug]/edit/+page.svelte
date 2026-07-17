@@ -28,8 +28,11 @@
 		saving = true;
 
 		try {
-			await api.updateAssetMetadata(symbol, { name: assetName, image: imageError ? '' : assetImage });
-			
+			await api.updateAssetMetadata(symbol, {
+				name: assetName,
+				image: imageError ? '' : assetImage
+			});
+
 			await invalidateAll();
 			await goto(`/assets/${encodeURIComponent(symbol)}`);
 		} finally {

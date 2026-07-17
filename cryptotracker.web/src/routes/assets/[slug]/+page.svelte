@@ -184,8 +184,8 @@
 		</div>
 		<div class="flex gap-2">
 			{#if assetData?.asset.externalId}
-        		<Button variant="outline" size="sm" onclick={EditAsset}>Bearbeiten</Button>
-  			{/if}
+				<Button variant="outline" size="sm" onclick={EditAsset}>Bearbeiten</Button>
+			{/if}
 			<Button variant="outline" size="sm" onclick={SetVisibility}>
 				{hidden ? 'Anzeigen' : 'Verstecken'}
 			</Button>

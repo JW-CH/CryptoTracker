@@ -12,10 +12,10 @@
 	{#each { length: 6 } as _}
 		<Card.Root class="flex h-full flex-col">
 			<Card.Content class="flex items-center gap-3">
-				<Skeleton class="size-12 shrink-0 rounded-full bg-muted" />
+				<Skeleton class="bg-muted size-12 shrink-0 rounded-full" />
 				<div class="min-w-0 flex-1">
-					<Skeleton class="mb-1 h-4 w-3/4 bg-muted" />
-					<Skeleton class="h-3 w-1/2 bg-muted" />
+					<Skeleton class="bg-muted mb-1 h-4 w-3/4" />
+					<Skeleton class="bg-muted h-3 w-1/2" />
 				</div>
 			</Card.Content>
 		</Card.Root>
@@ -24,7 +24,7 @@
 	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
 		<a href="/assets/{measuring.asset.symbol}" class="group">
 			<Card.Root
-				class="flex h-full flex-col transition-all duration-200 hover:shadow-md hover:border-primary/20 group-hover:-translate-y-0.5"
+				class="hover:border-primary/20 flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 			>
 				<Card.Content class="flex items-center gap-3">
 					{#if measuring.asset.image}
@@ -35,7 +35,7 @@
 						/>
 					{:else}
 						<div
-							class="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground"
+							class="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-full text-sm font-bold"
 						>
 							{(measuring.asset.symbol ?? '?').slice(0, 2).toUpperCase()}
 						</div>
@@ -44,7 +44,7 @@
 						<p class="truncate font-semibold">
 							{measuring.asset.name ? measuring.asset.name : measuring.asset.symbol}
 						</p>
-						<p class="text-sm text-muted-foreground">
+						<p class="text-muted-foreground text-sm">
 							{measuring.totalAmount?.toFixed(2)}
 							{measuring.asset.symbol}
 						</p>

@@ -49,7 +49,10 @@
 					<Card.Content class="grow p-3">
 						<div class="flex flex-row items-center justify-between">
 							<div class="text-sm font-medium">{measuring.asset.symbol}</div>
-							<div class="text-sm font-medium">{measuring.totalValue.toFixed(2)} {$baseCurrency}</div>
+							<div class="text-sm font-medium">
+								{measuring.totalValue.toFixed(2)}
+								{$baseCurrency}
+							</div>
 						</div>
 						<div class="text-xs text-gray-500">
 							{measuring.totalAmount.toFixed(8)}

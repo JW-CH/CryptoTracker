@@ -11,9 +11,9 @@
 	{#each { length: 6 } as _}
 		<Card.Root class="flex h-full flex-col">
 			<Card.Content class="flex flex-col items-center gap-3">
-				<Skeleton class="size-16 rounded-full bg-muted" />
-				<Skeleton class="h-4 w-32 bg-muted" />
-				<Skeleton class="h-3 w-20 bg-muted" />
+				<Skeleton class="bg-muted size-16 rounded-full" />
+				<Skeleton class="bg-muted h-4 w-32" />
+				<Skeleton class="bg-muted h-3 w-20" />
 			</Card.Content>
 		</Card.Root>
 	{/each}
@@ -21,10 +21,10 @@
 	{#each integrations as integration}
 		<a href="/integrations/{integration.id}" class="group">
 			<Card.Root
-				class="relative flex h-full flex-col transition-all duration-200 hover:shadow-md hover:border-primary/20 group-hover:-translate-y-0.5"
+				class="hover:border-primary/20 relative flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 			>
 				<span
-					class="absolute right-3 top-3 rounded-full px-2 py-0.5 text-xs font-medium {integration.isManual
+					class="absolute top-3 right-3 rounded-full px-2 py-0.5 text-xs font-medium {integration.isManual
 						? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
 						: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}"
 				>
@@ -39,9 +39,9 @@
 						{integration.name ? integration.name.slice(0, 2).toUpperCase() : '??'}
 					</div>
 					<div class="text-center">
-						<p class="font-semibold leading-tight">{integration.name}</p>
+						<p class="leading-tight font-semibold">{integration.name}</p>
 						{#if integration.description}
-							<p class="text-xs text-muted-foreground">{integration.description}</p>
+							<p class="text-muted-foreground text-xs">{integration.description}</p>
 						{/if}
 					</div>
 				</Card.Content>
