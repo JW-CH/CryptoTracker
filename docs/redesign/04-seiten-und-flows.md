@@ -1,7 +1,8 @@
 # Seiten & Flows
 
-Phase 4 — hier wird das Redesign sichtbar. Setzt Phase 1–3 voraus; ohne die
-Primitives aus [02](02-fundament.md) wird hier wieder kopiert.
+Phase 4 — hier wird das Redesign sichtbar. Phase 1–3 sind umgesetzt; alle
+benötigten Primitives (inkl. `table`, `dialog`, `alert-dialog`, `toggle-group`)
+liegen installiert bereit.
 
 <a id="r11"></a>
 ## R11 — Dashboard (`routes/+page.svelte`)
@@ -143,16 +144,16 @@ Das Kachel-Grid ist gut — **bleibt**. Verbesserungen:
   Vermögensseite die naheliegendste Information. Anreichern (Kurs, Bestand,
   Delta) — Daten liefert `getLatestMeasurings` bereits.
 - Empty-State, wenn noch kein Asset da ist.
-- `assets/add`: auf Combobox + Primitives ([R5](02-fundament.md#r5)); der
-  `NOT SUPPORTED`-Zweig für ETF (Zeile 109) gehört als deaktivierte Option mit
-  Hinweis in die Auswahl, nicht als Fehlertext ins Formular.
+- ~~`assets/add`: auf Combobox + Primitives~~ ✅ Phase 2 (ETF wurde entfernt
+  statt deaktiviert — war nie speicherbar).
 
 ### Integrationen (`integrations/`)
 - Kacheln: `bg-amber-100`/`bg-blue-100` für Manuell/Automatisch sind
-  **hartkodiert an den Tokens vorbei** (`IntegrationTiles.svelte:27-29`,
-  nochmals dupliziert in `[slug]/+page.svelte:56-58`) → `badge` aus der Registry.
-- Die Initialen-Kreise (`name.slice(0,2)`) sind in **beiden** Dateien dupliziert
-  → `<IntegrationAvatar>`.
+  **hartkodiert an den Tokens vorbei** (`IntegrationTiles.svelte:27-29`) →
+  `badge` aus der Registry. *Die Detailseite ist seit Phase 3 schon auf
+  `Badge` + `PageHeader` — nur die Kacheln fehlen noch.*
+- Die Initialen-Kreise (`name.slice(0,2)`) sind in Kacheln und Detail-Header
+  dupliziert → `<IntegrationAvatar>`.
 - Kachel zeigt keinen Wert und **kein Datum des letzten Syncs** — bei
   Auto-Integrationen die wichtigste Vertrauensinformation („läuft das noch?").
   **Entschieden (E10): wird gebaut.** `IntegrationDto` (geprüft: hat heute nur
@@ -191,11 +192,8 @@ Zielbild:
 - Summenzeile = Portfoliowert am Stichtag.
 - Empty-State für Tage ohne Daten (heute: nackter Text „Keine Daten vorhanden").
 
-### Info (`info/`) — löschen (E9)
-**Entschieden:** `routes/info/+page.svelte` (eine Zeile Platzhalter,
-`<p>info page</p>`) wird **samt Nav-Eintrag gelöscht**. Falls später Bedarf an
-einer System-Status-Seite entsteht, ist das ein neues, kleines Vorhaben — kein
-Grund, den Platzhalter mitzuschleppen.
+### Info (`info/`) — ✅ gelöscht (E9, Phase 3)
+Seite samt Nav-Eintrag entfernt.
 
 ## Definition of Done (Phase 4)
 
@@ -207,4 +205,4 @@ Grund, den Platzhalter mitzuschleppen.
 - [ ] Mehrere Messungen am Stück erfassbar, ohne Full-Reload
 - [ ] Report hat Datums-Navigation und Tabelle mit Summenzeile (E8)
 - [ ] Integrations-Kacheln zeigen den letzten Sync (E10)
-- [ ] `/info` + Nav-Eintrag gelöscht (E9)
+- [x] `/info` + Nav-Eintrag gelöscht (E9)
