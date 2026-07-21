@@ -48,23 +48,18 @@
 
 		const latest = days.length ? measurings[days.at(-1)!] : [];
 		const trimmedLatest = TrimMeasurings(latest);
-		const topSymbols = trimmedLatest.map((x) => x.asset.symbol ?? "").filter((s) => s !== "Other");
 
-		// Same top-7 + "Other" trim as the pie — keeps colors consistent between
-		// both charts and stops the palette from running out (R3.3)
-		const composition = trimmedLatest.map((entry) => {
-			const symbol = entry.asset.symbol ?? "";
-			return {
-				name: symbol,
-				data: days.map((d) =>
-					symbol === "Other"
-						? measurings[d]
-								.filter((m) => !topSymbols.includes(m.asset.symbol ?? ""))
-								.reduce((acc, m) => acc + (m.totalValue ?? 0), 0)
-						: (measurings[d].find((m) => m.asset.symbol === symbol)?.totalValue ?? 0)
-				)
-			};
-		});
+		const composition = latest
+			.sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0))
+			.map((entry) => {
+				const symbol = entry.asset.symbol ?? "";
+				return {
+					name: symbol,
+					data: days.map(
+						(d) => measurings[d].find((m) => m.asset.symbol === symbol)?.totalValue ?? 0
+					)
+				};
+			});
 
 		return {
 			days,
