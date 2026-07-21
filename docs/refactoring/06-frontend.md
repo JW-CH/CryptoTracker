@@ -16,10 +16,9 @@ Backend, aber einige betreffen Korrektheit.
 - ~~`TrimMeasurings` wird pro Chart zweimal aufgerufen (Labels + Values)
   und **sortiert das Array in place**~~ ✅ behoben 2026-07-17: Kopie statt
   In-Place-Sort, ein Aufruf via `{@const}` (Redesign Phase 1/R3)
-- Die drei Cards laden unabhängig via `{#await}` — `getMeasuringsByDays` und
-  `getStandingsByDay` holen dieselben Daten doppelt (Standing = Summe der
-  Measurings, siehe Backend `CryptoTrackerController.GetStandingByDay`). Ein
-  gemeinsamer Load in `+page.ts` würde einen Request und Backend-Arbeit sparen.
+- ~~Die drei Cards laden unabhängig via `{#await}`~~ ✅ 2026-07-21: ein
+  gemeinsamer Load in `+page.ts` (Redesign Phase 4/R11), Standing wird aus den
+  Measurings abgeleitet statt separat geholt.
 
 ## F2 — Datums-/Währungsformatierung dezentral 🟡
 
@@ -43,10 +42,12 @@ Backend, aber einige betreffen Korrektheit.
 - ~~Abbruch auf Login ohne Rückkehr~~ ✅ 2026-07-17: `returnUrl` wird mitgegeben
   und vom Login ausgewertet; „Session expired"-Toast nur, wenn vorher jemand
   eingeloggt war. (S4/Refresh-Token bleibt ein eigenes Backend-Thema.)
-- Fehlerzustände der `{#await}`-Blöcke rendern rohe `error.message` — bei 401
-  steht dort kryptisches Zeug. Mutationen laufen inzwischen über `mutate()` mit
-  Status-Mapping; die Lade-`{#await}`-Blöcke verschwinden mit den
-  Phase-4-Umbauten (Redesign R11/R13).
+- ~~Fehlerzustände der `{#await}`-Blöcke rendern rohe `error.message`~~
+  ✅ 2026-07-21: Dashboard/Report/Assets laufen über `+page.ts`-Loads mit
+  eigenem Empty-/Fehler-State statt rohem `error.message` (Redesign R11/R13).
+  Verbleibende Seiten (`integrations/`, `integrations/[slug]`,
+  `assets/[slug]`, Measurings-Ledger) sind noch auf `onMount`/`{#await}` — kein
+  Redesign-Scope, siehe F6.
 
 ## F4 — Abhängigkeiten & Projekt-Hygiene 🟡
 
@@ -71,13 +72,13 @@ aus dem Backend" war zuletzt schon veraltet (Exception-Texte sind englisch).
 
 ## F6 — Kleinigkeiten
 
-- `report/+page.svelte` filtert `isHidden` client-seitig (Zeile 44), obwohl der
-  Endpoint versteckte Assets bereits ausschließt — doppelte Logik, eine Quelle wählen.
-- `data: api.AssetHoldingDto[] | null` ohne Initialisierung (`undefined` ≠ `null`,
-  TS-Strictness prüfen); mit SvelteKit-Load-Funktionen (`+page.ts`) statt
-  `onMount`-Fetches bekäme man Typen, SSR-Fähigkeit und Ladezustände geschenkt —
-  aktuell wird durchgängig das `onMount`/`{#await}`-Muster verwendet, was mit
-  `adapter-static` funktioniert, aber Navigations-Flackern erzeugt.
+- ~~`report/+page.svelte` filtert `isHidden` client-seitig~~ ✅ 2026-07-21:
+  entfernt, Endpoint filtert bereits (Redesign R13).
+- `data: api.AssetHoldingDto[] | null` ohne Initialisierung — für Dashboard,
+  Report und Assets erledigt durch die Umstellung auf `+page.ts`-Loads
+  (Redesign R11/R13: Typen, SSR-Fähigkeit, kein Navigations-Flackern mehr).
+  Weiterhin offen für `integrations/`, `integrations/[slug]`, `assets/[slug]`
+  und die Measurings-Ledger — dort noch `onMount`/`{#await}`.
 - ~~Chart-Farben/Optionen je Komponente dupliziert~~ ✅ 2026-07-17: Farben
   kommen aus den `--chart-*`-Tokens via `colorForSymbol`
   (`$lib/charts/palette.ts`), Charts auf LayerChart migriert.
