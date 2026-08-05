@@ -98,6 +98,36 @@ public class PortfolioQueryServiceTest
     }
 
     [Test]
+    public async Task ManualIntegration_GapBeyondFillLimit_StillCarriesForward()
+    {
+        var manual = new ExchangeIntegration { Name = "Manual", IsManual = true };
+        _db.ExchangeIntegrations.Add(manual);
+        await _db.SaveChangesAsync();
+
+        await AddMeasuring(_today.AddDays(-(MaxFillDays + 20)), 0.5m, manual);
+
+        var result = await _service.GetAssetDayMeasuringAsync(_today);
+
+        Assert.That(result, Has.Count.EqualTo(1));
+        Assert.That(result[0].TotalAmount, Is.EqualTo(0.5m));
+    }
+
+    [Test]
+    public async Task ManualIntegration_ZeroMeasuring_StillEndsForwardFill()
+    {
+        var manual = new ExchangeIntegration { Name = "Manual", IsManual = true };
+        _db.ExchangeIntegrations.Add(manual);
+        await _db.SaveChangesAsync();
+
+        await AddMeasuring(_today.AddDays(-(MaxFillDays + 20)), 0.5m, manual);
+        await AddMeasuring(_today.AddDays(-(MaxFillDays + 5)), 0m, manual); // sold
+
+        var result = await _service.GetAssetDayMeasuringAsync(_today);
+
+        Assert.That(result, Is.Empty);
+    }
+
+    [Test]
     public async Task ZeroMeasuring_EndsForwardFill()
     {
         await AddMeasuring(_today.AddDays(-5), 0.5m);

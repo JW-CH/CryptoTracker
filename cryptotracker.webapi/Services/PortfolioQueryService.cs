@@ -62,13 +62,18 @@ namespace cryptotracker.webapi.Services
                 .GroupBy(x => x.Symbol)
                 .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Date).ToList());
 
-            // holdings older than <oldest requested day> - maxFillDays can never be
-            // carried forward into the requested range, so don't even load them
+            // manual integrations have no daily sync writing snapshots — their last
+            // measurement stays valid until replaced, so the fill limit (a staleness
+            // guard for broken syncs) must not apply to them
+            var manualIds = integrationList.Where(x => x.IsManual).Select(x => x.Id).ToList();
+
+            // synced holdings older than <oldest requested day> - maxFillDays can never
+            // be carried forward into the requested range, so don't even load them
             var minDay = days.Min().AddDays(-maxFillDays);
             var allHoldings = await _db.DailyHoldings
                 .AsNoTracking()
                 .Include(x => x.Integration)
-                .Where(x => x.Date <= maxDay && x.Date >= minDay)
+                .Where(x => x.Date <= maxDay && (x.Date >= minDay || manualIds.Contains(x.IntegrationId)))
                 .Where(x => allSymbols.Contains(x.Symbol))
                 .Where(x => allIntegrationIds.Contains(x.IntegrationId))
                 .ToListAsync();
@@ -94,8 +99,9 @@ namespace cryptotracker.webapi.Services
             Dictionary<(string Symbol, Guid IntegrationId), List<DailyHolding>> holdingsByKey,
             int maxFillDays)
         {
-            // forward-fill limit: only carry a holding into this day if it is at most
-            // maxFillDays old; older data counts as missing instead of silently stale
+            // forward-fill limit: only carry a synced holding into this day if it is at
+            // most maxFillDays old; older data counts as missing instead of silently
+            // stale. Manual measurements are exempt — they stay valid until replaced.
             var minDay = day.AddDays(-maxFillDays);
             var result = new List<AssetHoldingDto>();
 
@@ -118,7 +124,7 @@ namespace cryptotracker.webapi.Services
 
                     // exactly one snapshot per day — the newest one at or before the
                     // requested day is the integration's holding for that day
-                    var latest = groupHoldings.FirstOrDefault(x => x.Date <= day && x.Date >= minDay);
+                    var latest = groupHoldings.FirstOrDefault(x => x.Date <= day && (integration.IsManual || x.Date >= minDay));
                     if (latest == null) continue;
 
                     hasAnyData = true;
