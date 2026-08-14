@@ -55,6 +55,7 @@ export type RegisterRequest = {
 };
 export type ConfigResponse = {
 	baseCurrency?: string | null;
+	updateIntervalMinutes?: number;
 };
 export type IntegrationDto = {
 	id: string;
@@ -63,6 +64,7 @@ export type IntegrationDto = {
 	isHidden?: boolean;
 	isManual?: boolean;
 	lastSyncedAtUtc?: string | null;
+	currentValue?: number | null;
 };
 export type IntegrationAmount = {
 	integration: IntegrationDto;
@@ -82,6 +84,10 @@ export type AddIntegrationDto = {
 export type IntegrationDetails = {
 	integration: IntegrationDto;
 	measurings: AssetHoldingDto[] | null;
+};
+export type UpdateIntegrationDto = {
+	name?: string | null;
+	description?: string | null;
 };
 export type HoldingSource = "Sync" | "Manual";
 export type DailyHoldingDto = {
@@ -420,6 +426,46 @@ export function getIntegrationDetails(id: string, opts?: Oazapfts.RequestOpts) {
 		status: 200;
 		data: IntegrationDetails;
 	}>(`/api/Integration/${encodeURIComponent(id)}/detail`, {
+		...opts
+	});
+}
+export function updateIntegration(
+	id: string,
+	updateIntegrationDto?: UpdateIntegrationDto,
+	opts?: Oazapfts.RequestOpts
+) {
+	return oazapfts.fetchJson<{
+		status: 200;
+		data: boolean;
+	}>(
+		`/api/Integration/${encodeURIComponent(id)}`,
+		oazapfts.json({
+			...opts,
+			method: "PUT",
+			body: updateIntegrationDto
+		})
+	);
+}
+export function deleteIntegration(id: string, opts?: Oazapfts.RequestOpts) {
+	return oazapfts.fetchJson<{
+		status: 200;
+		data: boolean;
+	}>(`/api/Integration/${encodeURIComponent(id)}`, {
+		...opts,
+		method: "DELETE"
+	});
+}
+export function getIntegrationStandingByDays(
+	id: string,
+	days: number,
+	opts?: Oazapfts.RequestOpts
+) {
+	return oazapfts.fetchJson<{
+		status: 200;
+		data: {
+			[key: string]: number;
+		};
+	}>(`/api/Integration/${encodeURIComponent(id)}/standing/days/${encodeURIComponent(days)}`, {
 		...opts
 	});
 }

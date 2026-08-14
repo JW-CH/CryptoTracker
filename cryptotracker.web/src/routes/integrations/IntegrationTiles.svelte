@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
 	import * as Card from "$lib/components/ui/card";
-	import { Badge } from "$lib/components/ui/badge";
 	import { Skeleton } from "$lib/components/ui/skeleton/index.js";
 	import * as api from "$lib/cryptotrackerApi";
 	import IntegrationAvatar from "$lib/components/integration-avatar.svelte";
-	import { formatRelativeTime } from "$lib/format";
+	import IntegrationTypeBadge from "$lib/components/integration-type-badge.svelte";
+	import SyncStatusBadge from "$lib/components/sync-status-badge.svelte";
+	import { formatCurrency, formatRelativeTime } from "$lib/format";
+	import { baseCurrency, updateIntervalMinutes } from "$lib/stores/config";
+	import { isStale } from "$lib/integrations/health";
 
 	let {
 		integrations = [],
@@ -25,16 +28,15 @@
 	{/each}
 {:else}
 	{#each integrations as integration (integration.id)}
+		{@const stale = isStale(integration, $updateIntervalMinutes)}
 		<a href={resolve("/integrations/[slug]", { slug: integration.id })} class="group">
 			<Card.Root
 				class="hover:border-primary/20 relative flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 			>
-				<Badge
-					variant={integration.isManual ? "secondary" : "default"}
-					class="absolute top-3 right-3"
-				>
-					{integration.isManual ? "Manual" : "Automatic"}
-				</Badge>
+				<div class="absolute top-3 right-3 flex flex-col items-end gap-1">
+					<IntegrationTypeBadge isManual={integration.isManual} />
+					<SyncStatusBadge {stale} />
+				</div>
 				<Card.Content class="flex flex-col items-center gap-3">
 					<IntegrationAvatar
 						name={integration.name}
@@ -46,7 +48,14 @@
 						{#if integration.description}
 							<p class="text-muted-foreground text-xs">{integration.description}</p>
 						{/if}
-						<p class="text-muted-foreground mt-1 text-xs">
+						<p class="mt-2 text-xl font-semibold tracking-tight">
+							{formatCurrency(integration.currentValue ?? 0, $baseCurrency)}
+						</p>
+						<p
+							class="mt-1 text-xs {stale
+								? 'text-amber-600 dark:text-amber-400'
+								: 'text-muted-foreground'}"
+						>
 							{#if integration.lastSyncedAtUtc}
 								{integration.isManual ? "Last measurement" : "Last sync"}
 								{formatRelativeTime(integration.lastSyncedAtUtc)}

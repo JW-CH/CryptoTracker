@@ -10,8 +10,15 @@
 	let {
 		labels = [],
 		values = [],
-		skeleton = false
-	}: { labels?: string[]; values?: number[]; skeleton?: boolean } = $props();
+		skeleton = false,
+		valueFormatter
+	}: {
+		labels?: string[];
+		values?: number[];
+		skeleton?: boolean;
+		/** Formats tooltip values, e.g. as currency */
+		valueFormatter?: (value: number) => string;
+	} = $props();
 
 	const data = $derived(
 		labels.map((label, i) => ({
@@ -48,7 +55,7 @@
 			}}
 		>
 			{#snippet tooltip()}
-				<Chart.Tooltip hideLabel />
+				<Chart.Tooltip hideLabel {valueFormatter} />
 			{/snippet}
 		</PieChart>
 	</Chart.Container>

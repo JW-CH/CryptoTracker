@@ -21,7 +21,7 @@
 
 <Card.Root class={className}>
 	<Card.Header class="flex items-center justify-between">
-		<Card.Title>{title} (letzte {selectedRange} Tage)</Card.Title>
+		<Card.Title>{title} (last {selectedRange} days)</Card.Title>
 		<div class="flex gap-1">
 			{#each ranges as range}
 				<button

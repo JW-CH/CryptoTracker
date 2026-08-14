@@ -40,6 +40,26 @@ namespace cryptotracker.webapi.Controllers
             return true;
         }
 
+        [HttpPut("{id}", Name = "UpdateIntegration")]
+        public async Task<bool> UpdateIntegration([Required] Guid id, [FromBody] UpdateIntegrationDto dto)
+        {
+            await _integrationService.UpdateIntegrationAsync(id, dto);
+            return true;
+        }
+
+        [HttpDelete("{id}", Name = "DeleteIntegration")]
+        public async Task<bool> DeleteIntegration([Required] Guid id)
+        {
+            await _integrationService.DeleteIntegrationAsync(id);
+            return true;
+        }
+
+        [HttpGet("{id}/standing/days/{days}", Name = "GetIntegrationStandingByDays")]
+        public async Task<Dictionary<DateOnly, decimal>> GetIntegrationStandingByDays([Required] Guid id, [Required] int days = 7)
+        {
+            return await _integrationService.GetIntegrationStandingByDaysAsync(id, days);
+        }
+
         [HttpGet("{id}/measuring", Name = "GetMeasuringsByIntegration")]
         public async Task<List<DailyHoldingDto>> GetMeasuringsByIntegration([Required] Guid id)
         {

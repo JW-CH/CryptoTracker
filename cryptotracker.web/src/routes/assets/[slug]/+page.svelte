@@ -4,7 +4,7 @@
 	import * as Card from "$lib/components/ui/card";
 	import * as api from "$lib/cryptotrackerApi";
 	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount } from "$lib/format";
+	import { formatAmount, formatCurrency } from "$lib/format";
 	import { onMount, untrack } from "svelte";
 	import Button from "$lib/components/ui/button/button.svelte";
 	import LineChart from "$lib/components/charts/LineChart.svelte";
@@ -234,7 +234,7 @@
 			<!-- Charts -->
 			<div class="grid gap-4 md:grid-cols-2">
 				{#key [dailyMeasurings, measuringsInitialized]}
-					<CardWithDays title="Bestand" bind:selectedRange={range}>
+					<CardWithDays title="Amount" bind:selectedRange={range}>
 						<LineChart
 							skeleton={!measuringsInitialized}
 							fill={true}
@@ -245,9 +245,10 @@
 									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
 								}
 							]}
+							valueFormatter={(v) => formatAmount(v, assetData?.asset.assetType)}
 						/>
 					</CardWithDays>
-					<CardWithDays title="Wert Bestand" bind:selectedRange={range}>
+					<CardWithDays title="Value" bind:selectedRange={range}>
 						<LineChart
 							skeleton={!measuringsInitialized}
 							fill={true}
@@ -258,6 +259,7 @@
 									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
 								}
 							]}
+							valueFormatter={(v) => formatCurrency(v, $baseCurrency)}
 						/>
 					</CardWithDays>
 				{/key}
@@ -266,7 +268,7 @@
 			<!-- Integrations -->
 			{#if measuringsInitialized && dailyMeasurings.length > 0}
 				<div class="space-y-3">
-					<h2 class="text-lg font-semibold">Integrationen</h2>
+					<h2 class="text-lg font-semibold">Integrations</h2>
 					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
 							<a href="/integrations/{integrationItem.integration.id}" class="group">

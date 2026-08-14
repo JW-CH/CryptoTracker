@@ -19,9 +19,9 @@ namespace cryptotracker.webapi.Controllers
         [HttpGet(Name = "GetConfig")]
         public ConfigResponse GetConfig()
         {
-            return new ConfigResponse(_config.BaseCurrency);
+            return new ConfigResponse(_config.BaseCurrency, _config.Interval);
         }
 
-        public record ConfigResponse(string BaseCurrency);
+        public record ConfigResponse(string BaseCurrency, int UpdateIntervalMinutes);
     }
 }

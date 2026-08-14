@@ -5,15 +5,19 @@
 	import { Button } from "$lib/components/ui/button";
 	import { Skeleton } from "$lib/components/ui/skeleton";
 	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import * as api from "$lib/cryptotrackerApi";
 	import { baseCurrency } from "$lib/stores/config";
 	import { formatCurrency, formatPercent } from "$lib/format";
+	import { analyze, type Delta, type Mover } from "$lib/dashboard/analyze";
 	import LineChart from "$lib/components/charts/LineChart.svelte";
 	import PieChart from "$lib/components/charts/PieChart.svelte";
+	import StatTile from "$lib/components/stat-tile.svelte";
+	import TypeAllocationBar from "$lib/components/type-allocation-bar.svelte";
 	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
 	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 
 	let { data } = $props();
+
+	const fmtValue = $derived((v: number) => formatCurrency(v, $baseCurrency));
 
 	function setRange(value: string) {
 		if (!value || Number(value) === data.range) return;
@@ -21,55 +25,27 @@
 		goto(`${resolve("/")}?range=${value}`, { keepFocus: true, noScroll: true });
 	}
 
-	function TrimMeasurings(holdings: api.AssetHoldingDto[]) {
-		const sorted = [...holdings].sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
-		if (sorted.length <= 7) {
-			return sorted;
-		}
-
-		const top = sorted.slice(0, 7);
-		const otherValue = sorted.slice(7).reduce((acc, curr) => acc + (curr.totalValue ?? 0), 0);
-		return top.concat({
-			asset: { symbol: "Other", assetType: "Crypto" },
-			totalValue: otherValue,
-			price: 0,
-			totalAmount: 0,
-			integrationValues: []
-		});
+	function direction(value: number): "up" | "down" | "flat" {
+		return value > 0 ? "up" : value < 0 ? "down" : "flat";
 	}
 
-	function analyze(measurings: { [key: string]: api.AssetHoldingDto[] }) {
-		const days = Object.keys(measurings).sort();
-		const totals = days.map((d) => measurings[d].reduce((acc, m) => acc + (m.totalValue ?? 0), 0));
-		const current = totals.at(-1) ?? 0;
-		const first = totals[0] ?? 0;
-		const delta = current - first;
-		const deltaPct = first !== 0 ? delta / first : null;
-
-		const latest = days.length ? measurings[days.at(-1)!] : [];
-		const trimmedLatest = TrimMeasurings(latest);
-
-		const composition = latest
-			.sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0))
-			.map((entry) => {
-				const symbol = entry.asset.symbol ?? "";
-				return {
-					name: symbol,
-					data: days.map(
-						(d) => measurings[d].find((m) => m.asset.symbol === symbol)?.totalValue ?? 0
-					)
-				};
-			});
-
+	function changeTile(change: Delta | null) {
+		if (!change) return { value: "—", delta: null };
 		return {
-			days,
-			totals,
-			current,
-			delta,
-			deltaPct,
-			trimmedLatest,
-			composition,
-			empty: latest.length === 0
+			value: `${change.value >= 0 ? "+" : ""}${formatCurrency(change.value, $baseCurrency)}`,
+			delta:
+				change.pct !== null
+					? { text: formatPercent(change.pct), direction: direction(change.value) }
+					: null
+		};
+	}
+
+	function moverTile(mover: Mover | null) {
+		if (!mover) return { value: "—", delta: null, href: undefined };
+		return {
+			value: mover.symbol,
+			delta: { text: formatPercent(mover.pct), direction: direction(mover.value) },
+			href: resolve("/assets/[slug]", { slug: mover.symbol })
 		};
 	}
 </script>
@@ -77,6 +53,12 @@
 {#await data.measurings}
 	<div class="space-y-4">
 		<Skeleton class="h-88 w-full rounded-4xl" />
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+			<Skeleton class="h-28 w-full rounded-4xl" />
+			<Skeleton class="h-28 w-full rounded-4xl" />
+			<Skeleton class="h-28 w-full rounded-4xl" />
+			<Skeleton class="h-28 w-full rounded-4xl" />
+		</div>
 		<div class="grid gap-4 md:grid-cols-2">
 			<Skeleton class="h-80 w-full rounded-4xl" />
 			<Skeleton class="h-80 w-full rounded-4xl" />
@@ -96,6 +78,10 @@
 			</Card.Content>
 		</Card.Root>
 	{:else}
+		{@const change24h = changeTile(d.kpis.change24h)}
+		{@const change7d = changeTile(d.kpis.change7d)}
+		{@const gainer = moverTile(d.kpis.topGainer)}
+		{@const loser = moverTile(d.kpis.topLoser)}
 		<div class="space-y-4">
 			<!-- Hero: the one gradient surface of the app. Everything on it is
 			     primary-foreground only — no delta/series colors (R2). -->
@@ -112,6 +98,7 @@
 						color="var(--primary-foreground)"
 						axis={false}
 						grid={false}
+						valueFormatter={fmtValue}
 						class="aspect-auto h-44"
 					/>
 					<div class="space-y-4 px-6 pt-4 pb-8">
@@ -156,16 +143,47 @@
 				</Card.Content>
 			</Card.Root>
 
+			<!-- Snapshot deltas, not P&L: without transaction data, deposits and
+			     price moves are indistinguishable — label as "change" only. -->
+			<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<StatTile
+					label="24h change"
+					value={change24h.value}
+					delta={change24h.delta}
+					deltaLabel="vs yesterday"
+				/>
+				<StatTile
+					label="7d change"
+					value={change7d.value}
+					delta={change7d.delta}
+					deltaLabel="vs 7 days ago"
+				/>
+				<StatTile
+					label="Top gainer (24h)"
+					value={gainer.value}
+					delta={gainer.delta}
+					href={gainer.href}
+				/>
+				<StatTile
+					label="Top loser (24h)"
+					value={loser.value}
+					delta={loser.delta}
+					href={loser.href}
+				/>
+			</div>
+
 			<div class="grid gap-4 md:grid-cols-2">
 				<Card.Root>
 					<Card.Header>
 						<Card.Title>Allocation</Card.Title>
 					</Card.Header>
-					<Card.Content>
+					<Card.Content class="space-y-6">
 						<PieChart
 							labels={d.trimmedLatest.map((x) => x.asset.symbol ?? "")}
 							values={d.trimmedLatest.map((x) => x.totalValue ?? 0)}
+							valueFormatter={fmtValue}
 						/>
+						<TypeAllocationBar segments={d.kpis.typeAllocation} />
 					</Card.Content>
 				</Card.Root>
 				<Card.Root>
@@ -173,7 +191,14 @@
 						<Card.Title>Composition</Card.Title>
 					</Card.Header>
 					<Card.Content>
-						<LineChart labels={d.days} datasets={d.composition} />
+						<LineChart
+							labels={d.days}
+							datasets={d.composition}
+							fill={true}
+							stacked={true}
+							valueFormatter={fmtValue}
+							class="aspect-auto h-72"
+						/>
 					</Card.Content>
 				</Card.Root>
 			</div>

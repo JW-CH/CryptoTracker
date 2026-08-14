@@ -20,6 +20,8 @@
 		grid = true,
 		smooth = false,
 		gradientFill = false,
+		stacked = false,
+		valueFormatter,
 		class: className
 	}: {
 		labels?: string[];
@@ -34,6 +36,10 @@
 		smooth?: boolean;
 		/** Vertical gradient fill fading downwards (single series, fill mode) */
 		gradientFill?: boolean;
+		/** Stack the series (fill mode only) */
+		stacked?: boolean;
+		/** Formats tooltip values, e.g. as currency */
+		valueFormatter?: (value: number) => string;
 		class?: string;
 	} = $props();
 
@@ -85,6 +91,7 @@
 			{axis}
 			{grid}
 			legend={series.length > 1}
+			{...fill && stacked ? { seriesLayout: "stack" as const } : {}}
 			props={{
 				spline: { motion, ...(smooth ? { curve: curveMonotoneX } : {}) },
 				area: {
@@ -98,7 +105,14 @@
 			}}
 		>
 			{#snippet tooltip()}
-				<Chart.Tooltip labelFormatter={(d: Date) => formatDate(d)} />
+				<Chart.Tooltip
+					labelFormatter={(d: Date) => formatDate(d)}
+					{valueFormatter}
+					sortItems={series.length > 1}
+					showTotal={series.length > 1}
+					maxItems={9}
+					indicator={series.length > 1 ? "line" : "dot"}
+				/>
 			{/snippet}
 		</Component>
 	</Chart.Container>

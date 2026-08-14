@@ -23,6 +23,10 @@
 		formatter,
 		nameKey,
 		color,
+		valueFormatter,
+		sortItems = false,
+		maxItems,
+		showTotal = false,
 		...restProps
 	}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLDivElement>>> & {
 		hideLabel?: boolean;
@@ -32,6 +36,14 @@
 		labelKey?: string;
 		hideIndicator?: boolean;
 		labelClassName?: string;
+		/** Formats numeric item values (and the total row), e.g. as currency */
+		valueFormatter?: (value: number) => string;
+		/** Sort rows by value descending */
+		sortItems?: boolean;
+		/** Cap the number of rows; the rest collapses into "+n more" */
+		maxItems?: number;
+		/** Append a total row (only rendered with more than one visible series) */
+		showTotal?: boolean;
 		labelFormatter?:
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			((value: any, payload: TooltipPayload[]) => string | number | Snippet) | null;
@@ -56,6 +68,22 @@
 	const visibleSeries = $derived(
 		chartCtx.tooltip.series.filter((s: TooltipPayload) => s.value !== undefined)
 	);
+
+	const orderedSeries = $derived(
+		sortItems
+			? [...visibleSeries].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
+			: visibleSeries
+	);
+	const shownSeries = $derived(
+		maxItems && orderedSeries.length > maxItems ? orderedSeries.slice(0, maxItems) : orderedSeries
+	);
+	const hiddenCount = $derived(orderedSeries.length - shownSeries.length);
+	const total = $derived(orderedSeries.reduce((acc, s) => acc + (Number(s.value) || 0), 0));
+
+	function formatValue(value: unknown): string {
+		if (valueFormatter && typeof value === "number") return valueFormatter(value);
+		return typeof value === "number" ? value.toLocaleString() : String(value);
+	}
 
 	const formattedLabel = $derived.by(() => {
 		if (hideLabel || !visibleSeries?.length) return null;
@@ -116,7 +144,7 @@
 			{@render TooltipLabel()}
 		{/if}
 		<div class="grid gap-1.5">
-			{#each visibleSeries as item, i (item.key + i)}
+			{#each shownSeries as item, i (item.key + i)}
 				{@const key = `${nameKey || item.key || item.label || "value"}`}
 				{@const itemConfig = getPayloadConfigFromPayload(
 					chart.config,
@@ -169,13 +197,24 @@
 							</div>
 							{#if item.value !== undefined}
 								<span class="text-foreground font-mono font-medium tabular-nums">
-									{item.value.toLocaleString()}
+									{formatValue(item.value)}
 								</span>
 							{/if}
 						</div>
 					{/if}
 				</div>
 			{/each}
+			{#if hiddenCount > 0}
+				<div class="text-muted-foreground">+{hiddenCount} more</div>
+			{/if}
+			{#if showTotal && shownSeries.length > 1}
+				<div class="border-border/50 mt-1 flex items-center justify-between border-t pt-1">
+					<span class="text-muted-foreground">Total</span>
+					<span class="text-foreground font-mono font-medium tabular-nums">
+						{formatValue(total)}
+					</span>
+				</div>
+			{/if}
 		</div>
 	</div>
 </TooltipPrimitive.Root>

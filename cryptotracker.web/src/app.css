@@ -35,6 +35,9 @@
 	--chart-6: oklch(0.91 0.096 180.426);
 	--chart-7: oklch(0.386 0.063 188.416);
 	--chart-other: oklch(0.709 0.01 56.259);
+	/* Delta colors (R3.2): never the only channel — always pair with icon + sign */
+	--gain: oklch(0.433 0.147 142.5);
+	--loss: oklch(0.575 0.187 25.1);
 	--sidebar: oklch(0.985 0.001 106.423);
 	--sidebar-foreground: oklch(0.147 0.004 49.25);
 	--sidebar-primary: oklch(0.6 0.118 184.704);
@@ -73,6 +76,9 @@
 	--chart-6: oklch(0.91 0.096 180.426);
 	--chart-7: oklch(0.386 0.063 188.416);
 	--chart-other: oklch(0.553 0.013 58.071);
+	/* Delta colors (R3.2): brighter on dark surfaces */
+	--gain: oklch(0.621 0.208 142.6);
+	--loss: oklch(0.704 0.191 22.216);
 	--sidebar: oklch(0.216 0.006 56.043);
 	--sidebar-foreground: oklch(0.985 0.001 106.423);
 	--sidebar-primary: oklch(0.704 0.14 182.503);
@@ -114,6 +120,8 @@
 	--color-chart-6: var(--chart-6);
 	--color-chart-7: var(--chart-7);
 	--color-chart-other: var(--chart-other);
+	--color-gain: var(--gain);
+	--color-loss: var(--loss);
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-primary: var(--sidebar-primary);

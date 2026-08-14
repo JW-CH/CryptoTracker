@@ -11,6 +11,8 @@ namespace cryptotracker.webapi.Dtos
         public bool IsHidden { get; set; }
         public bool IsManual { get; set; }
         public DateTime? LastSyncedAtUtc { get; set; }
+        /// <summary>Today's total value in base currency; null when not computed (e.g. nested contexts).</summary>
+        public decimal? CurrentValue { get; set; }
 
         public static IntegrationDto FromModel(ExchangeIntegration integration)
         {
