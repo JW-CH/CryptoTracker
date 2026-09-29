@@ -9,6 +9,7 @@ namespace cryptotracker.core.Models
         public int Interval { get; set; } = 60;
         public CryptoTrackerAuth Auth { get; set; } = new();
         public CryptoTrackerOidc Oidc { get; set; } = new();
+        public CryptoTrackerMcp Mcp { get; set; } = new();
         public string LogLevel { get; set; } = "Information";
         public StockApi? StockApi { get; set; } = null;
         public int MaxFillDays { get; set; } = 10;

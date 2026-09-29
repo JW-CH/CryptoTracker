@@ -22,6 +22,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using ModelContextProtocol.AspNetCore;
+using cryptotracker.webapi.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +80,16 @@ builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
 {
     return config;
 });
+
+if (config.Mcp.Enabled)
+{
+    builder.Services
+    .AddMcpServer()
+    .WithHttpTransport(options =>
+    {
+        options.SessionMode = HttpServerSessionMode.Stateless;
+    });
+}
 
 builder.Services.AddSingleton(TimeProvider.System);
 // constructed eagerly so an invalid timezone fails at startup, not on first request
@@ -257,6 +269,11 @@ if (config.Oidc.IsEnabled)
         });
 }
 
+if (config.Mcp.Enabled)
+{
+    authBuilder.AddMcpAuthentication();
+}
+
 builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
@@ -321,6 +338,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (config.Mcp.Enabled)
+{
+    app.MapMcp("/mcp").RequireAuthorization(McpAuthenticationDefaults.Policy);
+}
 
 app.MapFallback(async context =>
 {

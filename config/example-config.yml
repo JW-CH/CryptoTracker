@@ -16,6 +16,9 @@ oidc:
   clientsecret: your-oidc-client-secret
   authority: https://your-oidc-provider.com
   autoprovision: true
+mcp:
+  enabled: false
+  token: your-mcp-token-with-at-least-32-characters
 integrations:
   - name: My Coinbase
     description: Main Coinbase account
