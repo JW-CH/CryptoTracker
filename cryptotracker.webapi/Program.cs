@@ -88,7 +88,8 @@ if (config.Mcp.Enabled)
     .WithHttpTransport(options =>
     {
         options.SessionMode = HttpServerSessionMode.Stateless;
-    });
+    })
+    .WithTools<PortfolioTools>();
 }
 
 builder.Services.AddSingleton(TimeProvider.System);
