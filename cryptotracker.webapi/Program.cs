@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using System.Text;
 using System.Threading.RateLimiting;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,15 +11,13 @@ using cryptotracker.database.Models;
 using cryptotracker.webapi.Backgroundservices;
 using cryptotracker.webapi.Configuration;
 using cryptotracker.webapi.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Tokens;
+using ModelContextProtocol.AspNetCore;
+using cryptotracker.webapi.Authentication;
+using cryptotracker.webapi.Mcp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,6 +74,17 @@ builder.Services.AddSingleton<ICryptoTrackerConfig>(srv =>
 {
     return config;
 });
+
+if (config.Mcp.Enabled)
+{
+    builder.Services
+    .AddMcpServer()
+    .WithHttpTransport(options =>
+    {
+        options.SessionMode = HttpServerSessionMode.Stateless;
+    })
+    .WithTools<PortfolioTools>();
+}
 
 builder.Services.AddSingleton(TimeProvider.System);
 // constructed eagerly so an invalid timezone fails at startup, not on first request
@@ -152,109 +159,16 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<DatabaseContext>()
     .AddDefaultTokenProviders();
 
-// JWT Auth
-var secretKey = Encoding.UTF8.GetBytes(config.Auth.Secret ?? throw new Exception("JWT Secret not configured"));
-if (secretKey.Length < 32)
-{
-    throw new Exception("JWT Secret must be at least 32 bytes (256 bits) for HMAC SHA256");
-}
+var authBuilder = builder.Services.AddJwtAuthentication(config);
 
-// Authentication
-var authBuilder = builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-// JWT-Validation
-.AddJwtBearer(jwtOptions =>
-{
-    jwtOptions.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
-        ValidateIssuer = !string.IsNullOrWhiteSpace(config.Auth.Issuer),
-        ValidIssuer = config.Auth.Issuer,
-        ValidateAudience = !string.IsNullOrWhiteSpace(config.Auth.Audience),
-        ValidAudience = config.Auth.Audience,
-    };
-
-    jwtOptions.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            // Prefer Bearer header; fall back to cookie
-            if (!context.Request.Headers.ContainsKey("Authorization"))
-            {
-                var cookie = context.Request.Cookies["jwt"];
-                if (!string.IsNullOrEmpty(cookie))
-                {
-                    context.Token = cookie;
-                }
-            }
-            return Task.CompletedTask;
-        }
-    };
-});
-
-// OpenID Connect – only when configured
 if (config.Oidc.IsEnabled)
 {
-    authBuilder
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, oidcOptions =>
-        {
-            oidcOptions.Authority = config.Oidc.Authority;
-            oidcOptions.ClientId = config.Oidc.ClientId;
-            oidcOptions.ClientSecret = config.Oidc.ClientSecret;
-            oidcOptions.ResponseType = OpenIdConnectResponseType.Code;
-            oidcOptions.CallbackPath = "/api/signin-oidc";
+    authBuilder.AddOidcAuthentication(config);
+}
 
-            oidcOptions.Scope.Clear();
-            oidcOptions.Scope.Add("openid");
-            oidcOptions.Scope.Add("profile");
-            oidcOptions.Scope.Add("email");
-
-            oidcOptions.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-
-            oidcOptions.Events = new OpenIdConnectEvents
-            {
-                OnTokenValidated = async ctx =>
-                {
-                    var userManager = ctx.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
-                    var email = ctx.Principal?.FindFirstValue(ClaimTypes.Email) ?? ctx.Principal?.FindFirst("email")?.Value ?? "";
-
-                    if (!string.IsNullOrEmpty(email))
-                    {
-                        var jwtService = ctx.HttpContext.RequestServices.GetRequiredService<JwtService>();
-                        var user = await userManager.FindByEmailAsync(email);
-                        if (user == null)
-                        {
-                            if (!config.Oidc.AutoProvision)
-                            {
-                                ctx.Fail($"User {email} is not provisioned and oidc auto provisioning is disabled");
-                                return;
-                            }
-
-                            user = new ApplicationUser { Email = email, UserName = email, EmailConfirmed = true };
-                            var createResult = await userManager.CreateAsync(user);
-                            if (!createResult.Succeeded)
-                            {
-                                ctx.Fail("User creation failed");
-                                return;
-                            }
-                        }
-                        var jwt = jwtService.GenerateJwtToken(user, ctx.Request);
-                        jwtService.SetJwtCookie(ctx.Response, jwt);
-                    }
-                    else
-                    {
-                        ctx.Fail("Email claim not found");
-                        return;
-                    }
-                }
-            };
-        });
+if (config.Mcp.Enabled)
+{
+    authBuilder.AddMcpAuthentication();
 }
 
 builder.Services
@@ -321,6 +235,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (config.Mcp.Enabled)
+{
+    app.MapMcp("/mcp").RequireAuthorization(McpAuthenticationDefaults.Policy);
+}
 
 app.MapFallback(async context =>
 {

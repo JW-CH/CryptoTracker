@@ -3,9 +3,9 @@ namespace cryptotracker.core.Models
     public static class CryptoTrackerConfigValidator
     {
         /// <summary>
-        /// Fails fast on integration config errors that would otherwise corrupt data
-        /// silently (duplicate names used to merge into one integration whose sources
-        /// zero-marked each other's holdings).
+        /// Fails fast on config errors that would otherwise corrupt data or open an
+        /// unauthenticated MCP endpoint. Duplicate integration names used to merge
+        /// into one integration whose sources zero-marked each other's holdings.
         /// </summary>
         public static void Validate(CryptoTrackerConfig config)
         {
@@ -40,9 +40,14 @@ namespace cryptotracker.core.Models
                 errors.Add($"Integration name '{group.First().Name}' is used {group.Count()} times. Names must be unique; use one integration with multiple sources instead.");
             }
 
+            if (config.Mcp?.Enabled == true && (string.IsNullOrWhiteSpace(config.Mcp.Token) || config.Mcp.Token.Length < 32))
+            {
+                errors.Add("MCP is enabled but mcp.token is missing or shorter than 32 characters.");
+            }
+
             if (errors.Count > 0)
             {
-                throw new InvalidOperationException($"Invalid integration config:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+                throw new InvalidOperationException($"Invalid config:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
             }
         }
     }

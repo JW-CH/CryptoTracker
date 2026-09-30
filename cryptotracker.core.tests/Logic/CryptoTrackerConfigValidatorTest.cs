@@ -75,4 +75,37 @@ public class CryptoTrackerConfigValidatorTest
 
         Assert.Throws<InvalidOperationException>(() => CryptoTrackerConfigValidator.Validate(config));
     }
+
+    [Test]
+    public void Validate_McpDisabledWithoutToken_DoesNotThrow()
+    {
+        var config = new CryptoTrackerConfig { Mcp = new CryptoTrackerMcp { Enabled = false } };
+
+        Assert.DoesNotThrow(() => CryptoTrackerConfigValidator.Validate(config));
+    }
+
+    [Test]
+    public void Validate_McpEnabledWithoutToken_Throws()
+    {
+        var config = new CryptoTrackerConfig { Mcp = new CryptoTrackerMcp { Enabled = true } };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => CryptoTrackerConfigValidator.Validate(config));
+        Assert.That(ex!.Message, Does.Contain("mcp.token"));
+    }
+
+    [Test]
+    public void Validate_McpEnabledWithShortToken_Throws()
+    {
+        var config = new CryptoTrackerConfig { Mcp = new CryptoTrackerMcp { Enabled = true, Token = new string('a', 31) } };
+
+        Assert.Throws<InvalidOperationException>(() => CryptoTrackerConfigValidator.Validate(config));
+    }
+
+    [Test]
+    public void Validate_McpEnabledWithToken_DoesNotThrow()
+    {
+        var config = new CryptoTrackerConfig { Mcp = new CryptoTrackerMcp { Enabled = true, Token = new string('a', 32) } };
+
+        Assert.DoesNotThrow(() => CryptoTrackerConfigValidator.Validate(config));
+    }
 }

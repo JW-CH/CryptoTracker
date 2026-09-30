@@ -8,6 +8,7 @@ namespace cryptotracker.core.Interfaces
         public List<CryptoTrackerIntegration> Integrations { get; set; }
         public CryptoTrackerAuth Auth { get; set; }
         public CryptoTrackerOidc Oidc { get; set; }
+        public CryptoTrackerMcp Mcp { get; set; }
         public string ConnectionString { get; set; }
         public string LogLevel { get; set; }
         public int Interval { get; set; }
