@@ -17,6 +17,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using ModelContextProtocol.AspNetCore;
 using cryptotracker.webapi.Authentication;
+using cryptotracker.webapi.Mcp;
 
 var builder = WebApplication.CreateBuilder(args);
 
