@@ -1,23 +1,22 @@
+import { runInLoad } from "#lib/api/client.js";
 import * as api from "#lib/cryptotrackerApi.js";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = () => {
-	const assets = api
-		.getAssets()
-		.then((res) => (res.status === 200 && Array.isArray(res.data) ? res.data : []))
-		.catch(() => [] as api.AssetDto[]);
+export const load: PageLoad = ({ fetch }) =>
+	runInLoad(fetch, () => ({
+		portfolio: Promise.all([
+			api.getAssets().catch(() => null),
+			api.getLatestMeasurings().catch(() => null)
+		]).then(([assetRes, holdingRes]) => {
+			const assets = assetRes?.status === 200 && Array.isArray(assetRes.data) ? assetRes.data : [];
+			const holdings =
+				holdingRes?.status === 200 && Array.isArray(holdingRes.data) ? holdingRes.data : [];
 
-	const holdings = api
-		.getLatestMeasurings()
-		.then((res) => (res.status === 200 && Array.isArray(res.data) ? res.data : []))
-		.catch(() => [] as api.AssetHoldingDto[]);
-
-	return {
-		portfolio: Promise.all([assets, holdings]).then(([assetList, holdingList]) => ({
-			assets: assetList,
-			holdingsBySymbol: Object.fromEntries(
-				holdingList.map((h) => [h.asset.symbol ?? "", h])
-			) as Record<string, api.AssetHoldingDto>
-		}))
-	};
-};
+			return {
+				assets,
+				holdingsBySymbol: Object.fromEntries(
+					holdings.map((h) => [h.asset.symbol ?? "", h])
+				) as Record<string, api.AssetHoldingDto>
+			};
+		})
+	}));

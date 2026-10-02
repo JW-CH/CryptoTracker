@@ -6,6 +6,7 @@
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { prefersReducedMotion } from "svelte/motion";
+	import { untrack } from "svelte";
 
 	let {
 		labels = [],
@@ -30,6 +31,9 @@
 	const config: Chart.ChartConfig = $derived(
 		Object.fromEntries(data.map((d) => [d.label, { label: d.label, color: d.color }]))
 	);
+	const pieMotion = untrack(() =>
+		prefersReducedMotion.current ? "none" : { type: "tween" as const, duration: 300 }
+	);
 </script>
 
 {#if skeleton}
@@ -45,7 +49,7 @@
 			cornerRadius={4}
 			props={{
 				pie: {
-					motion: prefersReducedMotion.current ? "none" : { type: "tween", duration: 300 }
+					motion: pieMotion
 				},
 				arc: { class: "cursor-pointer" }
 			}}

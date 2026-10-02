@@ -1,19 +1,19 @@
+import { runInLoad } from "#lib/api/client.js";
 import * as api from "#lib/cryptotrackerApi.js";
 import type { PageLoad } from "./$types";
 
 const RANGES = [7, 30, 90, 365];
 
-export const load: PageLoad = ({ url }) => {
+export const load: PageLoad = ({ fetch, url }) => {
 	const requested = Number(url.searchParams.get("range"));
 	const range = RANGES.includes(requested) ? requested : 30;
-	return {
+
+	return runInLoad(fetch, () => ({
 		range,
 		ranges: RANGES,
-		// One request for the whole dashboard: the portfolio standing per day is
-		// just the sum of the measurings, no separate endpoint needed.
-		measurings: api
-			.getMeasuringsByDays(range)
-			.then((res) => (res.status === 200 && res.data ? res.data : {}))
-			.catch(() => ({}) as { [key: string]: api.AssetHoldingDto[] })
-	};
+		measurings: api.getMeasuringsByDays(range, {}).then((res) => {
+			if (res.status !== 200 || !res.data) throw new Error("Could not load measurings");
+			return res.data;
+		})
+	}));
 };

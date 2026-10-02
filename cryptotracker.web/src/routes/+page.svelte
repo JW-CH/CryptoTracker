@@ -4,6 +4,7 @@
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { streamed } from "#lib/api/streamed.svelte.js";
 	import * as ToggleGroup from "#lib/components/ui/toggle-group/index.js";
 	import { baseCurrency } from "#lib/stores/config.js";
 	import { formatCurrency, formatPercent } from "#lib/format.js";
@@ -16,6 +17,8 @@
 	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 
 	let { data } = $props();
+
+	const measurings = streamed(() => data.measurings);
 
 	const fmtValue = $derived((v: number) => formatCurrency(v, $baseCurrency));
 
@@ -49,7 +52,9 @@
 	}
 </script>
 
-{#await data.measurings}
+{#if measurings.failed}
+	<p class="text-muted-foreground">Could not load the dashboard — please try again.</p>
+{:else if measurings.value === null}
 	<div class="space-y-4">
 		<Skeleton class="h-88 w-full rounded-4xl" />
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -63,8 +68,8 @@
 			<Skeleton class="h-80 w-full rounded-4xl" />
 		</div>
 	</div>
-{:then measurings}
-	{@const d = analyze(measurings)}
+{:else}
+	{@const d = analyze(measurings.value)}
 	{#if d.empty}
 		<Card.Root>
 			<Card.Content class="flex flex-col items-center gap-4 py-16 text-center">
@@ -203,6 +208,4 @@
 			</div>
 		</div>
 	{/if}
-{:catch}
-	<p class="text-muted-foreground">Could not load the dashboard — please try again.</p>
-{/await}
+{/if}

@@ -6,6 +6,7 @@
 	import { colorForSymbol } from "#lib/charts/palette.js";
 	import { LOCALE, formatDate } from "#lib/format.js";
 	import { prefersReducedMotion } from "svelte/motion";
+	import { untrack } from "svelte";
 	import { cn } from "#lib/utils.js";
 
 	type Dataset = { name: string; data: number[] };
@@ -64,7 +65,7 @@
 		Object.fromEntries(series.map((s) => [s.key, { label: s.label, color: s.color }]))
 	);
 	const Component = $derived(fill ? AreaChart : LineChart);
-	const motion = $derived(
+	const motion = untrack(() =>
 		prefersReducedMotion.current ? ("none" as const) : { type: "tween" as const, duration: 400 }
 	);
 </script>
