@@ -27,7 +27,7 @@
 				} else {
 					error = "Registration failed. Please try again.";
 				}
-			} catch (err) {
+			} catch {
 				error = "An error occurred during registration. Please try again.";
 			}
 		}}

@@ -13,7 +13,7 @@
 </script>
 
 {#if skeleton}
-	{#each { length: 6 } as _}
+	{#each { length: 6 }, i (i)}
 		<Card.Root class="flex h-full flex-col">
 			<Card.Content class="flex items-center gap-3">
 				<Skeleton class="bg-muted size-12 shrink-0 rounded-full" />
@@ -25,7 +25,7 @@
 		</Card.Root>
 	{/each}
 {:else}
-	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
+	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring (measuring.asset.symbol)}
 		<a href={resolve("/assets/[slug]", { slug: measuring.asset.symbol ?? "" })} class="group">
 			<Card.Root
 				class="hover:border-primary/20 flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"

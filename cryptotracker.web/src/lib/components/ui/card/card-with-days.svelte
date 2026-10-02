@@ -1,20 +1,18 @@
 <script lang="ts">
 	import * as Card from "#lib/components/ui/card/index.js";
-	import type { HTMLAttributes } from "svelte/elements";
-
-	interface Props {
-		title?: string;
-		class?: $$Props["class"];
-		selectedRange?: number;
-	}
-
-	type $$Props = HTMLAttributes<HTMLDivElement>;
+	import type { Snippet } from "svelte";
 
 	let {
 		title = "Card Title",
 		class: className = undefined,
-		selectedRange = $bindable(7)
-	}: Props = $props();
+		selectedRange = $bindable(7),
+		children
+	}: {
+		title?: string;
+		class?: string;
+		selectedRange?: number;
+		children?: Snippet;
+	} = $props();
 
 	const ranges = [7, 14, 30, 90];
 </script>
@@ -23,7 +21,7 @@
 	<Card.Header class="flex items-center justify-between">
 		<Card.Title>{title} (last {selectedRange} days)</Card.Title>
 		<div class="flex gap-1">
-			{#each ranges as range}
+			{#each ranges as range (range)}
 				<button
 					onclick={() => (selectedRange = range)}
 					class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors
@@ -37,6 +35,6 @@
 		</div>
 	</Card.Header>
 	<Card.Content>
-		<slot />
+		{@render children?.()}
 	</Card.Content>
 </Card.Root>

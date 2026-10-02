@@ -10,9 +10,12 @@ function apply(theme: Theme) {
 }
 
 const stored = localStorage.getItem(STORAGE_KEY);
-let current = $state<Theme>(stored === "light" || stored === "dark" ? stored : "system");
+const initial: Theme = stored === "light" || stored === "dark" ? stored : "system";
+let current = $state<Theme>(initial);
 
-apply(current);
+// Apply the stored value directly. Reading `current` here would only capture
+// the initial state and warn; later changes go through the setter.
+apply(initial);
 prefersDark.addEventListener("change", () => {
 	if (current === "system") apply("system");
 });

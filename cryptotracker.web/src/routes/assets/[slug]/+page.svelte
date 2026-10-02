@@ -217,13 +217,13 @@
 					{#key assetType}
 						{#if assetType === "Fiat"}
 							{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
+								{#each coins.data as coin (coin.symbol)}
 									<option value={coin.symbol}>{coin.name}</option>
 								{/each}
 							{/await}
 						{:else if assetType === "Crypto"}
 							{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
+								{#each coins.data as coin (coin.externalId)}
 									<option value={coin.externalId}>{coin.name}</option>
 								{/each}
 							{/await}
@@ -275,7 +275,9 @@
 				<div class="space-y-3">
 					<h2 class="text-lg font-semibold">Integrations</h2>
 					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
+						{@const integrationValues =
+							dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues ?? []}
+						{#each integrationValues as integrationItem (integrationItem.integration.id)}
 							<a
 								href={resolve("/integrations/[slug]", {
 									slug: integrationItem.integration.id
