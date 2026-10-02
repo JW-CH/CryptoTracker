@@ -2,22 +2,22 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { resolve } from "$app/paths";
-	import * as api from "$lib/cryptotrackerApi";
+	import * as api from "#lib/cryptotrackerApi.js";
 	import { onMount } from "svelte";
 	import AssetMeasuringTiles from "./AssetMeasuringTiles.svelte";
 	import EditIntegrationDialog from "./EditIntegrationDialog.svelte";
 	import DeleteIntegrationDialog from "./DeleteIntegrationDialog.svelte";
-	import Button from "$lib/components/ui/button/button.svelte";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import CardWithDays from "$lib/components/ui/card/card-with-days.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import IntegrationAvatar from "$lib/components/integration-avatar.svelte";
-	import IntegrationTypeBadge from "$lib/components/integration-type-badge.svelte";
-	import SyncStatusBadge from "$lib/components/sync-status-badge.svelte";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import { baseCurrency, updateIntervalMinutes } from "$lib/stores/config";
-	import { formatCurrency } from "$lib/format";
-	import { isStale } from "$lib/integrations/health";
+	import Button from "#lib/components/ui/button/button.svelte";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import CardWithDays from "#lib/components/ui/card/card-with-days.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import IntegrationAvatar from "#lib/components/integration-avatar.svelte";
+	import IntegrationTypeBadge from "#lib/components/integration-type-badge.svelte";
+	import SyncStatusBadge from "#lib/components/sync-status-badge.svelte";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import { baseCurrency, updateIntervalMinutes } from "#lib/stores/config.js";
+	import { formatCurrency } from "#lib/format.js";
+	import { isStale } from "#lib/integrations/health.js";
 
 	const slug = $derived(page.params.slug ?? "");
 
@@ -37,6 +37,7 @@
 	const currentValue = $derived(
 		(details?.measurings ?? []).reduce((acc, m) => acc + (m.totalValue ?? 0), 0)
 	);
+
 	const stale = $derived(details ? isStale(details.integration, $updateIntervalMinutes) : false);
 
 	// ── Value over time ──
@@ -96,9 +97,9 @@
 				/>
 			{/snippet}
 			{#snippet meta()}
-				<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
-					{formatCurrency(currentValue, $baseCurrency)}
-				</span>
+				<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold"
+					>{formatCurrency(currentValue, $baseCurrency)}</span
+				>
 				<IntegrationTypeBadge isManual={details!.integration.isManual} />
 				<SyncStatusBadge {stale} />
 			{/snippet}
@@ -109,12 +110,12 @@
 						size="sm"
 						href={resolve("/integrations/[slug]/measurings", {
 							slug: details!.integration.id ?? ""
-						})}
+						})}>Measurements</Button
 					>
-						Measurements
-					</Button>
 				{/if}
+
 				<Button variant="outline" size="sm" onclick={() => (editOpen = true)}>Edit</Button>
+
 				<Button variant="destructive" size="sm" onclick={() => (deleteOpen = true)}>Delete</Button>
 			{/snippet}
 		</PageHeader>
@@ -159,7 +160,7 @@
 		<DeleteIntegrationDialog
 			integration={details.integration}
 			bind:open={deleteOpen}
-			onDeleted={() => goto(resolve("/integrations"))}
+			onDeleted={() => goto(resolve("integrations"))}
 		/>
 	{/if}
 </div>

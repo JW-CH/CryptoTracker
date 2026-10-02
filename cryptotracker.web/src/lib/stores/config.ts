@@ -1,4 +1,4 @@
-import * as api from "$lib/cryptotrackerApi";
+import * as api from "#lib/cryptotrackerApi.js";
 import { writable } from "svelte/store";
 
 // display form of the backend's base currency (e.g. "CHF"), default until loaded

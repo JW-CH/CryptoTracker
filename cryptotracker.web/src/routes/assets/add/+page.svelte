@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import * as Select from "$lib/components/ui/select";
-	import SearchCombobox from "$lib/components/search-combobox.svelte";
-	import * as api from "$lib/cryptotrackerApi";
-	import { mutate } from "$lib/api/mutate";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import * as Select from "#lib/components/ui/select/index.js";
+	import SearchCombobox from "#lib/components/search-combobox.svelte";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { mutate } from "#lib/api/mutate.js";
 	import Loader2Icon from "@lucide/svelte/icons/loader-2";
 
 	// Commodity/RealEstate exist in the enum but have no price source yet;
@@ -84,7 +84,10 @@
 		saving = true;
 		await mutate(() => api.addAsset({ symbol: payloadSymbol, externalId, assetType }), {
 			success: `${payloadSymbol.toUpperCase()} added.`,
-			onSuccess: () => goto(resolve("/assets/[slug]", { slug: payloadSymbol }))
+			onSuccess: () =>
+				goto(resolve("/assets/[slug]", { slug: payloadSymbol })).catch(() => {
+					// Symbol did not resolve to an asset route.
+				})
 		});
 		saving = false;
 	}

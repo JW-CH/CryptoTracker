@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { resolve } from "$app/paths";
+	import { match, resolve } from "$app/paths";
 	import { page } from "$app/state";
-	import * as api from "$lib/cryptotrackerApi";
-	import { refreshUser } from "$lib/api/client";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import * as Alert from "$lib/components/ui/alert";
-	import { Separator } from "$lib/components/ui/separator";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { refreshUser } from "#lib/api/client.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import * as Alert from "#lib/components/ui/alert/index.js";
+	import { Separator } from "#lib/components/ui/separator/index.js";
 	import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
 	import Loader2Icon from "@lucide/svelte/icons/loader-2";
 
@@ -31,6 +31,22 @@
 
 	checkOidc();
 
+	async function goAfterLogin() {
+		const returnUrl = page.url.searchParams.get("returnUrl");
+		if (returnUrl && returnUrl.startsWith("/") && !returnUrl.startsWith("//")) {
+			try {
+				const matched = await match(returnUrl);
+				if (matched) {
+					await goto(returnUrl);
+					return;
+				}
+			} catch {
+				// Not an application route, or goto rejected the destination.
+			}
+		}
+		await goto(resolve("/"));
+	}
+
 	async function handleLogin() {
 		error = null;
 		submitting = true;
@@ -38,9 +54,7 @@
 			const response = await api.login({ username: email, password });
 			if (response.status === 200) {
 				await refreshUser();
-				const returnUrl = page.url.searchParams.get("returnUrl");
-				// eslint-disable-next-line svelte/no-navigation-without-resolve -- returnUrl is an app-internal path, guarded below
-				await goto(returnUrl?.startsWith("/") ? returnUrl : resolve("/"));
+				await goAfterLogin();
 			} else {
 				error = "Login failed. Please check your credentials.";
 			}
@@ -100,7 +114,10 @@
 		<Separator />
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
-			<a href={resolve("/auth/register")} class="text-primary hover:underline">Register here</a>.
+
+			<a href={resolve("auth/register")} class="text-primary hover:underline">Register here</a>
+
+			.
 		</p>
 	</form>
 </div>

@@ -1,25 +1,27 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as api from "$lib/cryptotrackerApi";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount, formatCurrency, formatShare } from "$lib/format";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as Table from "$lib/components/ui/table";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatAmount, formatCurrency, formatShare } from "#lib/format.js";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { streamed } from "#lib/api/streamed.svelte.js";
+	import * as Table from "#lib/components/ui/table/index.js";
 	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 
 	let { data } = $props();
 
+	const holdings = streamed(() => data.holdings);
+
 	const today = new Date().toISOString().split("T")[0];
 
 	function gotoDate(date: string) {
 		if (!date || date === data.date) return;
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve("/report")}?date=${date}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("report")}?date=${date}`, { reset: false });
 	}
 
 	function shiftDay(delta: number) {
@@ -32,6 +34,8 @@
 		const total = sorted.reduce((acc, h) => acc + (h.totalValue ?? 0), 0);
 		return { sorted, total };
 	}
+
+	const report = $derived(holdings.value ? analyze(holdings.value) : null);
 </script>
 
 <svelte:head>
@@ -68,61 +72,60 @@
 		{/snippet}
 	</PageHeader>
 
-	{#await data.holdings}
+	{#if report === null}
 		<Skeleton class="h-96 w-full rounded-4xl" />
-	{:then holdings}
-		{@const report = analyze(holdings)}
-		{#if report.sorted.length === 0}
-			<p class="text-muted-foreground py-16 text-center">No data for this day.</p>
-		{:else}
-			<Table.Root>
-				<Table.Header>
+	{:else if report.sorted.length === 0}
+		<p class="text-muted-foreground py-16 text-center">No data for this day.</p>
+	{:else}
+		<Table.Root>
+			<Table.Header>
+				<Table.Row>
+					<Table.Head>Asset</Table.Head>
+					<Table.Head class="text-right">Amount</Table.Head>
+					<Table.Head class="text-right">Price</Table.Head>
+					<Table.Head class="text-right">Value</Table.Head>
+					<Table.Head class="text-right">Share</Table.Head>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
+				{#each report.sorted as holding (holding.asset.symbol)}
 					<Table.Row>
-						<Table.Head>Asset</Table.Head>
-						<Table.Head class="text-right">Amount</Table.Head>
-						<Table.Head class="text-right">Price</Table.Head>
-						<Table.Head class="text-right">Value</Table.Head>
-						<Table.Head class="text-right">Share</Table.Head>
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each report.sorted as holding (holding.asset.symbol)}
-						<Table.Row>
-							<Table.Cell class="font-medium">
-								<a
-									class="hover:underline"
-									href={resolve("/assets/[slug]", { slug: holding.asset.symbol ?? "" })}
-								>
-									{holding.asset.name ?? holding.asset.symbol}
-								</a>
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatAmount(holding.totalAmount ?? 0, holding.asset.assetType)}
-								{holding.asset.symbol}
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatCurrency(holding.price ?? 0, $baseCurrency)}
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatCurrency(holding.totalValue ?? 0, $baseCurrency)}
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{report.total > 0 ? formatShare((holding.totalValue ?? 0) / report.total) : "—"}
-							</Table.Cell>
-						</Table.Row>
-					{/each}
-				</Table.Body>
-				<Table.Footer>
-					<Table.Row>
-						<Table.Cell class="font-semibold">Total</Table.Cell>
-						<Table.Cell colspan={2}></Table.Cell>
-						<Table.Cell class="text-right font-semibold tabular-nums">
-							{formatCurrency(report.total, $baseCurrency)}
+						<Table.Cell class="font-medium">
+							<a
+								class="hover:underline"
+								href={resolve("/assets/[slug]", { slug: holding.asset.symbol ?? "" })}
+							>
+								{holding.asset.name ?? holding.asset.symbol}
+							</a>
 						</Table.Cell>
-						<Table.Cell class="text-right tabular-nums">100%</Table.Cell>
+
+						<Table.Cell class="text-right tabular-nums"
+							>{formatAmount(holding.totalAmount ?? 0, holding.asset.assetType)}
+							{holding.asset.symbol}</Table.Cell
+						>
+						<Table.Cell class="text-right tabular-nums"
+							>{formatCurrency(holding.price ?? 0, $baseCurrency)}</Table.Cell
+						>
+						<Table.Cell class="text-right tabular-nums"
+							>{formatCurrency(holding.totalValue ?? 0, $baseCurrency)}</Table.Cell
+						>
+
+						<Table.Cell class="text-right tabular-nums">
+							{report.total > 0 ? formatShare((holding.totalValue ?? 0) / report.total) : "—"}
+						</Table.Cell>
 					</Table.Row>
-				</Table.Footer>
-			</Table.Root>
-		{/if}
-	{/await}
+				{/each}
+			</Table.Body>
+			<Table.Footer>
+				<Table.Row>
+					<Table.Cell class="font-semibold">Total</Table.Cell>
+					<Table.Cell colspan={2} />
+					<Table.Cell class="text-right font-semibold tabular-nums"
+						>{formatCurrency(report.total, $baseCurrency)}</Table.Cell
+					>
+					<Table.Cell class="text-right tabular-nums">100%</Table.Cell>
+				</Table.Row>
+			</Table.Footer>
+		</Table.Root>
+	{/if}
 </div>

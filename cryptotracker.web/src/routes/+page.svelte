@@ -1,28 +1,30 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatCurrency, formatPercent } from "$lib/format";
-	import { analyze, type Delta, type Mover } from "$lib/dashboard/analyze";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import PieChart from "$lib/components/charts/PieChart.svelte";
-	import StatTile from "$lib/components/stat-tile.svelte";
-	import TypeAllocationBar from "$lib/components/type-allocation-bar.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { streamed } from "#lib/api/streamed.svelte.js";
+	import * as ToggleGroup from "#lib/components/ui/toggle-group/index.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatCurrency, formatPercent } from "#lib/format.js";
+	import { analyze, type Delta, type Mover } from "#lib/dashboard/analyze.js";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import PieChart from "#lib/components/charts/PieChart.svelte";
+	import StatTile from "#lib/components/stat-tile.svelte";
+	import TypeAllocationBar from "#lib/components/type-allocation-bar.svelte";
 	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
 	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 
 	let { data } = $props();
 
+	const measurings = streamed(() => data.measurings);
+
 	const fmtValue = $derived((v: number) => formatCurrency(v, $baseCurrency));
 
 	function setRange(value: string) {
 		if (!value || Number(value) === data.range) return;
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve("/")}?range=${value}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("/")}?range=${value}`, { reset: false });
 	}
 
 	function direction(value: number): "up" | "down" | "flat" {
@@ -50,7 +52,9 @@
 	}
 </script>
 
-{#await data.measurings}
+{#if measurings.failed}
+	<p class="text-muted-foreground">Could not load the dashboard — please try again.</p>
+{:else if measurings.value === null}
 	<div class="space-y-4">
 		<Skeleton class="h-88 w-full rounded-4xl" />
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -64,8 +68,8 @@
 			<Skeleton class="h-80 w-full rounded-4xl" />
 		</div>
 	</div>
-{:then measurings}
-	{@const d = analyze(measurings)}
+{:else}
+	{@const d = analyze(measurings.value)}
 	{#if d.empty}
 		<Card.Root>
 			<Card.Content class="flex flex-col items-center gap-4 py-16 text-center">
@@ -74,7 +78,7 @@
 					Connect an exchange or add a manual integration with your first measurement — the
 					dashboard fills up from there.
 				</p>
-				<Button href={resolve("/integrations")}>Go to integrations</Button>
+				<Button href={resolve("integrations")}>Go to integrations</Button>
 			</Card.Content>
 		</Card.Root>
 	{:else}
@@ -204,6 +208,4 @@
 			</div>
 		</div>
 	{/if}
-{:catch}
-	<p class="text-muted-foreground">Could not load the dashboard — please try again.</p>
-{/await}
+{/if}

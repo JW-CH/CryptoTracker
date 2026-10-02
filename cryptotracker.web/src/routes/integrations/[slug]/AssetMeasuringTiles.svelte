@@ -1,8 +1,9 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as api from "$lib/cryptotrackerApi";
-	import { formatAmount } from "$lib/format";
+	import { resolve } from "$app/paths";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { formatAmount } from "#lib/format.js";
 
 	let {
 		measurings = [],
@@ -12,7 +13,7 @@
 </script>
 
 {#if skeleton}
-	{#each { length: 6 } as _}
+	{#each { length: 6 }, i (i)}
 		<Card.Root class="flex h-full flex-col">
 			<Card.Content class="flex items-center gap-3">
 				<Skeleton class="bg-muted size-12 shrink-0 rounded-full" />
@@ -24,8 +25,8 @@
 		</Card.Root>
 	{/each}
 {:else}
-	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
-		<a href="/assets/{measuring.asset.symbol}" class="group">
+	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring (measuring.asset.symbol)}
+		<a href={resolve("/assets/[slug]", { slug: measuring.asset.symbol ?? "" })} class="group">
 			<Card.Root
 				class="hover:border-primary/20 flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 			>

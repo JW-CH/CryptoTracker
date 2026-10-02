@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import * as api from "$lib/cryptotrackerApi";
-	import { mutate } from "$lib/api/mutate";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { mutate } from "#lib/api/mutate.js";
 	import Loader2Icon from "@lucide/svelte/icons/loader-2";
 
 	let name = $state("");
@@ -23,7 +23,7 @@
 		saving = true;
 		await mutate(() => api.addIntegration({ name, description: description || null }), {
 			success: `Integration "${name}" added.`,
-			onSuccess: () => goto(resolve("/integrations"))
+			onSuccess: () => goto(resolve("integrations"))
 		});
 		saving = false;
 	}

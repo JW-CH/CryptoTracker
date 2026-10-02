@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatShare } from "$lib/format";
+	import { formatShare } from "#lib/format.js";
 
 	let { segments }: { segments: { type: string; value: number; share: number }[] } = $props();
 

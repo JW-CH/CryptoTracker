@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { PieChart } from "layerchart";
-	import * as Chart from "$lib/components/ui/chart";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { colorForSymbol, OTHER_SYMBOL } from "$lib/charts/palette";
+	import * as Chart from "#lib/components/ui/chart/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { colorForSymbol, OTHER_SYMBOL } from "#lib/charts/palette.js";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { prefersReducedMotion } from "svelte/motion";
+	import { untrack } from "svelte";
 
 	let {
 		labels = [],
@@ -30,6 +31,9 @@
 	const config: Chart.ChartConfig = $derived(
 		Object.fromEntries(data.map((d) => [d.label, { label: d.label, color: d.color }]))
 	);
+	const pieMotion = untrack(() =>
+		prefersReducedMotion.current ? "none" : { type: "tween" as const, duration: 300 }
+	);
 </script>
 
 {#if skeleton}
@@ -45,13 +49,17 @@
 			cornerRadius={4}
 			props={{
 				pie: {
-					motion: prefersReducedMotion.current ? "none" : { type: "tween", duration: 300 }
+					motion: pieMotion
 				},
 				arc: { class: "cursor-pointer" }
 			}}
 			onArcClick={(_, detail) => {
 				const label = detail.data?.label;
-				if (label && label !== OTHER_SYMBOL) goto(resolve("/assets/[slug]", { slug: label }));
+				if (label && label !== OTHER_SYMBOL) {
+					goto(resolve("/assets/[slug]", { slug: label })).catch(() => {
+						// Symbol did not resolve to an asset route.
+					});
+				}
 			}}
 		>
 			{#snippet tooltip()}

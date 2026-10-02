@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import * as Card from "$lib/components/ui/card";
-	import * as api from "$lib/cryptotrackerApi";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount, formatCurrency } from "$lib/format";
+	import { resolve } from "$app/paths";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatAmount, formatCurrency } from "#lib/format.js";
 	import { onMount, untrack } from "svelte";
-	import Button from "$lib/components/ui/button/button.svelte";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import CardWithDays from "$lib/components/ui/card/card-with-days.svelte";
+	import Button from "#lib/components/ui/button/button.svelte";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import CardWithDays from "#lib/components/ui/card/card-with-days.svelte";
 
 	interface DailyMeasurings {
 		date: string;
@@ -28,6 +29,7 @@
 	let dailyMeasurings = $state<DailyMeasurings[]>([]);
 
 	let selectedCoin = $state<string>(initial.asset.externalId ?? "");
+	let providerCoins = $state<api.ProviderAsset[]>([]);
 	let selectedAssetType = $state<api.AssetType>(initial.asset.assetType ?? "Fiat");
 	let assetType = $state<api.AssetType>(initial.asset.assetType ?? "Fiat");
 	let hidden = $state<boolean>(initial.asset.isHidden ?? false);
@@ -62,7 +64,11 @@
 	}
 
 	function EditAsset() {
-		goto(`${page.url.pathname}/edit`);
+		const slug = page.params.slug;
+		if (!slug) return;
+		goto(resolve("/assets/[slug]/edit", { slug })).catch(() => {
+			// Current slug did not resolve to the edit route.
+		});
 	}
 
 	async function DeleteAsset() {
@@ -75,7 +81,7 @@
 		}
 
 		if (request.data) {
-			window.location.href = "/assets";
+			await goto(resolve("assets"));
 		}
 	}
 
@@ -118,6 +124,29 @@
 		}));
 		measuringsInitialized = true;
 	}
+
+	$effect(() => {
+		const symbol = assetData.asset.symbol;
+		const type = assetType;
+		if (!symbol || assetData.asset.name || (type !== "Fiat" && type !== "Crypto")) {
+			providerCoins = [];
+			return;
+		}
+
+		let cancelled = false;
+		const request = type === "Fiat" ? api.findFiatBySymbol(symbol) : api.findCoinsBySymbol(symbol);
+		request
+			.then((res) => {
+				if (!cancelled) providerCoins = res.status === 200 ? res.data : [];
+			})
+			.catch(() => {
+				if (!cancelled) providerCoins = [];
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	});
 
 	let lastRange: number | undefined;
 	$effect(() => {
@@ -209,21 +238,11 @@
 					class="border-input bg-background focus:border-ring focus:ring-ring rounded-lg border px-3 py-2 pe-9 text-sm focus:ring-1"
 					bind:value={selectedCoin}
 				>
-					{#key assetType}
-						{#if assetType === "Fiat"}
-							{#await api.findFiatBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
-									<option value={coin.symbol}>{coin.name}</option>
-								{/each}
-							{/await}
-						{:else if assetType === "Crypto"}
-							{#await api.findCoinsBySymbol(assetData.asset.symbol) then coins}
-								{#each coins.data as coin}
-									<option value={coin.externalId}>{coin.name}</option>
-								{/each}
-							{/await}
-						{/if}
-					{/key}
+					{#each providerCoins as coin (assetType === "Fiat" ? coin.symbol : coin.externalId)}
+						<option value={assetType === "Fiat" ? coin.symbol : coin.externalId}>
+							{coin.name}
+						</option>
+					{/each}
 				</select>
 				<Button size="sm" onclick={setAssetData}>Speichern</Button>
 			</Card.Content>
@@ -233,45 +252,50 @@
 		<div class="space-y-6">
 			<!-- Charts -->
 			<div class="grid gap-4 md:grid-cols-2">
-				{#key [dailyMeasurings, measuringsInitialized]}
-					<CardWithDays title="Amount" bind:selectedRange={range}>
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: assetData?.asset.symbol ?? "",
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
-								}
-							]}
-							valueFormatter={(v) => formatAmount(v, assetData?.asset.assetType)}
-						/>
-					</CardWithDays>
-					<CardWithDays title="Value" bind:selectedRange={range}>
-						<LineChart
-							skeleton={!measuringsInitialized}
-							fill={true}
-							labels={dailyMeasurings.map((x) => x.date)}
-							datasets={[
-								{
-									name: $baseCurrency,
-									data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
-								}
-							]}
-							valueFormatter={(v) => formatCurrency(v, $baseCurrency)}
-						/>
-					</CardWithDays>
-				{/key}
+				<CardWithDays title="Amount" bind:selectedRange={range}>
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: assetData?.asset.symbol ?? "",
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalAmount ?? 0)
+							}
+						]}
+						valueFormatter={(v) => formatAmount(v, assetData?.asset.assetType)}
+					/>
+				</CardWithDays>
+				<CardWithDays title="Value" bind:selectedRange={range}>
+					<LineChart
+						skeleton={!measuringsInitialized}
+						fill={true}
+						labels={dailyMeasurings.map((x) => x.date)}
+						datasets={[
+							{
+								name: $baseCurrency,
+								data: dailyMeasurings.map((x) => x.measurings.at(0)?.totalValue ?? 0)
+							}
+						]}
+						valueFormatter={(v) => formatCurrency(v, $baseCurrency)}
+					/>
+				</CardWithDays>
 			</div>
 
 			<!-- Integrations -->
 			{#if measuringsInitialized && dailyMeasurings.length > 0}
+				{@const integrationValues =
+					dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues ?? []}
 				<div class="space-y-3">
 					<h2 class="text-lg font-semibold">Integrations</h2>
 					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
-							<a href="/integrations/{integrationItem.integration.id}" class="group">
+						{#each integrationValues as integrationItem (integrationItem.integration.id)}
+							<a
+								href={resolve("/integrations/[slug]", {
+									slug: integrationItem.integration.id
+								})}
+								class="group"
+							>
 								<Card.Root
 									class="hover:border-primary/20 transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 								>

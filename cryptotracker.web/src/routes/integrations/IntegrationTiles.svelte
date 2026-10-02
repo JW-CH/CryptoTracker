@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-	import * as api from "$lib/cryptotrackerApi";
-	import IntegrationAvatar from "$lib/components/integration-avatar.svelte";
-	import IntegrationTypeBadge from "$lib/components/integration-type-badge.svelte";
-	import SyncStatusBadge from "$lib/components/sync-status-badge.svelte";
-	import { formatCurrency, formatRelativeTime } from "$lib/format";
-	import { baseCurrency, updateIntervalMinutes } from "$lib/stores/config";
-	import { isStale } from "$lib/integrations/health";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import IntegrationAvatar from "#lib/components/integration-avatar.svelte";
+	import IntegrationTypeBadge from "#lib/components/integration-type-badge.svelte";
+	import SyncStatusBadge from "#lib/components/sync-status-badge.svelte";
+	import { formatCurrency, formatRelativeTime } from "#lib/format.js";
+	import { baseCurrency, updateIntervalMinutes } from "#lib/stores/config.js";
+	import { isStale } from "#lib/integrations/health.js";
 
 	let {
 		integrations = [],
