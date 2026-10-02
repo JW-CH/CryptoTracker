@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { PieChart } from "layerchart";
-	import * as Chart from "$lib/components/ui/chart";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { colorForSymbol, OTHER_SYMBOL } from "$lib/charts/palette";
+	import * as Chart from "#lib/components/ui/chart/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { colorForSymbol, OTHER_SYMBOL } from "#lib/charts/palette.js";
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { prefersReducedMotion } from "svelte/motion";

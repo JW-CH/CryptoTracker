@@ -1,4 +1,4 @@
-import * as api from "$lib/cryptotrackerApi";
+import * as api from "#lib/cryptotrackerApi.js";
 
 /**
  * An automatic integration counts as stale after three missed sync intervals

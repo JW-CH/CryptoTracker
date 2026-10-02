@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as api from "$lib/cryptotrackerApi";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount, formatCurrency, formatShare } from "$lib/format";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as Table from "$lib/components/ui/table";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatAmount, formatCurrency, formatShare } from "#lib/format.js";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as Table from "#lib/components/ui/table/index.js";
 	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Badge } from "$lib/components/ui/badge";
+	import { Badge } from "#lib/components/ui/badge/index.js";
 	import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
 
 	let { stale = false }: { stale?: boolean } = $props();

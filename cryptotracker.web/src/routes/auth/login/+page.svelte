@@ -2,13 +2,13 @@
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
-	import * as api from "$lib/cryptotrackerApi";
-	import { refreshUser } from "$lib/api/client";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import * as Alert from "$lib/components/ui/alert";
-	import { Separator } from "$lib/components/ui/separator";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { refreshUser } from "#lib/api/client.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import * as Alert from "#lib/components/ui/alert/index.js";
+	import { Separator } from "#lib/components/ui/separator/index.js";
 	import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
 	import Loader2Icon from "@lucide/svelte/icons/loader-2";
 

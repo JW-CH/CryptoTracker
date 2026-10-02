@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto, invalidateAll } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import { mutate } from "$lib/api/mutate";
+	import { mutate } from "#lib/api/mutate.js";
 	import { untrack } from "svelte";
-	import * as api from "$lib/cryptotrackerApi";
-	import * as Card from "$lib/components/ui/card";
-	import Button from "$lib/components/ui/button/button.svelte";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import Button from "#lib/components/ui/button/button.svelte";
 
 	// provided by [slug]/+layout.ts – reused without an extra fetch
 	let { data } = $props();

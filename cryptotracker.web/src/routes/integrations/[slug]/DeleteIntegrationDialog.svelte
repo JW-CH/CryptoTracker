@@ -1,7 +1,7 @@
 <script lang="ts">
-	import * as api from "$lib/cryptotrackerApi";
-	import { mutate } from "$lib/api/mutate";
-	import * as AlertDialog from "$lib/components/ui/alert-dialog";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { mutate } from "#lib/api/mutate.js";
+	import * as AlertDialog from "#lib/components/ui/alert-dialog/index.js";
 
 	let {
 		integration,

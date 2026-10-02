@@ -1,8 +1,8 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as api from "$lib/cryptotrackerApi";
-	import { formatAmount } from "$lib/format";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { formatAmount } from "#lib/format.js";
 
 	let {
 		measurings = [],

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/state";
-	import { cn } from "$lib/utils";
+	import { cn } from "#lib/utils.js";
 
 	let { path = "", text }: { path?: string; text: string } = $props();
 

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
 	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
 	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 

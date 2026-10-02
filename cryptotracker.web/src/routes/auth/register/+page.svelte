@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import * as api from "$lib/cryptotrackerApi";
+	import * as api from "#lib/cryptotrackerApi.js";
 
 	let email: string = "";
 	let password: string = "";

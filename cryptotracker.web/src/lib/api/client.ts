@@ -1,9 +1,9 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
-import * as api from "$lib/cryptotrackerApi";
-import { defaults } from "$lib/cryptotrackerApi";
-import { loadConfig } from "$lib/stores/config";
-import { user } from "$lib/stores/user";
+import * as api from "#lib/cryptotrackerApi.js";
+import { defaults } from "#lib/cryptotrackerApi.js";
+import { loadConfig } from "#lib/stores/config.js";
+import { user } from "#lib/stores/user.js";
 import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 

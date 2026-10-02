@@ -2,22 +2,22 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { resolve } from "$app/paths";
-	import * as api from "$lib/cryptotrackerApi";
+	import * as api from "#lib/cryptotrackerApi.js";
 	import { onMount } from "svelte";
 	import AssetMeasuringTiles from "./AssetMeasuringTiles.svelte";
 	import EditIntegrationDialog from "./EditIntegrationDialog.svelte";
 	import DeleteIntegrationDialog from "./DeleteIntegrationDialog.svelte";
-	import Button from "$lib/components/ui/button/button.svelte";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import CardWithDays from "$lib/components/ui/card/card-with-days.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import IntegrationAvatar from "$lib/components/integration-avatar.svelte";
-	import IntegrationTypeBadge from "$lib/components/integration-type-badge.svelte";
-	import SyncStatusBadge from "$lib/components/sync-status-badge.svelte";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import { baseCurrency, updateIntervalMinutes } from "$lib/stores/config";
-	import { formatCurrency } from "$lib/format";
-	import { isStale } from "$lib/integrations/health";
+	import Button from "#lib/components/ui/button/button.svelte";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import CardWithDays from "#lib/components/ui/card/card-with-days.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import IntegrationAvatar from "#lib/components/integration-avatar.svelte";
+	import IntegrationTypeBadge from "#lib/components/integration-type-badge.svelte";
+	import SyncStatusBadge from "#lib/components/sync-status-badge.svelte";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import { baseCurrency, updateIntervalMinutes } from "#lib/stores/config.js";
+	import { formatCurrency } from "#lib/format.js";
+	import { isStale } from "#lib/integrations/health.js";
 
 	const slug = $derived(page.params.slug ?? "");
 

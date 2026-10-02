@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as api from "$lib/cryptotrackerApi";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount, formatCurrency } from "$lib/format";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatAmount, formatCurrency } from "#lib/format.js";
 
 	let {
 		assets = [],

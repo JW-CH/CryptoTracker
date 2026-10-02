@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import { Button } from "$lib/components/ui/button";
-	import * as api from "$lib/cryptotrackerApi";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
 	import AssetTiles from "./AssetTiles.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
 
 	// portfolio (assets + latest holdings) is streamed from assets/+page.ts
 	let { data } = $props();

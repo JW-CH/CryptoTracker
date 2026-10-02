@@ -1,4 +1,4 @@
-import * as api from "$lib/cryptotrackerApi";
+import * as api from "#lib/cryptotrackerApi.js";
 import { error } from "@sveltejs/kit";
 import type { LayoutLoad } from "./$types";
 

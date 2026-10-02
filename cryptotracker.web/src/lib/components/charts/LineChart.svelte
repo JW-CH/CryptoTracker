@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { AreaChart, LineChart } from "layerchart";
 	import { curveMonotoneX } from "d3-shape";
-	import * as Chart from "$lib/components/ui/chart";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { colorForSymbol } from "$lib/charts/palette";
-	import { LOCALE, formatDate } from "$lib/format";
+	import * as Chart from "#lib/components/ui/chart/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import { colorForSymbol } from "#lib/charts/palette.js";
+	import { LOCALE, formatDate } from "#lib/format.js";
 	import { prefersReducedMotion } from "svelte/motion";
-	import { cn } from "$lib/utils";
+	import { cn } from "#lib/utils.js";
 
 	type Dataset = { name: string; data: number[] };
 

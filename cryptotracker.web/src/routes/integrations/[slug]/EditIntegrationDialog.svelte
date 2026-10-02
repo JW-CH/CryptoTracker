@@ -1,10 +1,10 @@
 <script lang="ts">
-	import * as api from "$lib/cryptotrackerApi";
-	import { mutate } from "$lib/api/mutate";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import * as Dialog from "$lib/components/ui/dialog";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { mutate } from "#lib/api/mutate.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import Loader2Icon from "@lucide/svelte/icons/loader-2";
 
 	let {

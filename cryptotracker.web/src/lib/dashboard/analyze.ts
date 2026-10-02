@@ -1,5 +1,5 @@
-import * as api from "$lib/cryptotrackerApi";
-import { OTHER_SYMBOL } from "$lib/charts/palette";
+import * as api from "#lib/cryptotrackerApi.js";
+import { OTHER_SYMBOL } from "#lib/charts/palette.js";
 
 export type Measurings = { [key: string]: api.AssetHoldingDto[] };
 

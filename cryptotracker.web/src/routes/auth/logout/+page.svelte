@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as api from "$lib/cryptotrackerApi";
-	import { user } from "$lib/stores/user";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { user } from "#lib/stores/user.js";
 	import { onMount } from "svelte";
 
 	onMount(async () => {

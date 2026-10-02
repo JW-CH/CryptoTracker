@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from "$app/paths";
-	import Button from "$lib/components/ui/button/button.svelte";
-	import * as Card from "$lib/components/ui/card";
+	import Button from "#lib/components/ui/button/button.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
 	import IntegrationTiles from "./IntegrationTiles.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
 
 	let { data } = $props();
 </script>

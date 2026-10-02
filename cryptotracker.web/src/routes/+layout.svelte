@@ -2,11 +2,11 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
-	import { installAuthInterceptor, loginPath, refreshUser } from "$lib/api/client";
-	import { theme } from "$lib/stores/theme.svelte";
-	import Navbar from "$lib/components/navigation/navbar.svelte";
-	import NavBreadcrumb from "$lib/components/navigation/NavBreadcrumb.svelte";
-	import { Toaster } from "$lib/components/ui/sonner";
+	import { installAuthInterceptor, loginPath, refreshUser } from "#lib/api/client.js";
+	import { theme } from "#lib/stores/theme.svelte.js";
+	import Navbar from "#lib/components/navigation/navbar.svelte";
+	import NavBreadcrumb from "#lib/components/navigation/NavBreadcrumb.svelte";
+	import { Toaster } from "#lib/components/ui/sonner/index.js";
 	import "../app.css";
 
 	let { children } = $props();

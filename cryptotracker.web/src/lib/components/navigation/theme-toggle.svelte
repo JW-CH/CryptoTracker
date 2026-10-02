@@ -1,9 +1,9 @@
 <script lang="ts">
 	import SunIcon from "@lucide/svelte/icons/sun";
 	import MoonIcon from "@lucide/svelte/icons/moon";
-	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-	import { buttonVariants } from "$lib/components/ui/button";
-	import { theme, type Theme } from "$lib/stores/theme.svelte";
+	import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+	import { buttonVariants } from "#lib/components/ui/button/index.js";
+	import { theme, type Theme } from "#lib/stores/theme.svelte.js";
 </script>
 
 <DropdownMenu.Root>

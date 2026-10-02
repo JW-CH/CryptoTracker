@@ -1,10 +1,10 @@
 <script lang="ts">
 	import CheckIcon from "@lucide/svelte/icons/check";
 	import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
-	import * as Command from "$lib/components/ui/command";
-	import * as Popover from "$lib/components/ui/popover";
-	import { Button } from "$lib/components/ui/button";
-	import { cn } from "$lib/utils";
+	import * as Command from "#lib/components/ui/command/index.js";
+	import * as Popover from "#lib/components/ui/popover/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { cn } from "#lib/utils.js";
 
 	type Item = { value: string; label: string };
 

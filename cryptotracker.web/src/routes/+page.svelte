@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import * as ToggleGroup from "$lib/components/ui/toggle-group";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatCurrency, formatPercent } from "$lib/format";
-	import { analyze, type Delta, type Mover } from "$lib/dashboard/analyze";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import PieChart from "$lib/components/charts/PieChart.svelte";
-	import StatTile from "$lib/components/stat-tile.svelte";
-	import TypeAllocationBar from "$lib/components/type-allocation-bar.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+	import * as ToggleGroup from "#lib/components/ui/toggle-group/index.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatCurrency, formatPercent } from "#lib/format.js";
+	import { analyze, type Delta, type Mover } from "#lib/dashboard/analyze.js";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import PieChart from "#lib/components/charts/PieChart.svelte";
+	import StatTile from "#lib/components/stat-tile.svelte";
+	import TypeAllocationBar from "#lib/components/type-allocation-bar.svelte";
 	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
 	import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
 

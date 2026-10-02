@@ -1,4 +1,4 @@
-import * as api from "$lib/cryptotrackerApi";
+import * as api from "#lib/cryptotrackerApi.js";
 import type { PageLoad } from "./$types";
 
 function todayIso(): string {

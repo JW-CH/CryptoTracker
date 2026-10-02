@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
-	import * as Card from "$lib/components/ui/card";
-	import * as api from "$lib/cryptotrackerApi";
-	import { baseCurrency } from "$lib/stores/config";
-	import { formatAmount, formatCurrency } from "$lib/format";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import * as api from "#lib/cryptotrackerApi.js";
+	import { baseCurrency } from "#lib/stores/config.js";
+	import { formatAmount, formatCurrency } from "#lib/format.js";
 	import { onMount, untrack } from "svelte";
-	import Button from "$lib/components/ui/button/button.svelte";
-	import LineChart from "$lib/components/charts/LineChart.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import CardWithDays from "$lib/components/ui/card/card-with-days.svelte";
+	import Button from "#lib/components/ui/button/button.svelte";
+	import LineChart from "#lib/components/charts/LineChart.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import CardWithDays from "#lib/components/ui/card/card-with-days.svelte";
 
 	interface DailyMeasurings {
 		date: string;

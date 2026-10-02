@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { resolve } from "$app/paths";
-	import { user } from "$lib/stores/user";
+	import { user } from "#lib/stores/user.js";
 	import NavItem from "./nav-item.svelte";
 	import ThemeToggle from "./theme-toggle.svelte";
-	import * as Avatar from "$lib/components/ui/avatar";
-	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-	import * as Sheet from "$lib/components/ui/sheet";
-	import { buttonVariants } from "$lib/components/ui/button";
-	import { cn } from "$lib/utils";
+	import * as Avatar from "#lib/components/ui/avatar/index.js";
+	import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+	import * as Sheet from "#lib/components/ui/sheet/index.js";
+	import { buttonVariants } from "#lib/components/ui/button/index.js";
+	import { cn } from "#lib/utils.js";
 	import ChartPieIcon from "@lucide/svelte/icons/chart-pie";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
 	import MenuIcon from "@lucide/svelte/icons/menu";
