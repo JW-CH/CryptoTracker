@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { resolve } from "$app/paths";
+	import { match, resolve } from "$app/paths";
 	import { page } from "$app/state";
 	import * as api from "#lib/cryptotrackerApi.js";
 	import { refreshUser } from "#lib/api/client.js";
@@ -31,6 +31,22 @@
 
 	checkOidc();
 
+	async function goAfterLogin() {
+		const returnUrl = page.url.searchParams.get("returnUrl");
+		if (returnUrl && returnUrl.startsWith("/") && !returnUrl.startsWith("//")) {
+			try {
+				const matched = await match(returnUrl);
+				if (matched) {
+					await goto(returnUrl);
+					return;
+				}
+			} catch {
+				// Not an application route, or goto rejected the destination.
+			}
+		}
+		await goto(resolve("/"));
+	}
+
 	async function handleLogin() {
 		error = null;
 		submitting = true;
@@ -38,9 +54,7 @@
 			const response = await api.login({ username: email, password });
 			if (response.status === 200) {
 				await refreshUser();
-				const returnUrl = page.url.searchParams.get("returnUrl");
-				// eslint-disable-next-line svelte/no-navigation-without-resolve -- returnUrl is an app-internal path, guarded below
-				await goto(returnUrl?.startsWith("/") ? returnUrl : resolve("/"));
+				await goAfterLogin();
 			} else {
 				error = "Login failed. Please check your credentials.";
 			}

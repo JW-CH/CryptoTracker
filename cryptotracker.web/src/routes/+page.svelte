@@ -21,8 +21,7 @@
 
 	function setRange(value: string) {
 		if (!value || Number(value) === data.range) return;
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve("/")}?range=${value}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("/")}?range=${value}`, { reset: false });
 	}
 
 	function direction(value: number): "up" | "down" | "flat" {

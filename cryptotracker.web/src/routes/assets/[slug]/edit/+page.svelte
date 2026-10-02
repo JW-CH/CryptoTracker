@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from "$app/navigation";
+	import { goto, refreshAll } from "$app/navigation";
 	import { resolve } from "$app/paths";
 	import { mutate } from "#lib/api/mutate.js";
 	import { untrack } from "svelte";
@@ -39,7 +39,7 @@
 				{
 					success: "Changes saved.",
 					onSuccess: async () => {
-						await invalidateAll();
+						await refreshAll();
 						await goto(resolve("/assets/[slug]", { slug: symbol }));
 					}
 				}

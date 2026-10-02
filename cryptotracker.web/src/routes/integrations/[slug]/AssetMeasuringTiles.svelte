@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from "$app/paths";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { Skeleton } from "#lib/components/ui/skeleton/index.js";
 	import * as api from "#lib/cryptotrackerApi.js";
@@ -25,7 +26,7 @@
 	{/each}
 {:else}
 	{#each measurings.filter((x) => x.asset.isHidden == hidden) as measuring}
-		<a href="/assets/{measuring.asset.symbol}" class="group">
+		<a href={resolve("/assets/[slug]", { slug: measuring.asset.symbol ?? "" })} class="group">
 			<Card.Root
 				class="hover:border-primary/20 flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 			>

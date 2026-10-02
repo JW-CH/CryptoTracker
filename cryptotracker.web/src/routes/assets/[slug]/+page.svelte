@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import * as api from "#lib/cryptotrackerApi.js";
 	import { baseCurrency } from "#lib/stores/config.js";
@@ -62,7 +63,11 @@
 	}
 
 	function EditAsset() {
-		goto(`${page.url.pathname}/edit`);
+		const slug = page.params.slug;
+		if (!slug) return;
+		goto(resolve("/assets/[slug]/edit", { slug })).catch(() => {
+			// Current slug did not resolve to the edit route.
+		});
 	}
 
 	async function DeleteAsset() {
@@ -75,7 +80,7 @@
 		}
 
 		if (request.data) {
-			window.location.href = "/assets";
+			await goto(resolve("assets"));
 		}
 	}
 
@@ -271,7 +276,12 @@
 					<h2 class="text-lg font-semibold">Integrations</h2>
 					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						{#each dailyMeasurings.at(-1)?.measurings.at(0)?.integrationValues! as integrationItem}
-							<a href="/integrations/{integrationItem.integration.id}" class="group">
+							<a
+								href={resolve("/integrations/[slug]", {
+									slug: integrationItem.integration.id
+								})}
+								class="group"
+							>
 								<Card.Root
 									class="hover:border-primary/20 transition-all duration-200 group-hover:-translate-y-0.5 hover:shadow-md"
 								>

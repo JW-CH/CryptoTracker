@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import * as api from "#lib/cryptotrackerApi.js";
 
 	let email: string = "";
@@ -22,7 +23,7 @@
 
 				const response = await api.register({ email, username: email, password });
 				if (response.status === 200) {
-					goto("/");
+					goto(resolve("/"));
 				} else {
 					error = "Registration failed. Please try again.";
 				}
@@ -71,7 +72,7 @@
 		<hr />
 		<p class="text-center text-sm text-gray-600">
 			Already have an account?
-			<a href="/auth/login" class="text-blue-600 hover:underline">Login here</a>.
+			<a href={resolve("auth/login")} class="text-blue-600 hover:underline">Login here</a>.
 		</p>
 	</form>
 </div>

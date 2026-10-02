@@ -16,7 +16,6 @@
 	onMount(async () => {
 		if (page.url.pathname.startsWith("/auth/")) return;
 		const signedIn = await refreshUser();
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- loginPath builds on resolve()
 		if (!signedIn) goto(loginPath(page.url.pathname + page.url.search));
 	});
 </script>

@@ -51,7 +51,11 @@
 			}}
 			onArcClick={(_, detail) => {
 				const label = detail.data?.label;
-				if (label && label !== OTHER_SYMBOL) goto(resolve("/assets/[slug]", { slug: label }));
+				if (label && label !== OTHER_SYMBOL) {
+					goto(resolve("/assets/[slug]", { slug: label })).catch(() => {
+						// Symbol did not resolve to an asset route.
+					});
+				}
 			}}
 		>
 			{#snippet tooltip()}

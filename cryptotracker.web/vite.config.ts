@@ -1,10 +1,14 @@
 import adapter from "@sveltejs/adapter-static";
+import tailwindcss from "@tailwindcss/vite";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
 	plugins: [
+		// Vite 8's CSS importer cannot resolve `@import "tailwindcss"` before
+		// PostCSS runs. The Tailwind Vite plugin handles that import itself.
+		tailwindcss(),
 		sveltekit({
 			// Consult https://svelte.dev/docs/kit/integrations
 			// for more information about preprocessors

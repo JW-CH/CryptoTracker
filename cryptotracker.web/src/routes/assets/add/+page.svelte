@@ -84,7 +84,10 @@
 		saving = true;
 		await mutate(() => api.addAsset({ symbol: payloadSymbol, externalId, assetType }), {
 			success: `${payloadSymbol.toUpperCase()} added.`,
-			onSuccess: () => goto(resolve("/assets/[slug]", { slug: payloadSymbol }))
+			onSuccess: () =>
+				goto(resolve("/assets/[slug]", { slug: payloadSymbol })).catch(() => {
+					// Symbol did not resolve to an asset route.
+				})
 		});
 		saving = false;
 	}

@@ -13,8 +13,7 @@
 {#if path === ""}
 	<span class="text-muted-foreground cursor-default text-sm font-medium">{text}</span>
 {:else}
-	<!-- eslint-disable svelte/no-navigation-without-resolve -->
-	<!-- static app paths passed by navbar -->
+	<!-- static app paths passed by navbar, already passed through resolve() -->
 	<a
 		href={path}
 		class={cn(

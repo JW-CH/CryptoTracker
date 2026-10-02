@@ -57,7 +57,6 @@
 {#if skeleton}
 	<Skeleton class="h-28 w-full rounded-4xl" />
 {:else if href}
-	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass resolved hrefs -->
 	<a {href} class="group block">
 		{@render tile()}
 	</a>

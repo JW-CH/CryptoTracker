@@ -18,8 +18,7 @@
 
 	function gotoDate(date: string) {
 		if (!date || date === data.date) return;
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve("report")}?date=${date}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("report")}?date=${date}`, { reset: false });
 	}
 
 	function shiftDay(delta: number) {

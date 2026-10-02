@@ -55,7 +55,6 @@ export function installAuthInterceptor() {
 			}
 			const path = window.location.pathname;
 			const returnUrl = path.startsWith("/auth/") ? undefined : path + window.location.search;
-			// eslint-disable-next-line svelte/no-navigation-without-resolve -- loginPath builds on resolve()
 			goto(loginPath(returnUrl)).finally(() => {
 				redirectingToLogin = false;
 			});
