@@ -27,7 +27,7 @@
 <div class="space-y-6">
 	<PageHeader title="Assets">
 		{#snippet actions()}
-			<Button variant="outline" size="sm" href={resolve("/assets/add")}>+ Add</Button>
+			<Button variant="outline" size="sm" href={resolve("assets/add")}>+ Add</Button>
 		{/snippet}
 	</PageHeader>
 

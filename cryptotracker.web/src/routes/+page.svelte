@@ -74,7 +74,7 @@
 					Connect an exchange or add a manual integration with your first measurement — the
 					dashboard fills up from there.
 				</p>
-				<Button href={resolve("/integrations")}>Go to integrations</Button>
+				<Button href={resolve("integrations")}>Go to integrations</Button>
 			</Card.Content>
 		</Card.Root>
 	{:else}

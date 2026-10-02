@@ -15,9 +15,9 @@
 
 	const links = [
 		{ path: resolve("/"), text: "Home" },
-		{ path: resolve("/report"), text: "Report" },
-		{ path: resolve("/integrations"), text: "Integrations" },
-		{ path: resolve("/assets"), text: "Assets" }
+		{ path: resolve("report"), text: "Report" },
+		{ path: resolve("integrations"), text: "Integrations" },
+		{ path: resolve("assets"), text: "Assets" }
 	];
 
 	let mobileOpen = $state(false);
@@ -80,14 +80,13 @@
 							{/if}
 						</DropdownMenu.Label>
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item onclick={() => goto(resolve("/auth/logout"))}>
-							<LogOutIcon class="size-4" />
-							Logout
-						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => goto(resolve("auth/logout"))}
+							><LogOutIcon class="size-4" />Logout</DropdownMenu.Item
+						>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			{:else}
-				<NavItem path={resolve("/auth/login")} text="Login" />
+				<NavItem path={resolve("auth/login")} text="Login" />
 			{/if}
 		</div>
 	</div>

@@ -100,7 +100,10 @@
 		<Separator />
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
-			<a href={resolve("/auth/register")} class="text-primary hover:underline">Register here</a>.
+
+			<a href={resolve("auth/register")} class="text-primary hover:underline">Register here</a>
+
+			.
 		</p>
 	</form>
 </div>

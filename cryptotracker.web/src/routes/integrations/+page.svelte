@@ -15,7 +15,7 @@
 <div class="space-y-6">
 	<PageHeader title="Integrations">
 		{#snippet actions()}
-			<Button variant="outline" size="sm" href={resolve("/integrations/add")}>+ Add</Button>
+			<Button variant="outline" size="sm" href={resolve("integrations/add")}>+ Add</Button>
 		{/snippet}
 	</PageHeader>
 
@@ -32,7 +32,7 @@
 						Automatic integrations come from the server configuration; manual ones track wallets and
 						accounts you update yourself.
 					</p>
-					<Button href={resolve("/integrations/add")}>Add a manual integration</Button>
+					<Button href={resolve("integrations/add")}>Add a manual integration</Button>
 				</Card.Content>
 			</Card.Root>
 		{:else}

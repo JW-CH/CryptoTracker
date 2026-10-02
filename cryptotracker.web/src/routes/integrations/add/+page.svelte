@@ -23,7 +23,7 @@
 		saving = true;
 		await mutate(() => api.addIntegration({ name, description: description || null }), {
 			success: `Integration "${name}" added.`,
-			onSuccess: () => goto(resolve("/integrations"))
+			onSuccess: () => goto(resolve("integrations"))
 		});
 		saving = false;
 	}

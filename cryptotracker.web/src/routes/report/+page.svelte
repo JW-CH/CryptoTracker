@@ -19,7 +19,7 @@
 	function gotoDate(date: string) {
 		if (!date || date === data.date) return;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- query-only navigation on the current route
-		goto(`${resolve("/report")}?date=${date}`, { keepFocus: true, noScroll: true });
+		goto(`${resolve("report")}?date=${date}`, { keepFocus: true, noScroll: true });
 	}
 
 	function shiftDay(delta: number) {
@@ -96,16 +96,18 @@
 									{holding.asset.name ?? holding.asset.symbol}
 								</a>
 							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatAmount(holding.totalAmount ?? 0, holding.asset.assetType)}
-								{holding.asset.symbol}
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatCurrency(holding.price ?? 0, $baseCurrency)}
-							</Table.Cell>
-							<Table.Cell class="text-right tabular-nums">
-								{formatCurrency(holding.totalValue ?? 0, $baseCurrency)}
-							</Table.Cell>
+
+							<Table.Cell class="text-right tabular-nums"
+								>{formatAmount(holding.totalAmount ?? 0, holding.asset.assetType)}
+								{holding.asset.symbol}</Table.Cell
+							>
+							<Table.Cell class="text-right tabular-nums"
+								>{formatCurrency(holding.price ?? 0, $baseCurrency)}</Table.Cell
+							>
+							<Table.Cell class="text-right tabular-nums"
+								>{formatCurrency(holding.totalValue ?? 0, $baseCurrency)}</Table.Cell
+							>
+
 							<Table.Cell class="text-right tabular-nums">
 								{report.total > 0 ? formatShare((holding.totalValue ?? 0) / report.total) : "—"}
 							</Table.Cell>
@@ -115,10 +117,10 @@
 				<Table.Footer>
 					<Table.Row>
 						<Table.Cell class="font-semibold">Total</Table.Cell>
-						<Table.Cell colspan={2}></Table.Cell>
-						<Table.Cell class="text-right font-semibold tabular-nums">
-							{formatCurrency(report.total, $baseCurrency)}
-						</Table.Cell>
+						<Table.Cell colspan={2} />
+						<Table.Cell class="text-right font-semibold tabular-nums"
+							>{formatCurrency(report.total, $baseCurrency)}</Table.Cell
+						>
 						<Table.Cell class="text-right tabular-nums">100%</Table.Cell>
 					</Table.Row>
 				</Table.Footer>

@@ -8,7 +8,8 @@ import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
 export function loginPath(returnUrl?: string): string {
-	const base = resolve("/auth/login");
+	const base = resolve("auth/login");
+
 	return returnUrl ? `${base}?returnUrl=${encodeURIComponent(returnUrl)}` : base;
 }
 

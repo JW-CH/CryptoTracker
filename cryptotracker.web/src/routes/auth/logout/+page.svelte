@@ -12,7 +12,7 @@
 			// even if the request fails, treat the client as signed out
 		}
 		user.set(null);
-		await goto(resolve("/auth/login"));
+		await goto(resolve("auth/login"));
 	});
 </script>
 

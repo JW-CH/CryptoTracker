@@ -37,6 +37,7 @@
 	const currentValue = $derived(
 		(details?.measurings ?? []).reduce((acc, m) => acc + (m.totalValue ?? 0), 0)
 	);
+
 	const stale = $derived(details ? isStale(details.integration, $updateIntervalMinutes) : false);
 
 	// ── Value over time ──
@@ -96,9 +97,9 @@
 				/>
 			{/snippet}
 			{#snippet meta()}
-				<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold">
-					{formatCurrency(currentValue, $baseCurrency)}
-				</span>
+				<span class="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-semibold"
+					>{formatCurrency(currentValue, $baseCurrency)}</span
+				>
 				<IntegrationTypeBadge isManual={details!.integration.isManual} />
 				<SyncStatusBadge {stale} />
 			{/snippet}
@@ -109,12 +110,12 @@
 						size="sm"
 						href={resolve("/integrations/[slug]/measurings", {
 							slug: details!.integration.id ?? ""
-						})}
+						})}>Measurements</Button
 					>
-						Measurements
-					</Button>
 				{/if}
+
 				<Button variant="outline" size="sm" onclick={() => (editOpen = true)}>Edit</Button>
+
 				<Button variant="destructive" size="sm" onclick={() => (deleteOpen = true)}>Delete</Button>
 			{/snippet}
 		</PageHeader>
@@ -159,7 +160,7 @@
 		<DeleteIntegrationDialog
 			integration={details.integration}
 			bind:open={deleteOpen}
-			onDeleted={() => goto(resolve("/integrations"))}
+			onDeleted={() => goto(resolve("integrations"))}
 		/>
 	{/if}
 </div>
