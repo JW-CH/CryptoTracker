@@ -69,7 +69,7 @@
 		</div>
 	</div>
 {:else}
-	{@const d = analyze(measurings.value)}
+	{@const d = analyze(measurings.value, data.range)}
 	{#if d.empty}
 		<Card.Root>
 			<Card.Content class="flex flex-col items-center gap-4 py-16 text-center">

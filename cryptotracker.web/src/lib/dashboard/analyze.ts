@@ -16,6 +16,9 @@ export type Kpis = {
 
 const TOP_SLOTS = 7;
 
+/** Today plus the day 7 days ago. A 7-day range has only 7 points and cannot reach this. */
+export const SEVEN_DAY_POINTS = 8;
+
 export function trimHoldings(holdings: api.AssetHoldingDto[]): api.AssetHoldingDto[] {
 	const sorted = [...holdings].sort((a, b) => (b.totalValue ?? 0) - (a.totalValue ?? 0));
 	if (sorted.length <= TOP_SLOTS) {
@@ -46,7 +49,10 @@ function computeKpis(
 ): Kpis {
 	const current = totals.at(-1) ?? 0;
 	const change24h = totals.length >= 2 ? deltaBetween(current, totals.at(-2)!) : null;
-	const change7d = totals.length >= 2 ? deltaBetween(current, totals.at(-8) ?? totals[0]) : null;
+	const change7d =
+		totals.length >= SEVEN_DAY_POINTS
+			? deltaBetween(current, totals.at(-SEVEN_DAY_POINTS)!)
+			: null;
 
 	// 24h movers: price change only — amount changes are deposits/withdrawals,
 	// not performance, and must not surface as gains/losses
@@ -81,15 +87,21 @@ function computeKpis(
 	return { change24h, change7d, topGainer, topLoser, typeAllocation };
 }
 
-export function analyze(measurings: Measurings) {
-	const days = Object.keys(measurings).sort();
-	const totals = days.map((d) => measurings[d].reduce((acc, m) => acc + (m.totalValue ?? 0), 0));
+export function analyze(measurings: Measurings, range: number) {
+	const allDays = Object.keys(measurings).sort();
+	const allTotals = allDays.map((d) =>
+		measurings[d].reduce((acc, m) => acc + (m.totalValue ?? 0), 0)
+	);
+	// Chart and hero stay on the selected range. KPIs use the full payload so the
+	// 7d change can reach the day 7 days ago, which a 7-point range does not include.
+	const days = allDays.slice(-range);
+	const totals = allTotals.slice(-range);
 	const current = totals.at(-1) ?? 0;
 	const first = totals[0] ?? 0;
 	const delta = current - first;
 	const deltaPct = first !== 0 ? delta / first : null;
 
-	const latest = days.length ? measurings[days.at(-1)!] : [];
+	const latest = allDays.length ? measurings[allDays.at(-1)!] : [];
 	const trimmedLatest = trimHoldings(latest);
 
 	// Composition shares the pie's trim: same top symbols, same colors. Membership
@@ -121,7 +133,7 @@ export function analyze(measurings: Measurings) {
 		deltaPct,
 		trimmedLatest,
 		composition,
-		kpis: computeKpis(measurings, days, totals, latest),
+		kpis: computeKpis(measurings, allDays, allTotals, latest),
 		empty: latest.length === 0
 	};
 }

@@ -1,4 +1,5 @@
 import { runInLoad } from "#lib/api/client.js";
+import { SEVEN_DAY_POINTS } from "#lib/dashboard/analyze.js";
 import * as api from "#lib/cryptotrackerApi.js";
 import type { PageLoad } from "./$types";
 
@@ -11,7 +12,7 @@ export const load: PageLoad = ({ fetch, url }) => {
 	return runInLoad(fetch, () => ({
 		range,
 		ranges: RANGES,
-		measurings: api.getMeasuringsByDays(range, {}).then((res) => {
+		measurings: api.getMeasuringsByDays(Math.max(range, SEVEN_DAY_POINTS), {}).then((res) => {
 			if (res.status !== 200 || !res.data) throw new Error("Could not load measurings");
 			return res.data;
 		})
