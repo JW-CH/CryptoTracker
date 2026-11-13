@@ -25,7 +25,7 @@ docker run -d \
 ### Docker Compose (Recommended)
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   cryptotracker:
     image: janmer/cryptotracker_web:latest
@@ -96,9 +96,9 @@ integrations:
     description: Hardware wallet
     sources:
       - type: bitcoin
-        key: zpub6abc...  # Your XPUB or ZPUB
+        key: zpub6abc... # Your XPUB or ZPUB
       - type: ethereum
-        key: 0xabc...     # Your address
+        key: 0xabc... # Your address
 ```
 
 > **Note:** Run only a single instance of the container. The background import
@@ -121,15 +121,16 @@ if everything is provided via environment.
 
 ### Supported Integration Types
 
-| Type | Description | Key | Secret |
-|------|-------------|-----|--------|
-| `coinbase` | Coinbase Exchange | API Key | API Secret |
-| `bitpanda` | Bitpanda | API Key | API Secret |
-| `cryptocom` | Crypto.com Exchange | API Key | API Secret |
-| `binance` | Binance | API Key | API Secret |
-| `bitcoin` | Bitcoin Wallet | XPUB/ZPUB | (unused) |
-| `ethereum` | Ethereum Address | Wallet Address | (unused) |
-| `ripple` | XRP Address | Wallet Address | (unused) |
+| Type        | Description         | Key            | Secret                  |
+| ----------- | ------------------- | -------------- | ----------------------- |
+| `coinbase`  | Coinbase Exchange   | API Key        | API Secret              |
+| `bitpanda`  | Bitpanda            | API Key        | API Secret              |
+| `cryptocom` | Crypto.com Exchange | API Key        | API Secret              |
+| `binance`   | Binance             | API Key        | API Secret              |
+| `kucoin`    | KuCoin              | API Key        | API Secret + Passphrase |
+| `bitcoin`   | Bitcoin Wallet      | XPUB/ZPUB      | (unused)                |
+| `ethereum`  | Ethereum Address    | Wallet Address | (unused)                |
+| `ripple`    | XRP Address         | Wallet Address | (unused)                |
 
 ## Development Setup
 
@@ -143,7 +144,7 @@ if everything is provided via environment.
 
 ```bash
 # Run the API (starts on localhost:5106)
-make web
+make dev
 
 # Run tests
 make test-webapi

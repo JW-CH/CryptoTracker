@@ -45,12 +45,12 @@ auf PRs (die Repo-Historie zeigt PR-basierte Arbeit, d. h. CI hätte Nutzen).
 on: [push, pull_request]
 jobs:
   backend:
-    - dotnet build --warnaserror   # TreatWarningsAsErrors schrittweise aktivieren
+    - dotnet build --warnaserror # TreatWarningsAsErrors schrittweise aktivieren
     - dotnet test (beide Testprojekte)
   frontend:
     - npm ci && npm run lint && npm run check && npm run build
   docker (nur main/tags):
-    - buildx build --target final   # Push auf Docker Hub via Secret
+    - buildx build --target final # Push auf Docker Hub via Secret
 ```
 
 Dazu: `dotnet format`-Check oder `.editorconfig` mit Analyzern
@@ -79,8 +79,8 @@ Exchange-SDK-Pakete.
 
 ## T5 — Repo-Hygiene 🟡
 
-- `CLAUDE.md` beschreibt `make test-webapi`/`test-core` — beide laufen, aber
-  `make api` setzt eine laufende API voraus (nicht CI-fähig, siehe
+- `make test-webapi`/`test-core` laufen ohne Postgres, aber `make api` setzt
+  eine laufende API voraus (nicht CI-fähig, siehe
   [05/Q6](05-backend-codequalitaet.md)).
 - ~~`cryptotracker.worker` aus der Solution und dem Repo entfernen~~ ✅ erledigt 2026-07-09 (Details
   [04/A4](04-architektur.md)).
