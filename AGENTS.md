@@ -6,7 +6,7 @@ Selbst gehosteter Portfolio-Tracker. Befehle stehen im `Makefile`.
 
 - `cryptotracker.core` hängt von `database` ab, nicht umgekehrt. EF-Entities liegen in `database`. Import und Abfragen (`UpdateService`, `PortfolioQueryService`, `IntegrationService`) bleiben in `webapi`. Auth ist JWT, optional OIDC; MCP hängt unter `/mcp`.
 - Kein `svelte.config.js`. adapter-static steht in `cryptotracker.web/vite.config.ts` (Output `build/`, Fallback `index.html`). `src/routes/+layout.ts` setzt `ssr = false` und `prerender = false`.
-- `docs/` sind Planungsnotizen, keine Spec und keine Aufgabenliste. Das Snapshot-Modell heisst `DailyHolding`, nicht `AssetMeasuring`.
+- `docs/backlog.md` ist offenes Backlog, keine Spec und keine Aufgabenliste. Das Snapshot-Modell heisst `DailyHolding`, nicht `AssetMeasuring`.
 
 ## Start
 
