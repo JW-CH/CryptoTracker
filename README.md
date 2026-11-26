@@ -4,7 +4,7 @@ A self-hosted cryptocurrency portfolio tracker that aggregates holdings from mul
 
 ## Features
 
-- **Multi-Exchange Support**: Connect to Coinbase, Bitpanda, Crypto.com, and Binance
+- **Multi-Exchange Support**: Connect to Coinbase, Crypto.com, Binance, and KuCoin
 - **Wallet Tracking**: Track Bitcoin (XPUB/ZPUB), EVM addresses (Ethereum, Base, Arbitrum, Optimism, Polygon, Gnosis), and XRP directly
 - **Portfolio History**: Daily snapshots with historical value tracking
 - **Price Tracking**: Automatic price updates via CoinGecko
@@ -126,7 +126,6 @@ if everything is provided via environment.
 | Type        | Description         | Key            | Secret                  |
 | ----------- | ------------------- | -------------- | ----------------------- |
 | `coinbase`  | Coinbase Exchange   | API Key        | API Secret              |
-| `bitpanda`  | Bitpanda            | API Key        | API Secret              |
 | `cryptocom` | Crypto.com Exchange | API Key        | API Secret              |
 | `binance`   | Binance             | API Key        | API Secret              |
 | `kucoin`    | KuCoin              | API Key        | API Secret + Passphrase |

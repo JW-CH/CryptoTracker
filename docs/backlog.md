@@ -24,7 +24,7 @@ Nicht umsetzen, ohne dass es ausdrücklich gewollt ist.
 - Import-Takt hängt an der Startzeit. Kein manueller Sync-Endpoint. `LastSyncedAtUtc` sagt nicht, ob der Lauf fehlschlug.
 - `make api` braucht eine laufende Development-API. Structs mit öffentlichen Settern erzeugen schwache OpenAPI-Schemata.
 - Exchange-SDK-Clients werden pro Abruf von Hand erzeugt, nicht über `AddCoinbase()` und Verwandte.
-- `interval: 0` wirft im `PeriodicTimer`. Auskommentierter Bitpanda-Portfolio-Call. `[Description]` auf `AssetType` wird nicht gelesen. Frankfurter-Kurzschluss gilt nur bei genau einer Währung.
+- `interval: 0` wirft im `PeriodicTimer`. `[Description]` auf `AssetType` wird nicht gelesen. Frankfurter-Kurzschluss gilt nur bei genau einer Währung.
 - Deutschreste und native `<select>`s in `assets/[slug]` und `assets/[slug]/edit`. `auth/register` nutzt alte Tailwind-Klassen, nicht die Form-Primitives.
 - Loads noch in `onMount`: `integrations/[slug]`, `integrations/[slug]/measurings`, `assets/[slug]`.
 - JWT: kein Refresh (Default 60 Minuten). Ohne konfigurierten Issuer wird der Request-Host zum Issuer und nicht validiert. `Me()` sucht über die E-Mail-Claim, nicht über eine User-Id.
