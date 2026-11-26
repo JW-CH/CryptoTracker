@@ -37,4 +37,4 @@ Nicht umsetzen, ohne dass es ausdrücklich gewollt ist.
 - Kein Frontend-Test (Vitest/Playwright).
 - Kein Healthcheck. `Database.Migrate()` und `UpdateService` laufen bei jedem Start, unkoordiniert. Mehr als eine Instanz bräuchte ein Lock und ein Migrate-Flag.
 - Image-Tags nur `:latest` und `:dev`. Kein Backup-Hinweis (`pg_dump`).
-- README fehlt: Exchange-Keys read-only, und dass Bitcoin/Ethereum/Ripple Adressen bzw. XPUB/ZPUB an blockchain.info, ethplorer.io und xrpscan.com schicken.
+- README fehlt: Exchange-Keys read-only, und dass Bitcoin, die EVM-Chains und Ripple Adressen bzw. XPUB/ZPUB an blockchain.info, Blockscout und xrpscan.com schicken.

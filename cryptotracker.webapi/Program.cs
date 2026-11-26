@@ -102,9 +102,8 @@ builder.Services.AddSingleton<IEnumerable<IIntegrationProvider>>(srv =>
         new KucoinIntegrationProvider(),
         new CryptocomIntegrationProvider(),
         new BitcoinIntegrationProvider(httpClientFactory),
-        new EthereumIntegrationProvider(httpClientFactory),
         new RippleIntegrationProvider(httpClientFactory),
-    };
+    }.Concat(EvmIntegrationProvider.CreateAll(httpClientFactory)).ToList();
 });
 
 builder.Services.AddSingleton<IEnumerable<IPriceProvider>>(srv =>

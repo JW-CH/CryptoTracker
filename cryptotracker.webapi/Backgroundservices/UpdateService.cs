@@ -73,8 +73,8 @@ public class UpdateService : BackgroundService
 
                 var exchangeIntegration = await GetOrCreateExchangeIntegration(db, integration);
 
-                // symbols the last snapshot still had but no source reports anymore:
-                // their balance dropped to 0 (exchanges omit empty positions)
+                // symbols the last snapshot or today's row still had, but no source reports
+                // anymore: their balance dropped to 0 (exchanges omit empty positions)
                 var zeroSymbols = await GetDisappearedSymbols(db, exchangeIntegration.Id, balances, today);
 
                 foreach (var balance in balances)
@@ -159,30 +159,41 @@ public class UpdateService : BackgroundService
     }
 
     /// <summary>
-    /// Returns the symbols that had a non-zero balance in the integration's most recent
-    /// snapshot before <paramref name="today"/> but are missing from the freshly fetched
-    /// balances — i.e. positions that were emptied since the last import.
+    /// Returns symbols that had a non-zero balance in the previous snapshot, or already
+    /// today, but are missing from the freshly fetched balances. Providers omit empty
+    /// positions, so a same-day reimport would otherwise leave the earlier amount in place.
     /// </summary>
     async Task<List<string>> GetDisappearedSymbols(DatabaseContext db, Guid integrationId, IEnumerable<BalanceResult> balances, DateOnly today)
     {
+        var currentSymbols = balances.Select(b => b.Symbol).ToHashSet();
+
         var lastDate = await db.DailyHoldings
             .Where(h => h.IntegrationId == integrationId && h.Date < today)
             .MaxAsync(h => (DateOnly?)h.Date);
 
-        if (lastDate == null) return new();
-
         // Amount != 0 keeps the zero-markers self-terminating: an asset recorded as 0
         // is no longer part of the previous snapshot and won't get another 0 tomorrow
-        var previousSymbols = await db.DailyHoldings
+        var previousSymbols = lastDate == null
+            ? new List<string>()
+            : await db.DailyHoldings
+                .Where(h => h.IntegrationId == integrationId
+                         && h.Date == lastDate
+                         && h.Amount != 0)
+                .Select(h => h.Symbol)
+                .ToListAsync();
+
+        var todaysSymbols = await db.DailyHoldings
             .Where(h => h.IntegrationId == integrationId
-                     && h.Date == lastDate
+                     && h.Date == today
                      && h.Amount != 0)
             .Select(h => h.Symbol)
             .ToListAsync();
 
-        var currentSymbols = balances.Select(b => b.Symbol).ToHashSet();
-
-        return previousSymbols.Where(s => !currentSymbols.Contains(s)).ToList();
+        return previousSymbols
+            .Concat(todaysSymbols)
+            .Where(s => !currentSymbols.Contains(s))
+            .Distinct()
+            .ToList();
     }
 
     async Task UpsertHolding(DatabaseContext db, IPriceProvider currencyProvider, ExchangeIntegration exchangeIntegration, string symbol, decimal balance, AssetType? assetTypeHint, DateOnly today)

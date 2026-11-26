@@ -149,6 +149,20 @@ public class UpdateServiceTest
     }
 
     [Test]
+    public async Task Import_SameDayReimportToZero_OverwritesTodaysHolding()
+    {
+        AddConfigIntegration("A");
+        SetupBalances("A", ("ETH", 1m));
+        await Import();
+
+        SetupBalances("A");
+        await Import();
+
+        var today = await TodaysHoldings();
+        Assert.That(today.Single(m => m.Symbol == "ETH").Amount, Is.EqualTo(0m));
+    }
+
+    [Test]
     public async Task Import_DisappearedAsset_GetsSingleZeroMeasuring()
     {
         await SeedIntegrationWithHoldings("A", _clock.Today.AddDays(-1), ("BTC", 0.5m), ("ETH", 2m));

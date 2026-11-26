@@ -56,6 +56,8 @@ public class YamlConfigurationTest
                     key: zpub123
                   - type: ethereum
                     key: 0xabc
+                  - type: base
+                    key: 0xdef
             """);
 
         Assert.That(config.ConnectionString, Is.EqualTo("Host=localhost;Database=test"));
@@ -66,10 +68,11 @@ public class YamlConfigurationTest
         Assert.That(config.Auth.Secret, Is.EqualTo("some-secret"));
         Assert.That(config.Integrations, Has.Count.EqualTo(2));
         Assert.That(config.Integrations[0].Sources.Single().Type, Is.EqualTo(CryptoTrackerIntegrationType.Coinbase));
-        Assert.That(config.Integrations[1].Sources, Has.Count.EqualTo(2));
+        Assert.That(config.Integrations[1].Sources, Has.Count.EqualTo(3));
         Assert.That(config.Integrations[1].Sources[0].Type, Is.EqualTo(CryptoTrackerIntegrationType.Bitcoin));
         Assert.That(config.Integrations[1].Sources[0].Key, Is.EqualTo("zpub123"));
         Assert.That(config.Integrations[1].Sources[1].Type, Is.EqualTo(CryptoTrackerIntegrationType.Ethereum));
+        Assert.That(config.Integrations[1].Sources[2].Type, Is.EqualTo(CryptoTrackerIntegrationType.Base));
     }
 
     [Test]
