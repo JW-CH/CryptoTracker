@@ -96,7 +96,6 @@ builder.Services.AddSingleton<IEnumerable<IIntegrationProvider>>(srv =>
 
     return new List<IIntegrationProvider>
     {
-        new BitpandaIntegrationProvider(httpClientFactory),
         new CoinbaseIntegrationProvider(),
         new BinanceIntegrationProvider(),
         new KucoinIntegrationProvider(),

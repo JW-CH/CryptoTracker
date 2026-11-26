@@ -5,7 +5,6 @@ namespace cryptotracker.core.Models
     public enum CryptoTrackerIntegrationType
     {
         Unknown,
-        Bitpanda,
         Cryptocom,
         Kucoin,
         Coinbase,

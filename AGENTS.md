@@ -31,7 +31,7 @@ Selbst gehosteter Portfolio-Tracker. Befehle stehen im `Makefile`.
 - PK von `DailyHolding` ist `(IntegrationId, Symbol, Date)`. Imports upserten. Positionen, die eine Börse nicht mehr meldet, werden mit Amount 0 geschrieben.
 - Sync-Bestände höchstens `maxfilldays` (Default 10) vortragen. Manuelle Integrationen (`IsManual`, nur in der DB) bleiben bis zum nächsten Eintrag gültig. Config-Integrationen matchen case-insensitive über `name` und dürfen über die API nicht umbenannt werden. Mehrere `sources` einer Integration werden pro Symbol addiert.
 - `AssetMetadata.Price` ist der Wert einer Einheit in `Currency` — für Fiat, Crypto und Aktien gleich. Frankfurter und CoinGecko sind immer registriert; Aktien nur bei `stockapi: yahoofinance`.
-- Registrierte Provider: Bitpanda, Coinbase, Binance, KuCoin (`passphrase`), Crypto.com, Bitcoin (xpub/zpub), Ethereum, Base, Arbitrum, Optimism, Polygon, Gnosis, Ripple. `Cardano` ist nur ein Enum-Wert. Börsen ausser Bitpanda laufen über CryptoClients.Net; Bitpanda, Bitcoin, Ripple und die EVM-Chains über `HttpClient`. EVM-Bestände kommen von Blockscout, nur die native Münze.
+- Registrierte Provider: Coinbase, Binance, KuCoin (`passphrase`), Crypto.com, Bitcoin (xpub/zpub), Ethereum, Base, Arbitrum, Optimism, Polygon, Gnosis, Ripple. `Cardano` ist nur ein Enum-Wert. Börsen laufen über CryptoClients.Net; Bitcoin, Ripple und die EVM-Chains über `HttpClient`. EVM-Bestände kommen von Blockscout, nur die native Münze.
 
 ## UI
 
