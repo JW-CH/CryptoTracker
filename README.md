@@ -5,7 +5,7 @@ A self-hosted cryptocurrency portfolio tracker that aggregates holdings from mul
 ## Features
 
 - **Multi-Exchange Support**: Connect to Coinbase, Bitpanda, Crypto.com, and Binance
-- **Wallet Tracking**: Track Bitcoin (XPUB/ZPUB), Ethereum, and XRP addresses directly
+- **Wallet Tracking**: Track Bitcoin (XPUB/ZPUB), EVM addresses (Ethereum, Base, Arbitrum, Optimism, Polygon, Gnosis), and XRP directly
 - **Portfolio History**: Daily snapshots with historical value tracking
 - **Price Tracking**: Automatic price updates via CoinGecko
 - **Authentication**: Username/password and OIDC (OpenID Connect) support
@@ -98,7 +98,9 @@ integrations:
       - type: bitcoin
         key: zpub6abc... # Your XPUB or ZPUB
       - type: ethereum
-        key: 0xabc... # Your address
+        key: 0xabc... # Your address. Same address can be repeated per chain.
+      - type: base
+        key: 0xabc...
 ```
 
 > **Note:** Run only a single instance of the container. The background import
@@ -129,8 +131,15 @@ if everything is provided via environment.
 | `binance`   | Binance             | API Key        | API Secret              |
 | `kucoin`    | KuCoin              | API Key        | API Secret + Passphrase |
 | `bitcoin`   | Bitcoin Wallet      | XPUB/ZPUB      | (unused)                |
-| `ethereum`  | Ethereum Address    | Wallet Address | (unused)                |
+| `ethereum`  | Ethereum            | Wallet Address | (unused)                |
+| `base`      | Base                | Wallet Address | (unused)                |
+| `arbitrum`  | Arbitrum One        | Wallet Address | (unused)                |
+| `optimism`  | Optimism            | Wallet Address | (unused)                |
+| `polygon`   | Polygon             | Wallet Address | (unused)                |
+| `gnosis`    | Gnosis Chain        | Wallet Address | (unused)                |
 | `ripple`    | XRP Address         | Wallet Address | (unused)                |
+
+EVM sources read only the native coin from Blockscout (ETH, POL, or XDAI). ERC-20 tokens are not imported. The same `0x` address on several chains is several sources.
 
 ## Development Setup
 

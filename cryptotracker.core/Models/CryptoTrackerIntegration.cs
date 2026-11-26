@@ -12,6 +12,11 @@ namespace cryptotracker.core.Models
         Binance,
         Bitcoin,
         Ethereum,
+        Base,
+        Arbitrum,
+        Optimism,
+        Polygon,
+        Gnosis,
         Ripple,
         Cardano,
     }
